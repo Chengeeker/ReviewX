@@ -1,0 +1,36 @@
+name: review_x
+description: ReviewX — Material Design 3 client for X/Twitter.
+publish_to: 'none'
+version: 0.8.1+18
+environment:
+  sdk: ^3.5.0
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  dynamic_color: ^1.7.0
+  extended_image: ^8.2.1
+  dio: ^5.7.0
+  crypto: ^3.0.6
+  flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.3.2
+  intl: ^0.20.3
+  url_launcher: ^6.3.0
+  video_player: ^2.9.2
+  path_provider: ^2.1.4
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/twitter_protocol.json
+    - assets/x_transaction_pairs.json
+    - assets/branding/icon13.png
+    - LICENSE
+    - licenses/Review-MIT.txt
+    - licenses/fa0311-transaction-mit.txt
+    - THIRD_PARTY_NOTICES.md

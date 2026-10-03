@@ -1,0 +1,12 @@
+.dart_tool/
+.flutter-plugins*
+build/
+.reference/
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+*.bks
+*.p12
+*.apk
+*.log
