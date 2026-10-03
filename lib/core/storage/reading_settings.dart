@@ -15,6 +15,7 @@ const readingDefaults = <String, dynamic>{
   'fontSize': 16.0,
   'lineHeight': 1.5,
   'largeImages': true,
+  'defaultMutedVideo': false,
   'imageRadius': 16.0,
   'coloredLinks': true,
   'saveHistory': true,

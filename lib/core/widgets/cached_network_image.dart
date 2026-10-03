@@ -1,5 +1,6 @@
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
+import '../../twitter/api/x_request_headers.dart';
 
 /// Reuses ExtendedImage's URL-keyed disk cache across ordinary app launches.
 /// Android may reclaim its temporary cache, so images always keep a network
@@ -26,7 +27,7 @@ class CachedNetworkImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ExtendedImage.network(
       url,
-      headers: headers,
+      headers: headers ?? XRequestHeaders.media,
       width: width,
       height: height,
       fit: fit,

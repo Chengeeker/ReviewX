@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,9 +12,13 @@ import 'post_card.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage(
-      {super.key, this.initialQuery = '', this.showExplore = false});
+      {super.key,
+      this.initialQuery = '',
+      this.showExplore = false,
+      this.actions});
   final String initialQuery;
   final bool showExplore;
+  final ScrollPageActions? actions;
   @override
   ConsumerState<SearchPage> createState() => _SearchPageState();
 }
@@ -32,16 +38,70 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   List<SocialUser> _recommendations = const [];
   String? _recommendationsError;
   bool _recommendationsLoading = false;
+  final ScrollController _exploreScrollController = ScrollController();
+  final ScrollPageActions _searchTimelineActions = ScrollPageActions();
 
   @override
   void initState() {
     super.initState();
+    widget.actions?.attach(this,
+        onSingleTap: _handleBottomBarSingleTap,
+        onDoubleTap: _handleBottomBarDoubleTap,
+        onTopBarDoubleTap: _handleTopBarDoubleTap);
     if (widget.showExplore && widget.initialQuery.trim().isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadTrends();
         _loadRecommendations();
       });
     }
+  }
+
+  void _scrollExploreToTop() {
+    if (!_exploreScrollController.hasClients ||
+        _exploreScrollController.offset <= 0) {
+      return;
+    }
+    _exploreScrollController.animateTo(0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic);
+  }
+
+  void _handleBottomBarSingleTap() {
+    if (!widget.showExplore) return;
+    if (_query.isEmpty) {
+      _scrollExploreToTop();
+    } else {
+      _searchTimelineActions.handleSingleTap();
+    }
+  }
+
+  void _handleBottomBarDoubleTap() {
+    if (!widget.showExplore) return;
+    if (_query.isEmpty) {
+      _scrollExploreToTop();
+      unawaited(_refreshExplore());
+    } else {
+      _searchTimelineActions.handleDoubleTap();
+    }
+  }
+
+  void _handleTopBarDoubleTap() {
+    if (!widget.showExplore) return;
+    if (_query.isNotEmpty) {
+      _searchTimelineActions.handleTopBarDoubleTap();
+    } else if (_exploreScrollController.hasClients &&
+        _exploreScrollController.offset > 50) {
+      _scrollExploreToTop();
+    } else {
+      unawaited(_refreshExplore());
+    }
+  }
+
+  Future<void> _refreshExplore() async {
+    await Future.wait([
+      _loadTrends(force: true),
+      if (_personalized) _loadRecommendations(),
+    ]);
   }
 
   Future<void> _loadTrends({bool force = false}) async {
@@ -122,6 +182,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   @override
   void dispose() {
+    widget.actions?.detach(this);
+    _exploreScrollController.dispose();
     _text.dispose();
     super.dispose();
   }
@@ -209,6 +271,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           adapter.searchUsers(_query, cursor: cursor))
                   : TimelinePage(
                       key: ValueKey('$_query/$_product/$_revision'),
+                      actions:
+                          widget.showExplore ? _searchTimelineActions : null,
                       load: (cursor) => adapter.search(_query,
                           product: _product, cursor: cursor)))
     ]);
@@ -216,12 +280,10 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
   Widget _buildTrends() => RefreshIndicator(
         onRefresh: () async {
-          await Future.wait([
-            _loadTrends(force: true),
-            if (_personalized) _loadRecommendations()
-          ]);
+          await _refreshExplore();
         },
         child: ListView(
+          controller: _exploreScrollController,
           padding: EdgeInsets.only(
               bottom: MediaQuery.paddingOf(context).bottom + 16),
           physics: const AlwaysScrollableScrollPhysics(),

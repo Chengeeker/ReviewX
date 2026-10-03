@@ -120,9 +120,21 @@ class TwitterAdapter implements SocialPlatformAdapter {
 
   Future<PostPage> userTimeline(String id,
       {String operation = 'UserTweets', String? cursor}) async {
-    if (!const ['UserTweets', 'UserTweetsAndReplies', 'UserMedia']
-        .contains(operation)) {
+    if (!const [
+      'UserTweets',
+      'UserTweetsAndReplies',
+      'UserMedia',
+      'UserHighlightsTweets',
+      'UserRepostsTimeline',
+      'UserPhotoTimeline',
+      'UserVideoTimeline',
+      'UserArticlesTweets',
+      'Likes'
+    ].contains(operation)) {
       throw const TwitterFailure('不支持的用户时间线');
+    }
+    if (operation == 'Likes' && client.session?.userId != id) {
+      throw const TwitterFailure('X 不公开其他用户的喜欢列表，仅可查看自己的喜欢');
     }
     final data = await client.call(operation, {
       'userId': id,
@@ -133,6 +145,8 @@ class TwitterAdapter implements SocialPlatformAdapter {
       'withCommunity': true,
       'withClientEventToken': false,
       'withBirdwatchNotes': false,
+      if (operation == 'UserHighlightsTweets' || operation == 'UserTweets')
+        'sortByMostLiked': false,
       if (cursor != null) 'cursor': cursor
     });
     final result = object(object(data['user'])['result']);

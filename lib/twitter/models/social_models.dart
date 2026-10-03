@@ -28,7 +28,8 @@ class SocialUser {
       this.website = '',
       this.postsCount = 0,
       this.createdAt = '',
-      this.followRequested = false});
+      this.followRequested = false,
+      this.knownCounts = const {'followers', 'following', 'postsCount'}});
   final String id, name, handle, avatar, banner, description;
   final int followers, following;
   final bool verified;
@@ -36,6 +37,7 @@ class SocialUser {
   final String location, website, createdAt;
   final int postsCount;
   final bool followRequested;
+  final Set<String> knownCounts;
 
   Map<String, dynamic> toCacheJson() => {
         'id': id,
@@ -44,6 +46,7 @@ class SocialUser {
         'avatar': avatar,
         'banner': banner,
         'description': description,
+        'knownCounts': knownCounts.toList(),
         'followers': followers,
         'following': following,
         'verified': verified,
@@ -73,6 +76,12 @@ class SocialUser {
       avatar: safeMediaUrl(avatar) ? avatar : '',
       banner: safeMediaUrl(banner) ? banner : '',
       description: _cacheText(user['description'], limit: 1200),
+      knownCounts: user['knownCounts'] is List
+          ? array(user['knownCounts'])
+              .whereType<String>()
+              .where(const {'followers', 'following', 'postsCount'}.contains)
+              .toSet()
+          : const {'followers', 'following', 'postsCount'},
       followers: count(user['followers']).clamp(0, 1 << 53),
       following: count(user['following']).clamp(0, 1 << 53),
       verified: user['verified'] == true,
@@ -92,9 +101,39 @@ class SocialUser {
     );
   }
 
+  /// Missing statistics are unknown, while an explicit zero remains authoritative.
+  SocialUser preservingCounts(SocialUser? previous) {
+    if (previous == null || previous.id != id) return this;
+    return SocialUser(
+        id: id,
+        name: name,
+        handle: handle,
+        avatar: avatar,
+        banner: banner,
+        description: description,
+        verified: verified,
+        isFollowing: isFollowing,
+        followedBy: followedBy,
+        protected: protected,
+        location: location,
+        website: website,
+        createdAt: createdAt,
+        followRequested: followRequested,
+        followers:
+            knownCounts.contains('followers') ? followers : previous.followers,
+        following:
+            knownCounts.contains('following') ? following : previous.following,
+        postsCount: knownCounts.contains('postsCount')
+            ? postsCount
+            : previous.postsCount,
+        knownCounts: {...previous.knownCounts, ...knownCounts});
+  }
+
   static SocialUser? parse(dynamic value) {
     final user = object(value), legacy = object(object(value)['legacy']);
     final core = object(user['core']);
+    final relationships = object(user['relationship_counts']);
+    final tweets = object(user['tweet_counts']);
     final id = '${user['rest_id'] ?? legacy['id_str'] ?? ''}';
     final handle = '${core['screen_name'] ?? legacy['screen_name'] ?? ''}';
     if (id.isEmpty || handle.isEmpty) return null;
@@ -105,11 +144,23 @@ class SocialUser {
         avatar:
             '${object(user['avatar'])['image_url'] ?? legacy['profile_image_url_https'] ?? ''}'
                 .replaceAll('_normal.', '_bigger.'),
-        banner: '${legacy['profile_banner_url'] ?? ''}',
+        banner:
+            '${object(user['banner'])['image_url'] ?? legacy['profile_banner_url'] ?? ''}',
         description:
-            '${object(user['profile_bio'])['description'] ?? legacy['description'] ?? ''}',
-        followers: count(legacy['followers_count']),
-        following: count(legacy['friends_count']),
+            '${object(user['profile_bio'])['description'] ?? object(user['profile_description'])['description'] ?? legacy['description'] ?? ''}',
+        followers:
+            count(relationships['followers'] ?? legacy['followers_count']),
+        following: count(relationships['following'] ?? legacy['friends_count']),
+        knownCounts: {
+          if (relationships['followers'] != null ||
+              legacy['followers_count'] != null)
+            'followers',
+          if (relationships['following'] != null ||
+              legacy['friends_count'] != null)
+            'following',
+          if (tweets['tweets'] != null || legacy['statuses_count'] != null)
+            'postsCount',
+        },
         isFollowing: (object(user['relationship_perspectives'])['following'] ??
                 legacy['following']) ==
             true,
@@ -122,9 +173,11 @@ class SocialUser {
         location:
             '${object(user['location'])['location'] ?? legacy['location'] ?? ''}',
         website:
-            '${object(array(object(object(legacy['entities'])['url'])['urls']).firstOrNull)['expanded_url'] ?? legacy['url'] ?? ''}',
-        postsCount: count(legacy['statuses_count']),
-        followRequested: legacy['follow_request_sent'] == true,
+            '${object(user['website'])['url'] ?? object(array(object(object(legacy['entities'])['url'])['urls']).firstOrNull)['expanded_url'] ?? legacy['url'] ?? ''}',
+        postsCount: count(tweets['tweets'] ?? legacy['statuses_count']),
+        followRequested:
+            (user['follow_request_sent'] ?? legacy['follow_request_sent']) ==
+                true,
         createdAt: '${core['created_at'] ?? legacy['created_at'] ?? ''}',
         verified:
             user['is_blue_verified'] == true || legacy['verified'] == true);
@@ -196,17 +249,20 @@ class SocialMedia {
   const SocialMedia(
       {required this.preview,
       this.video,
+      this.videoQualities = const {},
       this.width = 0,
       this.height = 0,
       this.alt = ''});
   final String preview;
   final String? video;
+  final Map<String, String> videoQualities;
   final int width, height;
   final String alt;
 
   Map<String, dynamic> toCacheJson() => {
         'preview': preview,
         'video': video,
+        'videoQualities': videoQualities,
         'width': width,
         'height': height,
         'alt': alt,
@@ -220,6 +276,12 @@ class SocialMedia {
     return SocialMedia(
       preview: preview,
       video: safeMediaUrl(video) ? video : null,
+      videoQualities: Map.fromEntries(object(media['videoQualities'])
+          .entries
+          .take(12)
+          .where((entry) => entry.value is String && safeMediaUrl(entry.value))
+          .map((entry) => MapEntry(
+              _cacheText(entry.key, limit: 40), entry.value as String))),
       width: count(media['width']).clamp(0, 100000),
       height: count(media['height']).clamp(0, 100000),
       alt: _cacheText(media['alt'], limit: 2000),
@@ -243,9 +305,23 @@ class SocialMedia {
         .toList()
       ..sort((a, b) => count(b['bitrate']).compareTo(count(a['bitrate'])));
     final size = object(media['original_info']);
+    final qualities = <String, String>{};
+    for (final variant in variants.take(12)) {
+      final url = '${variant['url']}';
+      final resolution =
+          RegExp(r'/(\d+)x(\d+)/').firstMatch(Uri.parse(url).path);
+      final label = resolution == null
+          ? '${(count(variant['bitrate']) / 1000).round()} kbps'
+          : '${[
+              int.parse(resolution[1]!),
+              int.parse(resolution[2]!)
+            ].reduce((a, b) => a < b ? a : b)}p';
+      qualities.putIfAbsent(label, () => url);
+    }
     return SocialMedia(
         preview: preview,
         video: variants.isEmpty ? null : '${variants.first['url']}',
+        videoQualities: qualities,
         alt: '${media['ext_alt_text'] ?? ''}',
         width: count(size['width']),
         height: count(size['height']));

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
@@ -27,6 +29,14 @@ class _HomePageState extends ConsumerState<HomePage>
   bool _openingNotifications = false;
   final Set<int> _visitedHomeTimelineTabs = {0};
   late final TabController _homeTimelineController;
+  final ScrollPageActions _forYouActions = ScrollPageActions();
+  final ScrollPageActions _followingActions = ScrollPageActions();
+  final ScrollPageActions _exploreActions = ScrollPageActions();
+  DateTime? _lastNavigationTapTime;
+  Timer? _navigationSingleTapTimer;
+  int? _pendingNavigationTapIndex;
+  DateTime? _lastTopBarTapTime;
+  Timer? _topBarSingleTapTimer;
   @override
   void initState() {
     super.initState();
@@ -46,6 +56,84 @@ class _HomePageState extends ConsumerState<HomePage>
     _homeTimelineIndex = index;
     _visitedHomeTimelineTabs.add(index);
     if (mounted) setState(() {});
+  }
+
+  ScrollPageActions? _actionsForNavigationIndex(int index) {
+    if (index == 0) {
+      return _homeTimelineIndex == 1 ? _followingActions : _forYouActions;
+    }
+    if (index == 1) return _exploreActions;
+    return null;
+  }
+
+  void _cancelPendingTapGestures() {
+    _navigationSingleTapTimer?.cancel();
+    _navigationSingleTapTimer = null;
+    _lastNavigationTapTime = null;
+    _pendingNavigationTapIndex = null;
+    _topBarSingleTapTimer?.cancel();
+    _topBarSingleTapTimer = null;
+    _lastTopBarTapTime = null;
+  }
+
+  void _onNavigationItemSelected(int index) {
+    if (index != _tab) {
+      _cancelPendingTapGestures();
+      setState(() {
+        _tab = index;
+        _visited.add(index);
+      });
+      return;
+    }
+
+    final actions = _actionsForNavigationIndex(index);
+    if (actions == null) return;
+
+    final now = DateTime.now();
+    if (_pendingNavigationTapIndex == index &&
+        _lastNavigationTapTime != null &&
+        now.difference(_lastNavigationTapTime!) <
+            const Duration(milliseconds: 300)) {
+      _navigationSingleTapTimer?.cancel();
+      _navigationSingleTapTimer = null;
+      _lastNavigationTapTime = null;
+      _pendingNavigationTapIndex = null;
+      actions.handleDoubleTap();
+      return;
+    }
+
+    _navigationSingleTapTimer?.cancel();
+    _lastNavigationTapTime = now;
+    _pendingNavigationTapIndex = index;
+    _navigationSingleTapTimer = Timer(const Duration(milliseconds: 300), () {
+      _lastNavigationTapTime = null;
+      _pendingNavigationTapIndex = null;
+      if (mounted && _tab == index) {
+        _actionsForNavigationIndex(index)?.handleSingleTap();
+      }
+    });
+  }
+
+  void _onTopBarTap() {
+    final now = DateTime.now();
+    if (_lastTopBarTapTime != null &&
+        now.difference(_lastTopBarTapTime!) <
+            const Duration(milliseconds: 300)) {
+      _topBarSingleTapTimer?.cancel();
+      _topBarSingleTapTimer = null;
+      _lastTopBarTapTime = null;
+      if (_tab == 0) {
+        _actionsForNavigationIndex(0)?.handleTopBarDoubleTap();
+      } else if (_tab == 1) {
+        _exploreActions.handleTopBarDoubleTap();
+      }
+    } else {
+      _lastTopBarTapTime = now;
+      _topBarSingleTapTimer?.cancel();
+      _topBarSingleTapTimer = Timer(const Duration(milliseconds: 300), () {
+        _lastTopBarTapTime = null;
+      });
+    }
   }
 
   Future<void> _consumeLaunch() async {
@@ -69,6 +157,7 @@ class _HomePageState extends ConsumerState<HomePage>
 
   @override
   void dispose() {
+    _cancelPendingTapGestures();
     NotificationPoll.channel.setMethodCallHandler(null);
     _homeTimelineController
       ..removeListener(_onHomeTimelineChanged)
@@ -90,10 +179,7 @@ class _HomePageState extends ConsumerState<HomePage>
         selectedIndex: _tab,
         elevation: 0,
         height: 68,
-        onDestinationSelected: (tab) => setState(() {
-              _tab = tab;
-              _visited.add(tab);
-            }),
+        onDestinationSelected: _onNavigationItemSelected,
         destinations: const [
           NavigationDestination(
               icon: Icon(Icons.home_outlined),
@@ -149,39 +235,43 @@ class _HomePageState extends ConsumerState<HomePage>
         ],
       ),
     );
+    final appBar = AppBar(
+        leading: IconButton(
+            tooltip: '打开侧边栏',
+            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+            icon: controller.me?.avatar.isNotEmpty == true
+                ? ClipOval(
+                    child: CachedNetworkImage(controller.me!.avatar,
+                        width: 32, height: 32, fit: BoxFit.cover))
+                : const Icon(Icons.menu_rounded)),
+        title: Text(const ['ReviewX', '探索', '设置'][_tab]),
+        bottom: controller.loggedIn && _tab == 0
+            ? TabBar(
+                controller: _homeTimelineController,
+                tabs: const [
+                  Tab(text: '为你推荐'),
+                  Tab(text: '正在关注'),
+                ],
+              )
+            : null,
+        actions: [
+          if (controller.loggedIn && _tab == 0)
+            IconButton(
+                tooltip: '发布帖子',
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const ComposePage()))),
+        ]);
     return Scaffold(
         key: _scaffoldKey,
         drawer: const AppDrawer(),
         extendBody: theme.useFloatingNavBar,
-        appBar: AppBar(
-            leading: IconButton(
-                tooltip: '打开侧边栏',
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                icon: controller.me?.avatar.isNotEmpty == true
-                    ? ClipOval(
-                        child: CachedNetworkImage(controller.me!.avatar,
-                            width: 32, height: 32, fit: BoxFit.cover))
-                    : const Icon(Icons.menu_rounded)),
-            title: Text(const ['ReviewX', '探索', '设置'][_tab]),
-            bottom: controller.loggedIn && _tab == 0
-                ? TabBar(
-                    controller: _homeTimelineController,
-                    tabs: const [
-                      Tab(text: '为你推荐'),
-                      Tab(text: '正在关注'),
-                    ],
-                  )
-                : null,
-            actions: [
-              if (controller.loggedIn && _tab == 0)
-                IconButton(
-                    tooltip: '发布帖子',
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const ComposePage()))),
-            ]),
+        appBar: PreferredSize(
+            preferredSize: appBar.preferredSize,
+            child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: _onTopBarTap,
+                child: appBar)),
         body: Column(children: [
           if (controller.expired)
             MaterialBanner(content: const Text('X 会话已过期，请重新登录'), actions: [
@@ -200,18 +290,23 @@ class _HomePageState extends ConsumerState<HomePage>
                                 children: [
                                   TimelinePage(
                                       cacheKey: 'for_you',
+                                      actions: _forYouActions,
                                       load: (cursor) => controller.adapter
                                           .forYou(cursor: cursor)),
                                   _visitedHomeTimelineTabs.contains(1)
                                       ? TimelinePage(
                                           cacheKey: 'following',
+                                          actions: _followingActions,
                                           load: (cursor) => controller.adapter
                                               .following(cursor: cursor))
                                       : const SizedBox.shrink(),
                                 ],
                               ),
                               _visited.contains(1)
-                                  ? const SearchPage(showExplore: true)
+                                  ? SearchPage(
+                                      showExplore: true,
+                                      actions: _exploreActions,
+                                    )
                                   : const SizedBox.shrink(),
                             ])
                       : Center(
@@ -272,10 +367,7 @@ class _HomePageState extends ConsumerState<HomePage>
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
           hoverColor: Colors.transparent,
-          onTap: () => setState(() {
-            _tab = index;
-            _visited.add(index);
-          }),
+          onTap: () => _onNavigationItemSelected(index),
           child: Stack(
             fit: StackFit.expand,
             alignment: Alignment.center,

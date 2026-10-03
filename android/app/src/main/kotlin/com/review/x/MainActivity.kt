@@ -16,6 +16,7 @@ import android.content.pm.PackageManager
 import android.os.Environment
 import android.provider.MediaStore
 import android.media.MediaScannerConnection
+import android.provider.Settings
 import java.io.File
 import java.util.concurrent.Executors
 import io.flutter.embedding.android.FlutterActivity
@@ -61,6 +62,39 @@ class MainActivity : FlutterActivity() {
         }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.review.x/media")
             .setMethodCallHandler { call, result ->
+                // Adapted from Review's player controls; brightness affects this window only.
+                when (call.method) {
+                    "getPlayerLevels" -> {
+                        val original = window.attributes.screenBrightness
+                        val brightness = if (original >= 0) original else
+                            Settings.System.getInt(contentResolver, Settings.System.SCREEN_BRIGHTNESS, 128) / 255f
+                        result.success(mapOf("windowBrightness" to original.toDouble(),
+                            "brightness" to brightness.coerceIn(0.01f, 1f).toDouble()))
+                        return@setMethodCallHandler
+                    }
+                    "setBrightness", "restorePlayerBrightness" -> {
+                        val value = call.argument<Double>("brightness") ?: -1.0
+                        val attributes = window.attributes
+                        attributes.screenBrightness = if (call.method == "restorePlayerBrightness" && value < 0) -1f
+                            else value.toFloat().coerceIn(0.01f, 1f)
+                        window.attributes = attributes
+                        result.success(true)
+                        return@setMethodCallHandler
+                    }
+                    "shareText" -> {
+                        val text = call.argument<String>("text") ?: ""
+                        if (text.isBlank()) result.error("EMPTY", "分享内容为空", null)
+                        else {
+                            val share = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, text)
+                            }
+                            startActivity(Intent.createChooser(share, call.argument<String>("title") ?: "分享"))
+                            result.success(true)
+                        }
+                        return@setMethodCallHandler
+                    }
+                }
                 if (call.method != "saveMedia") { result.notImplemented(); return@setMethodCallHandler }
                 val args = mapOf("path" to (call.argument<String>("path") ?: ""), "name" to (call.argument<String>("name") ?: ""),
                     "mime" to (call.argument<String>("mime") ?: ""), "folder" to (call.argument<String>("folder") ?: ""))

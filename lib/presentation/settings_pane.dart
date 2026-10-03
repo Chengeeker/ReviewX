@@ -8,7 +8,7 @@ import 'login_page.dart';
 import 'settings_pages.dart';
 import 'theme_settings_page.dart';
 
-const _appVersion = '0.8.1';
+const _appVersion = '0.11.2';
 
 /// Review-style grouped settings, with X-specific account actions retained.
 class SettingsPane extends ConsumerWidget {

@@ -55,8 +55,8 @@ class AppController extends ChangeNotifier {
     try {
       final user = await adapter.user(accountId);
       if (epoch != capturedEpoch || client.session?.userId != accountId) return;
-      me = user;
-      await localCache?.writeProfile(accountId, user);
+      me = user.preservingCounts(me);
+      await localCache?.writeProfile(accountId, me!);
       if (epoch == capturedEpoch) notifyListeners();
     } catch (error) {
       if (epoch == capturedEpoch && client.session?.userId == accountId) {
@@ -115,8 +115,8 @@ class AppController extends ChangeNotifier {
           await adapter.validateSession(onStage: (stage) => loginStage = stage);
       loginStage = '保存安全会话';
       await store.save(candidate);
-      me = user;
-      await localCache?.writeProfile(candidate.userId, user);
+      me = user.preservingCounts(me);
+      await localCache?.writeProfile(candidate.userId, me!);
       expired = false;
       startupError = null;
       _updated.clear();
@@ -169,8 +169,8 @@ class AppController extends ChangeNotifier {
     try {
       final user = await adapter.validateSession();
       if (epoch != capturedEpoch) throw const TwitterFailure('账号已切换');
-      me = user;
-      await localCache?.writeProfile(session.userId, user);
+      me = user.preservingCounts(me);
+      await localCache?.writeProfile(session.userId, me!);
       expired = false;
     } catch (error) {
       report(error);

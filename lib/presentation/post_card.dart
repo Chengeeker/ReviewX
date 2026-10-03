@@ -595,6 +595,7 @@ class _MediaGridState extends ConsumerState<MediaGrid> {
                               builder: (_) => MediaPage(
                                   media: media,
                                   index: index,
+                                  post: widget.post,
                                   author: widget.post.author.handle))),
                       child: ClipRRect(
                           borderRadius:

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../auth/session.dart';
 import '../models/social_models.dart';
 import 'transaction_id.dart';
+import 'x_request_headers.dart';
 
 class TwitterFailure implements Exception {
   const TwitterFailure(this.message,
@@ -29,8 +30,7 @@ class TwitterClient {
   TwitterSession? session;
   Map<String, dynamic>? _protocol;
   final Set<CancelToken> _active = {};
-  static const userAgent =
-      'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
+  static const userAgent = XRequestHeaders.userAgent;
   // Public X web client identifier, not an account credential.
   static const _bearer =
       'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';

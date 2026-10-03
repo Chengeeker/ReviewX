@@ -103,6 +103,7 @@ class ReadingSettingsPage extends ConsumerWidget {
             'showBanner': '显示主页背景图',
             'cardBackground': '帖子背景',
             'largeImages': '单图保留图片比例',
+            'defaultMutedVideo': '默认静音播放视频',
             'coloredLinks': '链接使用主题色',
             'showSensitive': '直接显示标记为敏感的媒体',
             'saveHistory': '记录本机浏览历史',
@@ -111,7 +112,9 @@ class ReadingSettingsPage extends ConsumerWidget {
                 title: Text(entry.value),
                 subtitle: entry.key == 'grokAutoTranslate'
                     ? const Text('仅在 X 返回可用的中文全文翻译时生效')
-                    : null,
+                    : entry.key == 'defaultMutedVideo'
+                        ? const Text('视频打开时静音；滑动调节音量会恢复声音，仅调整应用内音量')
+                        : null,
                 value: state[entry.key],
                 onChanged: (value) => notifier.set(entry.key, value)),
           for (final entry in const {
