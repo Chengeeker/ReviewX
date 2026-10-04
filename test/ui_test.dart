@@ -281,6 +281,49 @@ void main() {
     expect(find.text('测试帖子'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+  testWidgets(
+      'cached feed shows pending and failed refresh above rows and retries',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = await StorageService.init();
+    final pending = Completer<PostPage>();
+    var calls = 0;
+    await tester.pumpWidget(ProviderScope(
+        overrides: [storageServiceProvider.overrideWithValue(storage)],
+        child: MaterialApp(
+            home: Scaffold(
+                body: TimelinePage(
+          initial: const [sample],
+          load: (cursor) {
+            calls++;
+            expect(cursor, isNull);
+            return calls == 1
+                ? pending.future
+                : Future.value(const PostPage([sample], null));
+          },
+        )))));
+    await tester.pump();
+    expect(find.textContaining('正在连接 X'), findsOneWidget);
+    expect(find.text('测试帖子'), findsOneWidget);
+    await tester
+        .widget<RefreshIndicator>(find.byType(RefreshIndicator))
+        .onRefresh();
+    expect(calls, 1);
+    pending
+        .completeError(const TwitterFailure('连接 X 超时，请检查 VPN 或代理是否开启及可用，然后重试'));
+    await tester.pumpAndSettle();
+    final error = find.textContaining('连接 X 超时');
+    expect(error, findsOneWidget);
+    expect(tester.getTopLeft(error).dy,
+        lessThan(tester.getTopLeft(find.text('测试帖子')).dy));
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    await tester.tap(find.text('重试'));
+    await tester.pumpAndSettle();
+    expect(calls, 2);
+    expect(error, findsNothing);
+    expect(find.text('测试帖子'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('floating capsule leaves the home timeline scrollable',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);

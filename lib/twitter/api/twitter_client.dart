@@ -223,11 +223,19 @@ class TwitterClient {
       return object(body['data']);
     } on TwitterFailure {
       rethrow;
-    } on DioException catch (_) {
+    } on DioException catch (error) {
+      final message = switch (error.type) {
+        DioExceptionType.connectionTimeout ||
+        DioExceptionType.receiveTimeout ||
+        DioExceptionType.sendTimeout =>
+          '连接 X 超时，请检查 VPN 或代理是否开启及可用，然后重试',
+        DioExceptionType.connectionError => '无法连接 X，请检查网络、VPN 或代理，然后重试',
+        DioExceptionType.badCertificate => 'X 安全连接验证失败，请检查设备时间及网络配置',
+        DioExceptionType.cancel => '请求已取消',
+        _ => 'X 网络请求失败，请检查网络、VPN 或代理，然后重试',
+      };
       throw TwitterFailure(
-          dispatched && method == 'POST'
-              ? '结果尚未确认，请刷新帖子核对后再操作'
-              : '网络连接失败，请检查网络后重试',
+          dispatched && method == 'POST' ? '结果尚未确认，请刷新帖子核对后再操作' : message,
           uncertain: dispatched && method == 'POST');
     } catch (_) {
       throw TwitterFailure('连接 X 的接口准备失败，请稍后重试',

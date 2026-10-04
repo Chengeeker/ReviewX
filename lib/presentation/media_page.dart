@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/media_saver.dart';
+import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../twitter/api/x_request_headers.dart';
 import '../twitter/auth/app_controller.dart';
@@ -86,6 +87,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
   }
 
   void _handleImageDoubleTap(ExtendedImageGestureState state, int pageIndex) {
+    HapticFeedbackUtil.light();
     _stopDoubleTapAnimation();
     final generation = _zoomGeneration;
     final pointerDownPosition = state.pointerDownPosition;
@@ -126,6 +128,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
   }
 
   void _handleGalleryTap(TapUpDetails details) {
+    HapticFeedbackUtil.light();
     final screenWidth = MediaQuery.sizeOf(context).width;
     final x = details.globalPosition.dx;
     final isMiddleThird = x >= screenWidth / 3 && x < screenWidth * 2 / 3;

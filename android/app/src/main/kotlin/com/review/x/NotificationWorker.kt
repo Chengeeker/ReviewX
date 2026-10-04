@@ -31,6 +31,7 @@ class NotificationWorker(context: Context, params: WorkerParameters) : Coroutine
         val generation = applicationContext.getSharedPreferences("ReviewXWorker", Context.MODE_PRIVATE).getLong("generation", 0)
         val completed = CompletableDeferred<List<Map<String, Any?>>>()
         val engine = FlutterEngine(applicationContext)
+        NetworkRouting.register(engine, applicationContext)
         val channel = MethodChannel(engine.dartExecutor.binaryMessenger, "com.review.x/notifications")
         try {
             channel.setMethodCallHandler { call, result ->

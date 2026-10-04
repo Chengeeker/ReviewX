@@ -359,6 +359,18 @@ void main() {
             .having((e) => e.uncertain, 'uncertain', true)));
     expect(transport.requests.length, 1);
   });
+  test(
+      'read timeout explains VPN check without expiring the session or retrying',
+      () async {
+    final transport = StubTransport({}, timeout: true);
+    await expectLater(
+        client(transport).call('HomeLatestTimeline', {}),
+        throwsA(isA<TwitterFailure>()
+            .having((e) => e.message, 'message', contains('VPN 或代理'))
+            .having((e) => e.sessionExpired, 'expired', false)
+            .having((e) => e.uncertain, 'uncertain', false)));
+    expect(transport.requests.length, 1);
+  });
   test('like requires explicit Done confirmation', () async {
     final transport = StubTransport({'data': {}});
     expect(TwitterAdapter(client(transport)).like('2', true),

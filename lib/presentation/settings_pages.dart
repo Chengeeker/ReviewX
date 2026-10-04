@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/storage/storage_service.dart';
+import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../core/theme/theme_provider.dart';
 import '../core/services/image_cache_maintenance.dart';
@@ -137,6 +138,7 @@ class ReadingSettingsPage extends ConsumerWidget {
                         : entry.key == 'lineHeight'
                             ? 2
                             : 28,
+                    onChangeStart: (_) => HapticFeedbackUtil.selection(),
                     onChanged: (value) => notifier.set(entry.key, value))),
         ]));
   }

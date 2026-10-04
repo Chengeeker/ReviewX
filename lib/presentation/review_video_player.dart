@@ -361,6 +361,7 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
         !_applicationActive) {
       return;
     }
+    HapticFeedbackUtil.light();
     setState(() {
       if (_controller!.value.isPlaying) {
         _mayAutoPlay = false;
@@ -890,6 +891,7 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
                         _lastTapDownPosition = details.localPosition;
                       },
                       onTap: () {
+                        HapticFeedbackUtil.light();
                         setState(() {
                           _showControls = !_showControls;
                         });

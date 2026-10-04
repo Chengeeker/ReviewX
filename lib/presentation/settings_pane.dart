@@ -7,8 +7,9 @@ import '../twitter/auth/app_controller.dart';
 import 'login_page.dart';
 import 'settings_pages.dart';
 import 'theme_settings_page.dart';
+import 'network_settings_page.dart';
 
-const _appVersion = '0.11.2';
+const _appVersion = '0.12.1';
 
 /// Review-style grouped settings, with X-specific account actions retained.
 class SettingsPane extends ConsumerWidget {
@@ -268,6 +269,15 @@ class SettingsPane extends ConsumerWidget {
                 onTap: () => open(const ReadingSettingsPage()),
               ),
             ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        AppSectionCard(
+          child: row(
+            icon: Icons.language_outlined,
+            title: '网络设置',
+            subtitle: '自动、直连或手动 HTTP 代理',
+            onTap: () => open(const NetworkSettingsPage()),
           ),
         ),
         const SizedBox(height: 14),

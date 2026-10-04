@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/widgets/cached_network_image.dart';
+import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../core/storage/storage_service.dart';
 import '../twitter/api/twitter_client.dart';
@@ -16,6 +17,7 @@ import '../twitter/auth/app_controller.dart';
 import '../twitter/cache/local_x_cache.dart';
 import '../twitter/models/social_models.dart';
 import 'post_card.dart';
+import 'request_status.dart';
 
 typedef PageLoader = Future<PostPage> Function(String? cursor);
 
@@ -68,7 +70,7 @@ class TimelinePage extends ConsumerStatefulWidget {
 class _TimelinePageState extends ConsumerState<TimelinePage> {
   late List<SocialPost> _posts = widget.initial;
   String? _cursor, _error;
-  bool _loading = false, _loaded = false;
+  bool _loading = false;
   bool _refreshing = false;
   int _request = 0;
   late final ScrollController _scrollController = ScrollController();
@@ -81,7 +83,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     final accountId = controller.client.session?.userId;
     if (cacheKey != null && accountId != null) {
       _posts = ref.read(localXCacheProvider).readTimeline(accountId, cacheKey);
-      _loaded = _posts.isNotEmpty;
     }
     widget.actions?.attach(this,
         onSingleTap: _handleBottomSingleTap,
@@ -167,7 +168,6 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           _posts = incoming.values.toList();
         }
         _cursor = !refresh && page.cursor == oldCursor ? null : page.cursor;
-        _loaded = true;
       });
     } catch (error) {
       controller.report(error);
@@ -189,39 +189,42 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   }
 
   @override
-  Widget build(BuildContext context) => RefreshIndicator(
-      onRefresh: () => _fetch(refresh: true),
-      child: ListView.builder(
-          controller: _scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.only(
-              bottom: MediaQuery.paddingOf(context).bottom > 24
-                  ? MediaQuery.paddingOf(context).bottom
-                  : 24),
-          itemCount: _posts.length + 2,
-          itemBuilder: (context, index) {
-            if (index == 0) return widget.header ?? const SizedBox.shrink();
-            if (index <= _posts.length) {
-              return PostCard(
-                  key: ValueKey(_posts[index - 1].id), post: _posts[index - 1]);
-            }
-            return Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(children: [
-                  if (_error != null)
-                    Text(_error!, textAlign: TextAlign.center),
-                  if (_loading) const CircularProgressIndicator(),
-                  if (!_loading && _error != null)
-                    FilledButton.tonal(
-                        onPressed: () => _fetch(refresh: !_loaded),
-                        child: const Text('重试')),
-                  if (!_loading && _error == null && _cursor != null)
-                    FilledButton.tonal(
-                        onPressed: _fetch, child: const Text('加载更多')),
-                  if (!_loading && _error == null && _cursor == null)
-                    Text(_posts.isEmpty ? '暂无帖子，下拉刷新' : '没有更多帖子')
-                ]));
-          }));
+  Widget build(BuildContext context) => Column(children: [
+        RequestStatus(
+            loading: _loading,
+            error: _error,
+            onRetry: () => _fetch(refresh: true)),
+        Expanded(
+            child: RefreshIndicator(
+                onRefresh: () => _fetch(refresh: true),
+                child: ListView.builder(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.only(
+                        bottom: MediaQuery.paddingOf(context).bottom > 24
+                            ? MediaQuery.paddingOf(context).bottom
+                            : 24),
+                    itemCount: _posts.length + 2,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return widget.header ?? const SizedBox.shrink();
+                      }
+                      if (index <= _posts.length) {
+                        return PostCard(
+                            key: ValueKey(_posts[index - 1].id),
+                            post: _posts[index - 1]);
+                      }
+                      return Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(children: [
+                            if (!_loading && _error == null && _cursor != null)
+                              FilledButton.tonal(
+                                  onPressed: _fetch, child: const Text('加载更多')),
+                            if (!_loading && _error == null && _cursor == null)
+                              Text(_posts.isEmpty ? '暂无帖子，下拉刷新' : '没有更多帖子')
+                          ]));
+                    })))
+      ]);
 }
 
 class PostDetailPage extends ConsumerStatefulWidget {
@@ -506,7 +509,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   height: bannerHeight,
                   child: _user.banner.isNotEmpty && safeMediaUrl(_user.banner)
                       ? GestureDetector(
-                          onTap: () => _image(_user.banner),
+                          onTap: () {
+                            HapticFeedbackUtil.light();
+                            _image(_user.banner);
+                          },
                           child: CachedNetworkImage(_user.banner,
                               fit: BoxFit.cover))
                       : ColoredBox(color: colors.surfaceContainerHighest)),
@@ -515,7 +521,10 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 top: showBanner ? bannerHeight - 38 : 8,
                 child: GestureDetector(
                     onTap: _user.avatar.isNotEmpty
-                        ? () => _image(_user.avatar.replaceAll('_bigger.', '.'))
+                        ? () {
+                            HapticFeedbackUtil.light();
+                            _image(_user.avatar.replaceAll('_bigger.', '.'));
+                          }
                         : null,
                     child: Container(
                         width: 88,

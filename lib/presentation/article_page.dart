@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../core/widgets/cached_network_image.dart';
 import '../twitter/auth/app_controller.dart';
@@ -177,11 +178,14 @@ class ArticleMedia extends StatelessWidget {
           Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: GestureDetector(
-                  onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => MediaPage(
-                              media: media, index: i, author: author))),
+                  onTap: () {
+                    HapticFeedbackUtil.light();
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => MediaPage(
+                                media: media, index: i, author: author)));
+                  },
                   child: Stack(alignment: Alignment.center, children: [
                     ClipRRect(
                         borderRadius: BorderRadius.circular(16),
@@ -316,7 +320,10 @@ class _RichContentTextState extends ConsumerState<RichContentText> {
           style = style.copyWith(color: Theme.of(context).colorScheme.primary);
         }
         recognizer = TapGestureRecognizer()
-          ..onTap = () => _open('${link['url']}');
+          ..onTap = () {
+            HapticFeedbackUtil.light();
+            _open('${link['url']}');
+          };
         _recognizers.add(recognizer);
       }
       spans.add(TextSpan(

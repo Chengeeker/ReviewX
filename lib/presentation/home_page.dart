@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/haptic_feedback_util.dart';
 import '../core/theme/theme_provider.dart';
 import '../core/widgets/cached_network_image.dart';
 import '../twitter/auth/app_controller.dart';
@@ -115,6 +116,7 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   void _onTopBarTap() {
+    HapticFeedbackUtil.light();
     final now = DateTime.now();
     if (_lastTopBarTapTime != null &&
         now.difference(_lastTopBarTapTime!) <

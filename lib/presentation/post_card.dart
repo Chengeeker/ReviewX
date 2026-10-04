@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/widgets/cached_network_image.dart';
+import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../twitter/auth/app_controller.dart';
 import '../twitter/models/social_models.dart';
@@ -589,14 +590,17 @@ class _MediaGridState extends ConsumerState<MediaGrid> {
                       crossAxisSpacing: 6,
                       mainAxisSpacing: 6),
                   itemBuilder: (context, index) => GestureDetector(
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => MediaPage(
-                                  media: media,
-                                  index: index,
-                                  post: widget.post,
-                                  author: widget.post.author.handle))),
+                      onTap: () {
+                        HapticFeedbackUtil.light();
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => MediaPage(
+                                    media: media,
+                                    index: index,
+                                    post: widget.post,
+                                    author: widget.post.author.handle)));
+                      },
                       child: ClipRRect(
                           borderRadius:
                               BorderRadius.circular(settings['imageRadius']),

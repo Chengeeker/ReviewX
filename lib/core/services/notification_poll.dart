@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import '../storage/storage_service.dart';
+import 'network_routing.dart';
 import '../../twitter/auth/session.dart';
 import '../../twitter/api/twitter_client.dart';
 import '../../twitter/repositories/twitter_adapter.dart';
@@ -18,6 +19,7 @@ class NotificationPoll {
   static Future<List<Map<String, dynamic>>> run() async {
     final storage = await StorageService.init();
     if (!storage.getBool('notification_enabled')) return [];
+    await NetworkRouting.initialize(storage);
     final session = await const SessionStore().read();
     if (session == null) return [];
     final client = TwitterClient()..session = session;

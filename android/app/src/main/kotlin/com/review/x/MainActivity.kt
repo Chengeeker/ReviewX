@@ -31,6 +31,7 @@ class MainActivity : FlutterActivity() {
     private var pendingPermission: MethodChannel.Result? = null
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        NetworkRouting.register(flutterEngine, applicationContext)
         notificationChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.review.x/notifications")
         notificationChannel!!.setMethodCallHandler { call, result ->
             when (call.method) {

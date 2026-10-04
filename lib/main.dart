@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/services/image_cache_maintenance.dart';
 import 'core/services/notification_poll.dart';
+import 'core/services/network_routing.dart';
 import 'core/storage/storage_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
@@ -27,6 +28,7 @@ void main() async {
         await rootBundle.loadString('THIRD_PARTY_NOTICES.md'));
   });
   final storage = await StorageService.init();
+  await NetworkRouting.initialize(storage, configurePlayer: true);
   runApp(ProviderScope(
       overrides: [storageServiceProvider.overrideWithValue(storage)],
       child: const ReviewXApp()));

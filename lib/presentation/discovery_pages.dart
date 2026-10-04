@@ -9,6 +9,7 @@ import '../twitter/models/content_models.dart';
 import '../core/widgets/cached_network_image.dart';
 import 'timeline_page.dart';
 import 'post_card.dart';
+import 'request_status.dart';
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage(
@@ -278,97 +279,62 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     ]);
   }
 
-  Widget _buildTrends() => RefreshIndicator(
-        onRefresh: () async {
-          await _refreshExplore();
-        },
-        child: ListView(
-          controller: _exploreScrollController,
-          padding: EdgeInsets.only(
-              bottom: MediaQuery.paddingOf(context).bottom + 16),
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-              child: Text(_personalized ? '为你推荐的趋势' : '当前趋势',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      )),
-            ),
-            if (_trendsLoading && _trends.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_trendsError != null && _trends.isEmpty)
+  Widget _buildTrends() => Column(children: [
+        RequestStatus(
+          loading: _trendsLoading || (_personalized && _recommendationsLoading),
+          error: _trendsError ?? (_personalized ? _recommendationsError : null),
+          onRetry: () => _refreshExplore(),
+        ),
+        Expanded(
+            child: RefreshIndicator(
+          onRefresh: () async {
+            await _refreshExplore();
+          },
+          child: ListView(
+            controller: _exploreScrollController,
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.paddingOf(context).bottom + 16),
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
               Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Text(_trendsError!, textAlign: TextAlign.center),
-                    TextButton.icon(
-                      onPressed: () => _loadTrends(force: true),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('重试'),
-                    ),
-                  ],
-                ),
-              )
-            else if (_trends.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: Text('当前没有可显示的趋势')),
-              )
-            else
-              for (var index = 0; index < _trends.length; index++)
-                _TrendTile(
-                  trend: _trends[index],
-                  onTap: () => _searchTrend(_trends[index]),
-                ),
-            if (_trendsError != null && _trends.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Center(
-                  child: TextButton.icon(
-                    onPressed: () => _loadTrends(force: true),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('刷新失败，点此重试'),
-                  ),
-                ),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                child: Text(_personalized ? '为你推荐的趋势' : '当前趋势',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        )),
               ),
-            if (_personalized) ...[
-              const Divider(),
-              Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('推荐关注',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold))),
-              if (_recommendationsLoading && _recommendations.isEmpty)
+              if (!_trendsLoading && _trendsError == null && _trends.isEmpty)
                 const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Center(child: CircularProgressIndicator())),
-              for (final user in _recommendations)
-                _RecommendedUserTile(key: ValueKey(user.id), user: user),
-              if (_recommendationsError != null)
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: Text('当前没有可显示的趋势')),
+                )
+              else
+                for (var index = 0; index < _trends.length; index++)
+                  _TrendTile(
+                    trend: _trends[index],
+                    onTap: () => _searchTrend(_trends[index]),
+                  ),
+              if (_personalized) ...[
+                const Divider(),
                 Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Column(children: [
-                      Text(_recommendationsError!),
-                      TextButton(
-                          onPressed: _loadRecommendations,
-                          child: const Text('重试推荐关注')),
-                    ])),
-              if (!_recommendationsLoading &&
-                  _recommendationsError == null &&
-                  _recommendations.isEmpty)
-                const Padding(
-                    padding: EdgeInsets.all(16), child: Text('X 暂未返回推荐用户')),
+                    child: Text('推荐关注',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold))),
+                for (final user in _recommendations)
+                  _RecommendedUserTile(key: ValueKey(user.id), user: user),
+                if (!_recommendationsLoading &&
+                    _recommendationsError == null &&
+                    _recommendations.isEmpty)
+                  const Padding(
+                      padding: EdgeInsets.all(16), child: Text('X 暂未返回推荐用户')),
+              ],
             ],
-          ],
-        ),
-      );
+          ),
+        ))
+      ]);
 }
 
 class _TrendTile extends StatelessWidget {
