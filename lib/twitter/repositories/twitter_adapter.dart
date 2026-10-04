@@ -3,12 +3,22 @@ import '../models/social_models.dart';
 import '../models/content_models.dart';
 
 /// Platform boundary. Widgets never read Twitter JSON or call GraphQL directly.
+enum ReplySort {
+  relevance('Relevance', '相关'),
+  recent('Recency', '最近'),
+  likes('Likes', '喜欢');
+
+  const ReplySort(this.apiValue, this.label);
+  final String apiValue, label;
+}
+
 abstract interface class SocialPlatformAdapter {
   Future<PostPage> home({String? cursor});
   Future<PostPage> forYou({String? cursor});
   Future<PostPage> following({String? cursor});
   Future<List<TrendingTopic>> trends({bool personalized = false});
-  Future<PostPage> detail(String id, {String? cursor});
+  Future<PostPage> detail(String id,
+      {String? cursor, ReplySort sort = ReplySort.relevance});
   Future<SocialUser> user(String id);
   Future<PostPage> userPosts(String id, {String? cursor});
   Future<void> like(String id, bool liked);
@@ -80,13 +90,14 @@ class TwitterAdapter implements SocialPlatformAdapter {
   }
 
   @override
-  Future<PostPage> detail(String id, {String? cursor}) async {
+  Future<PostPage> detail(String id,
+      {String? cursor, ReplySort sort = ReplySort.relevance}) async {
     final data = await client.call('TweetDetail', {
       'focalTweetId': id,
       'referrer': 'tweet',
       'withV2Timeline': true,
       'with_rux_injections': false,
-      'rankingMode': 'Relevance',
+      'rankingMode': sort.apiValue,
       'includePromotedContent': false,
       'withCommunity': true,
       'withQuickPromoteEligibilityTweetFields': true,

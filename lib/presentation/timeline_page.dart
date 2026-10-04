@@ -9,6 +9,7 @@ import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../core/storage/storage_service.dart';
 import '../twitter/api/twitter_client.dart';
+import '../twitter/repositories/twitter_adapter.dart';
 import '../twitter/models/content_models.dart';
 import 'discovery_pages.dart';
 import 'media_page.dart';
@@ -20,6 +21,14 @@ import 'post_card.dart';
 import 'request_status.dart';
 
 typedef PageLoader = Future<PostPage> Function(String? cursor);
+
+bool _continuesConversation(SocialPost parent, SocialPost reply) =>
+    parent.repostedBy == null &&
+    reply.repostedBy == null &&
+    reply.replyToId == parent.id &&
+    (parent.conversationId == null ||
+        reply.conversationId == null ||
+        parent.conversationId == reply.conversationId);
 
 /// Lets the selected bottom tab control the scrollable that currently owns
 /// the visible feed without coupling the app shell to a private State class.
@@ -57,11 +66,13 @@ class TimelinePage extends ConsumerStatefulWidget {
       this.header,
       this.initial = const [],
       this.cacheKey,
+      this.conversationRoot,
       this.actions});
   final PageLoader load;
   final Widget? header;
   final List<SocialPost> initial;
   final String? cacheKey;
+  final SocialPost? conversationRoot;
   final ScrollPageActions? actions;
   @override
   ConsumerState<TimelinePage> createState() => _TimelinePageState();
@@ -189,42 +200,77 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(children: [
-        RequestStatus(
-            loading: _loading,
-            error: _error,
-            onRetry: () => _fetch(refresh: true)),
-        Expanded(
-            child: RefreshIndicator(
-                onRefresh: () => _fetch(refresh: true),
-                child: ListView.builder(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.only(
-                        bottom: MediaQuery.paddingOf(context).bottom > 24
-                            ? MediaQuery.paddingOf(context).bottom
-                            : 24),
-                    itemCount: _posts.length + 2,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return widget.header ?? const SizedBox.shrink();
-                      }
-                      if (index <= _posts.length) {
-                        return PostCard(
-                            key: ValueKey(_posts[index - 1].id),
-                            post: _posts[index - 1]);
+  Widget build(BuildContext context) {
+    final known = <String, SocialPost>{
+      if (widget.conversationRoot != null)
+        widget.conversationRoot!.id: widget.conversationRoot!,
+      if (widget.conversationRoot != null)
+        for (final post in _posts) post.id: post,
+    };
+    return Column(children: [
+      RequestStatus(
+          loading: _loading,
+          error: _error,
+          onRetry: () => _fetch(refresh: true)),
+      Expanded(
+          child: RefreshIndicator(
+              onRefresh: () => _fetch(refresh: true),
+              child: ListView.builder(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.only(
+                      bottom: MediaQuery.paddingOf(context).bottom > 24
+                          ? MediaQuery.paddingOf(context).bottom
+                          : 24),
+                  itemCount: _posts.length + 2,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return widget.header ?? const SizedBox.shrink();
+                    }
+                    if (index <= _posts.length) {
+                      final post = _posts[index - 1];
+                      final connectedAbove = widget.conversationRoot == null &&
+                          index > 1 &&
+                          _continuesConversation(_posts[index - 2], post);
+                      final connectedBelow = widget.conversationRoot == null &&
+                          index < _posts.length &&
+                          _continuesConversation(post, _posts[index]);
+                      final parent = widget.conversationRoot == null
+                          ? null
+                          : known[post.replyToId];
+                      var depth = 0;
+                      var ancestor = parent;
+                      final seen = <String>{post.id};
+                      while (ancestor != null &&
+                          ancestor.id != widget.conversationRoot?.id &&
+                          depth < 2 &&
+                          seen.add(ancestor.id)) {
+                        depth++;
+                        ancestor = known[ancestor.replyToId];
                       }
                       return Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(children: [
-                            if (!_loading && _error == null && _cursor != null)
-                              FilledButton.tonal(
-                                  onPressed: _fetch, child: const Text('加载更多')),
-                            if (!_loading && _error == null && _cursor == null)
-                              Text(_posts.isEmpty ? '暂无帖子，下拉刷新' : '没有更多帖子')
-                          ]));
-                    })))
-      ]);
+                          key: ValueKey(post.id),
+                          padding: EdgeInsets.only(left: depth * 12.0),
+                          child: PostCard(
+                              post: post,
+                              connectedAbove: connectedAbove,
+                              connectedBelow: connectedBelow,
+                              replyParent: parent,
+                              showReplyParentPreview:
+                                  parent?.id != widget.conversationRoot?.id));
+                    }
+                    return Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(children: [
+                          if (!_loading && _error == null && _cursor != null)
+                            FilledButton.tonal(
+                                onPressed: _fetch, child: const Text('加载更多')),
+                          if (!_loading && _error == null && _cursor == null)
+                            Text(_posts.isEmpty ? '暂无帖子，下拉刷新' : '没有更多帖子')
+                        ]));
+                  })))
+    ]);
+  }
 }
 
 class PostDetailPage extends ConsumerStatefulWidget {
@@ -235,6 +281,10 @@ class PostDetailPage extends ConsumerStatefulWidget {
 }
 
 class _PostDetailPageState extends ConsumerState<PostDetailPage> {
+  ReplySort _sort = ReplySort.relevance;
+  int _sortGeneration = 0;
+  SocialPost? _replyParent;
+  String? _conversationId;
   @override
   void initState() {
     super.initState();
@@ -255,14 +305,84 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
     return Scaffold(
         appBar: AppBar(title: const Text('帖子详情')),
         body: TimelinePage(
-            header: PostCard(post: post, detail: true),
+            key: ValueKey('${post.id}/${_sort.name}/${controller.epoch}'),
+            conversationRoot: post,
+            header: Column(children: [
+              PostCard(post: post, detail: true, replyParent: _replyParent),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Row(children: [
+                  const Expanded(child: Text('回复')),
+                  PopupMenuButton<ReplySort>(
+                    tooltip: '回复排序',
+                    initialValue: _sort,
+                    onSelected: (value) {
+                      if (value != _sort) {
+                        setState(() {
+                          _sort = value;
+                          _sortGeneration++;
+                        });
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      for (final sort in ReplySort.values)
+                        CheckedPopupMenuItem(
+                            value: sort,
+                            checked: sort == _sort,
+                            child: Text(sort.label))
+                    ],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(_sort.label),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.expand_more, size: 20),
+                      ]),
+                    ),
+                  ),
+                ]),
+              ),
+            ]),
             load: (cursor) async {
-              final page =
-                  await controller.adapter.detail(post.id, cursor: cursor);
+              final sort = _sort,
+                  epoch = controller.epoch,
+                  generation = _sortGeneration;
+              final page = await controller.adapter
+                  .detail(post.id, cursor: cursor, sort: sort);
+              if (!mounted ||
+                  generation != _sortGeneration ||
+                  sort != _sort ||
+                  epoch != controller.epoch) {
+                return const PostPage([], null);
+              }
               controller.ingest(page.posts);
-              // Focal tweet stays in the header; remaining rows contain reply chains.
+              final focal =
+                  page.posts.where((item) => item.id == post.id).firstOrNull;
+              final parent = page.posts
+                  .where(
+                      (item) => item.id == (focal?.replyToId ?? post.replyToId))
+                  .firstOrNull;
+              if (parent != null) setState(() => _replyParent = parent);
+              // Ancestors belong in the focal post's context, not the reply list.
+              final focalIndex = cursor == null
+                  ? page.posts.indexWhere((item) => item.id == post.id)
+                  : -1;
+              final replies =
+                  focalIndex < 0 ? page.posts : page.posts.skip(focalIndex + 1);
+              final conversationId = focal?.conversationId ??
+                  _conversationId ??
+                  post.conversationId;
+              _conversationId = conversationId;
               return PostPage(
-                  page.posts.where((item) => item.id != post.id).toList(),
+                  replies
+                      .where((item) =>
+                          item.id != post.id &&
+                          (conversationId == null ||
+                              item.conversationId == null ||
+                              item.conversationId == conversationId))
+                      .toList(),
                   page.cursor);
             }));
   }

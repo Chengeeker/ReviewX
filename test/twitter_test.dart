@@ -103,6 +103,40 @@ TwitterClient client(StubTransport transport) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  test('reply identity survives parsing, cache and action updates', () {
+    final raw = tweet('3');
+    raw['legacy'] = <String, dynamic>{
+      ...Map<String, dynamic>.from(raw['legacy']),
+      'in_reply_to_status_id_str': '2',
+      'in_reply_to_screen_name': 'parent',
+      'conversation_id_str': '1',
+    };
+    final post = SocialPost.parse(raw)!;
+    final restored = SocialPost.fromCacheJson(post.toCacheJson())!;
+    for (final value in [post, restored, post.withActions(liked: false)]) {
+      expect(value.replyToId, '2');
+      expect(value.replyToHandle, 'parent');
+      expect(value.conversationId, '1');
+    }
+  });
+  test('reply ranking mode is sent to X with the same pagination cursor',
+      () async {
+    final transport = StubTransport({
+      'data': {
+        'threaded_conversation_with_injections_v2': {'instructions': []}
+      }
+    });
+    final adapter = TwitterAdapter(client(transport));
+    for (final sort in ReplySort.values) {
+      await adapter.detail('2', cursor: 'opaque-next', sort: sort);
+    }
+    final variables = transport.requests
+        .map((request) => jsonDecode(request.queryParameters['variables']));
+    expect(variables.map((value) => value['rankingMode']),
+        ['Relevance', 'Recency', 'Likes']);
+    expect(
+        variables.every((value) => value['cursor'] == 'opaque-next'), isTrue);
+  });
   test('explore default and objective trends use distinct guide parameters',
       () async {
     final transport = StubTransport({

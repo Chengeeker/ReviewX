@@ -357,6 +357,8 @@ class SocialPost {
       this.source = '',
       this.sensitive = false,
       this.replyToHandle,
+      this.replyToId,
+      this.conversationId,
       this.bookmarked = false});
   final String id, text, translatedText;
   final SocialUser author;
@@ -373,6 +375,7 @@ class SocialPost {
   final String source;
   final bool sensitive;
   final String? replyToHandle;
+  final String? replyToId, conversationId;
   final bool bookmarked;
 
   Map<String, dynamic> toCacheJson({int depth = 0}) => {
@@ -410,6 +413,8 @@ class SocialPost {
         'source': _cacheText(source, limit: 300),
         'sensitive': sensitive,
         'replyToHandle': replyToHandle,
+        'replyToId': replyToId,
+        'conversationId': conversationId,
         'bookmarked': bookmarked,
       };
 
@@ -453,6 +458,12 @@ class SocialPost {
           ? _cacheText(post['replyToHandle'], limit: 100)
           : null,
       bookmarked: post['bookmarked'] == true,
+      replyToId: post['replyToId'] is String
+          ? _cacheText(post['replyToId'], limit: 32)
+          : null,
+      conversationId: post['conversationId'] is String
+          ? _cacheText(post['conversationId'], limit: 32)
+          : null,
     );
   }
 
@@ -531,6 +542,8 @@ class SocialPost {
           source: source,
           sensitive: sensitive,
           replyToHandle: replyToHandle,
+          replyToId: replyToId,
+          conversationId: conversationId,
           bookmarked: bookmarked ?? this.bookmarked,
           repostedBy: repostedBy);
   static SocialPost? parse(dynamic value, {int depth = 0, String? repostedBy}) {
@@ -626,6 +639,8 @@ class SocialPost {
             .replaceAll(RegExp('<[^>]*>'), ''),
         sensitive: legacy['possibly_sensitive'] == true,
         replyToHandle: legacy['in_reply_to_screen_name'] as String?,
+        replyToId: legacy['in_reply_to_status_id_str'] as String?,
+        conversationId: legacy['conversation_id_str'] as String?,
         bookmarked: legacy['bookmarked'] == true,
         repostedBy: repostedBy,
         quote: parse(object(post['quoted_status_result'])['result'],

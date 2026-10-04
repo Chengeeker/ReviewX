@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/widgets/app_section_card.dart';
@@ -9,11 +10,88 @@ import 'settings_pages.dart';
 import 'theme_settings_page.dart';
 import 'network_settings_page.dart';
 
-const _appVersion = '0.12.1';
+const _appVersion = '0.14.0';
 
 /// Review-style grouped settings, with X-specific account actions retained.
 class SettingsPane extends ConsumerWidget {
   const SettingsPane({super.key});
+
+  void _showExportCookie(BuildContext context, AppController controller) {
+    final session = controller.client.session;
+    if (session == null) return;
+    HapticFeedbackUtil.light();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      constraints:
+          BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.75),
+      builder: (sheetContext) => Consumer(builder: (_, ref, __) {
+        final current = ref.watch(appControllerProvider);
+        final active = identical(current.client.session, session);
+        return SafeArea(
+            child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(children: [
+                Expanded(
+                    child: Text('导出 Cookie',
+                        style: Theme.of(sheetContext).textTheme.titleLarge)),
+                IconButton(
+                    tooltip: '关闭',
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.close)),
+              ]),
+              Text(active
+                  ? (current.me == null
+                      ? '当前 X 账号'
+                      : '${current.me!.name} · @${current.me!.handle}')
+                  : '登录账号已变更，请重新打开导出'),
+              const SizedBox(height: 12),
+              if (active)
+                AppSectionCard(
+                    child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SelectableText(session.cookie,
+                      style: const TextStyle(
+                          fontFamily: 'monospace', fontSize: 13)),
+                )),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: !active
+                    ? null
+                    : () async {
+                        if (!identical(controller.client.session, session)) {
+                          return;
+                        }
+                        try {
+                          await Clipboard.setData(
+                              ClipboardData(text: session.cookie));
+                          if (sheetContext.mounted) Navigator.pop(sheetContext);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('已复制 Cookie 到剪贴板')));
+                          }
+                        } catch (_) {
+                          if (sheetContext.mounted) {
+                            ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                const SnackBar(content: Text('复制失败，请重试')));
+                          }
+                        }
+                      },
+                icon: const Icon(Icons.copy_all_rounded),
+                label: const Text('复制全部'),
+              ),
+            ],
+          ),
+        ));
+      }),
+    );
+  }
 
   void _showAboutDialog(BuildContext context) {
     HapticFeedbackUtil.light();
@@ -315,14 +393,19 @@ class SettingsPane extends ConsumerWidget {
             children: [
               row(
                 icon: controller.loggedIn
-                    ? Icons.person_outline_rounded
+                    ? Icons.copy_all_rounded
                     : Icons.login_rounded,
-                title: controller.me?.name ??
-                    (controller.loggedIn ? 'X 已登录' : '登录 X 账号'),
-                subtitle: controller.me == null
-                    ? '使用 X Cookie 验证并登录'
-                    : '@${controller.me!.handle}',
-                onTap: () => open(const LoginPage()),
+                title: controller.loggedIn ? '导出 Cookie' : '登录 X 账号',
+                subtitle: controller.loggedIn
+                    ? (controller.me == null
+                        ? '查看并复制当前 X 登录 Cookie'
+                        : '@${controller.me!.handle} · 查看并复制登录 Cookie')
+                    : '使用 X Cookie 验证并登录',
+                onTap: controller.busy
+                    ? null
+                    : () => controller.loggedIn
+                        ? _showExportCookie(context, controller)
+                        : open(const LoginPage()),
               ),
               if (controller.loggedIn) ...[
                 const Divider(height: 1, indent: 56),

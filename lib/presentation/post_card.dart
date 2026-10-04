@@ -14,13 +14,79 @@ import 'timeline_page.dart';
 import 'article_page.dart';
 import 'compose_page.dart';
 
+class _ReplyContext extends StatelessWidget {
+  const _ReplyContext(
+      {required this.post, this.parent, this.showPreview = true});
+  final SocialPost post;
+  final SocialPost? parent;
+  final bool showPreview;
+
+  @override
+  Widget build(BuildContext context) {
+    final target = parent?.author.handle ?? post.replyToHandle;
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          Icon(Icons.subdirectory_arrow_right,
+              size: 16, color: theme.colorScheme.primary),
+          const SizedBox(width: 6),
+          Expanded(
+              child: Text(target == null ? '回复帖子' : '回复 @$target',
+                  style: theme.textTheme.labelMedium
+                      ?.copyWith(color: theme.colorScheme.primary))),
+        ]),
+        if (parent != null && showPreview)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Material(
+              color: theme.colorScheme.surfaceContainerHighest
+                  .withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => PostDetailPage(post: parent!))),
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(parent!.author.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelMedium),
+                        Text(parent!.text.isEmpty ? '查看原帖' : parent!.text,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall),
+                      ]),
+                ),
+              ),
+            ),
+          ),
+      ]),
+    );
+  }
+}
+
 class PostCard extends ConsumerWidget {
   const PostCard(
       {super.key,
       required this.post,
+      this.replyParent,
+      this.showReplyParentPreview = true,
+      this.connectedAbove = false,
+      this.connectedBelow = false,
       this.detail = false,
       this.quoted = false});
   final SocialPost post;
+  final SocialPost? replyParent;
+  final bool showReplyParentPreview;
+  final bool connectedAbove, connectedBelow;
   final bool detail, quoted;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,14 +94,25 @@ class PostCard extends ConsumerWidget {
     final current = controller.effective(post);
     final scheme = Theme.of(context).colorScheme;
     final settings = ref.watch(readingProvider);
-    return Container(
+    final connected = !quoted && (connectedAbove || connectedBelow);
+    final card = Container(
         decoration: BoxDecoration(
           color: settings['cardBackground'] == true
               ? scheme.surfaceContainerLowest
               : null,
           border: quoted
               ? Border.all(color: scheme.outlineVariant)
-              : Border(bottom: BorderSide(color: scheme.outlineVariant)),
+              : Border(
+                  left: !connected &&
+                          (current.replyToId != null ||
+                              current.replyToHandle != null)
+                      ? BorderSide(
+                          color: scheme.primary.withValues(alpha: 0.35),
+                          width: 2)
+                      : BorderSide.none,
+                  bottom: connectedBelow
+                      ? BorderSide.none
+                      : BorderSide(color: scheme.outlineVariant)),
           borderRadius: quoted ? BorderRadius.circular(16) : null,
         ),
         child: InkWell(
@@ -54,7 +131,7 @@ class PostCard extends ConsumerWidget {
                     children: [
                       if (current.repostedBy != null)
                         Padding(
-                            padding: const EdgeInsets.only(left: 50, bottom: 8),
+                            padding: const EdgeInsets.only(bottom: 8),
                             child: Text('↻ ${current.repostedBy} 转发了',
                                 style:
                                     Theme.of(context).textTheme.labelMedium)),
@@ -238,213 +315,180 @@ class PostCard extends ConsumerWidget {
                                       ),
                                     ],
                                   ),
-                                  if (current.text.isNotEmpty)
-                                    Padding(
-                                        padding: const EdgeInsets.only(
-                                            top: 8, bottom: 8),
-                                        child: _GrokTranslationText(
-                                            key: ValueKey(current.id),
-                                            original: current.text,
-                                            translated: current.translatedText,
-                                            autoTranslate:
-                                                settings['grokAutoTranslate'] ==
-                                                    true,
-                                            maxLines: detail ? null : 12,
-                                            selectable: detail,
-                                            style: TextStyle(
-                                                fontSize: settings['fontSize'],
-                                                height:
-                                                    settings['lineHeight']))),
-                                  if (current.replyToHandle != null)
-                                    Text('回复 @${current.replyToHandle}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall),
-                                  if (settings['showSource'] == true &&
-                                      current.source.isNotEmpty)
-                                    Text(current.source,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall),
-                                  if (current.article != null)
-                                    Card(
-                                        clipBehavior: Clip.antiAlias,
-                                        child: InkWell(
-                                            onTap: () => Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                    builder: (_) => ArticlePage(
-                                                        post: current))),
-                                            child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  if (current.article!.cover !=
-                                                      null)
-                                                    CachedNetworkImage(
-                                                        current.article!.cover!
-                                                            .preview,
-                                                        width: double.infinity,
-                                                        height: 180,
-                                                        fit: BoxFit.cover),
-                                                  Padding(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              12),
-                                                      child: Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Text(
-                                                                current.article!
-                                                                    .title,
-                                                                style: Theme.of(
-                                                                        context)
-                                                                    .textTheme
-                                                                    .titleMedium),
-                                                            if (current
-                                                                .article!
-                                                                .preview
-                                                                .isNotEmpty)
-                                                              Text(
-                                                                  current
-                                                                      .article!
-                                                                      .preview,
-                                                                  maxLines: 3,
-                                                                  overflow:
-                                                                      TextOverflow
-                                                                          .ellipsis),
-                                                            const Text(
-                                                                '阅读 X 文章 →'),
-                                                          ]))
-                                                ]))),
-                                  if (current.linkCard != null &&
-                                      current.article == null)
-                                    Card(
-                                        clipBehavior: Clip.antiAlias,
-                                        child: InkWell(
-                                            onTap: () => launchUrl(
-                                                Uri.parse(
-                                                    current.linkCard!.url),
-                                                mode: LaunchMode
-                                                    .externalApplication),
-                                            child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  if (current.linkCard!.image
-                                                      .isNotEmpty)
-                                                    CachedNetworkImage(
-                                                        current.linkCard!.image,
-                                                        width: double.infinity,
-                                                        height: 150,
-                                                        fit: BoxFit.cover),
-                                                  Padding(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                              12),
-                                                      child: Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Text(
-                                                                current
-                                                                    .linkCard!
-                                                                    .title,
-                                                                style: Theme.of(
-                                                                        context)
-                                                                    .textTheme
-                                                                    .titleSmall),
-                                                            Text(
-                                                                current
-                                                                    .linkCard!
-                                                                    .description,
-                                                                maxLines: 2,
-                                                                overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis),
-                                                            Text(Uri.parse(current
-                                                                    .linkCard!
-                                                                    .url)
-                                                                .host),
-                                                          ]))
-                                                ]))),
-                                  if (current.poll != null)
-                                    PollView(
-                                        poll: current.poll!, url: current.url),
-                                  if (current.media.isNotEmpty)
-                                    MediaGrid(post: current),
-                                  if (current.quote != null && !quoted)
-                                    PostCard(
-                                        post: current.quote!, quoted: true),
-                                  if (!quoted)
-                                    Wrap(
-                                        alignment: WrapAlignment.spaceAround,
-                                        children: [
-                                          TextButton.icon(
-                                              onPressed: detail
-                                                  ? null
-                                                  : () => Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                          builder: (_) =>
-                                                              PostDetailPage(
-                                                                  post:
-                                                                      current))),
-                                              icon: const Icon(
-                                                  Icons.chat_bubble_outline,
-                                                  size: 19),
-                                              label:
-                                                  Text('${current.replies}')),
-                                          TextButton.icon(
-                                              onPressed: controller
-                                                      .actionBlocked(current.id)
-                                                  ? null
-                                                  : () => _action(
-                                                      context,
-                                                      controller,
-                                                      current,
-                                                      false),
-                                              icon: Icon(Icons.repeat,
-                                                  size: 19,
-                                                  color: current.reposted
-                                                      ? scheme.primary
-                                                      : null),
-                                              label:
-                                                  Text('${current.reposts}')),
-                                          TextButton.icon(
-                                              onPressed: controller
-                                                      .actionBlocked(current.id)
-                                                  ? null
-                                                  : () => _action(
-                                                      context,
-                                                      controller,
-                                                      current,
-                                                      true),
-                                              icon: Icon(
-                                                  current.liked
-                                                      ? Icons.favorite
-                                                      : Icons.favorite_border,
-                                                  size: 19,
-                                                  color: current.liked
-                                                      ? scheme.error
-                                                      : null),
-                                              label: Text('${current.likes}'))
-                                        ]),
-                                  if (!quoted && current.views > 0)
-                                    Text('${current.views} 次浏览',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall),
-                                  if (controller.isUncertain(current.id))
-                                    const Padding(
-                                        padding: EdgeInsets.only(top: 8),
-                                        child: Text('操作结果待核对，请刷新后再操作'))
                                 ])),
-                          ])
+                          ]),
+                      const SizedBox(height: 12),
+                      if (current.replyToHandle != null ||
+                          current.replyToId != null)
+                        _ReplyContext(
+                            post: current,
+                            parent: replyParent,
+                            showPreview: showReplyParentPreview),
+                      if (current.text.isNotEmpty)
+                        Padding(
+                            padding: const EdgeInsets.only(top: 8, bottom: 8),
+                            child: _GrokTranslationText(
+                                key: ValueKey(current.id),
+                                original: current.text,
+                                translated: current.translatedText,
+                                autoTranslate:
+                                    settings['grokAutoTranslate'] == true,
+                                maxLines: detail ? null : 12,
+                                selectable: detail,
+                                style: TextStyle(
+                                    fontSize: settings['fontSize'],
+                                    height: settings['lineHeight']))),
+                      if (settings['showSource'] == true &&
+                          current.source.isNotEmpty)
+                        Text(current.source,
+                            style: Theme.of(context).textTheme.labelSmall),
+                      if (current.article != null)
+                        Card(
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                                onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            ArticlePage(post: current))),
+                                child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (current.article!.cover != null)
+                                        CachedNetworkImage(
+                                            current.article!.cover!.preview,
+                                            width: double.infinity,
+                                            height: 180,
+                                            fit: BoxFit.cover),
+                                      Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(current.article!.title,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .titleMedium),
+                                                if (current.article!.preview
+                                                    .isNotEmpty)
+                                                  Text(current.article!.preview,
+                                                      maxLines: 3,
+                                                      overflow: TextOverflow
+                                                          .ellipsis),
+                                                const Text('阅读 X 文章 →'),
+                                              ]))
+                                    ]))),
+                      if (current.linkCard != null && current.article == null)
+                        Card(
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                                onTap: () => launchUrl(
+                                    Uri.parse(current.linkCard!.url),
+                                    mode: LaunchMode.externalApplication),
+                                child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (current.linkCard!.image.isNotEmpty)
+                                        CachedNetworkImage(
+                                            current.linkCard!.image,
+                                            width: double.infinity,
+                                            height: 150,
+                                            fit: BoxFit.cover),
+                                      Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(current.linkCard!.title,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .titleSmall),
+                                                Text(
+                                                    current
+                                                        .linkCard!.description,
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis),
+                                                Text(Uri.parse(
+                                                        current.linkCard!.url)
+                                                    .host),
+                                              ]))
+                                    ]))),
+                      if (current.poll != null)
+                        PollView(poll: current.poll!, url: current.url),
+                      if (current.media.isNotEmpty) MediaGrid(post: current),
+                      if (current.quote != null && !quoted) ...[
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 6),
+                          child: Row(children: [
+                            const Icon(Icons.format_quote, size: 16),
+                            const SizedBox(width: 6),
+                            Expanded(
+                                child: Text(
+                                    '引用 @${current.quote!.author.handle} 的帖子',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelMedium)),
+                          ]),
+                        ),
+                        PostCard(post: current.quote!, quoted: true),
+                      ],
+                      if (!quoted)
+                        Wrap(alignment: WrapAlignment.spaceAround, children: [
+                          TextButton.icon(
+                              onPressed: detail
+                                  ? null
+                                  : () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              PostDetailPage(post: current))),
+                              icon: const Icon(Icons.chat_bubble_outline,
+                                  size: 19),
+                              label: Text('${current.replies}')),
+                          TextButton.icon(
+                              onPressed: controller.actionBlocked(current.id)
+                                  ? null
+                                  : () => _action(
+                                      context, controller, current, false),
+                              icon: Icon(Icons.repeat,
+                                  size: 19,
+                                  color:
+                                      current.reposted ? scheme.primary : null),
+                              label: Text('${current.reposts}')),
+                          TextButton.icon(
+                              onPressed: controller.actionBlocked(current.id)
+                                  ? null
+                                  : () => _action(
+                                      context, controller, current, true),
+                              icon: Icon(
+                                  current.liked
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  size: 19,
+                                  color: current.liked ? scheme.error : null),
+                              label: Text('${current.likes}'))
+                        ]),
+                      if (!quoted && current.views > 0)
+                        Text('${current.views} 次浏览',
+                            style: Theme.of(context).textTheme.labelSmall),
+                      if (controller.isUncertain(current.id))
+                        const Padding(
+                            padding: EdgeInsets.only(top: 8),
+                            child: Text('操作结果待核对，请刷新后再操作'))
                     ]))));
+    if (!connected) return card;
+    return CustomPaint(
+      painter: _ConversationConnector(
+          above: connectedAbove,
+          below: connectedBelow,
+          color: scheme.primary.withValues(alpha: 0.5)),
+      child: Padding(padding: const EdgeInsets.only(left: 16), child: card),
+    );
   }
 
   Future<void> _action(BuildContext context, AppController controller,
@@ -458,6 +502,31 @@ class PostCard extends ConsumerWidget {
       }
     }
   }
+}
+
+/// The spine stays in a separate gutter so full-width body text cannot overlap it.
+class _ConversationConnector extends CustomPainter {
+  const _ConversationConnector(
+      {required this.above, required this.below, required this.color});
+  final bool above, below;
+  final Color color;
+  @override
+  void paint(Canvas canvas, Size size) {
+    const centerY = 30.0; // Card top padding (10) + avatar radius (20).
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(8, above ? 0 : centerY),
+        Offset(8, below ? size.height : centerY), paint);
+    canvas.drawLine(const Offset(8, centerY), const Offset(28, centerY), paint);
+  }
+
+  @override
+  bool shouldRepaint(_ConversationConnector oldDelegate) =>
+      above != oldDelegate.above ||
+      below != oldDelegate.below ||
+      color != oldDelegate.color;
 }
 
 class _GrokTranslationText extends StatefulWidget {

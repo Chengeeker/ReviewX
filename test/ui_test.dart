@@ -152,7 +152,7 @@ void main() {
     final actions = tester
         .getRect(find.widgetWithIcon(TextButton, Icons.chat_bubble_outline));
     expect(actions.top - media.bottom, lessThan(12));
-    expect(tester.getTopLeft(find.text('带图片')).dx, greaterThan(50));
+    expect(tester.getTopLeft(find.text('带图片')).dx, 12);
     expect(tester.takeException(), isNull);
   });
   testWidgets('explore starts personalized with region and recommendations',
