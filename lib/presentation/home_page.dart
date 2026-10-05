@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../core/navigation/x_deep_link.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/theme/theme_provider.dart';
@@ -14,6 +16,7 @@ import 'discovery_pages.dart';
 import 'settings_pane.dart';
 import '../core/services/notification_poll.dart';
 import 'compose_page.dart';
+import 'x_profile_link_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -38,6 +41,8 @@ class _HomePageState extends ConsumerState<HomePage>
   int? _pendingNavigationTapIndex;
   DateTime? _lastTopBarTapTime;
   Timer? _topBarSingleTapTimer;
+  String? _lastDeepLink;
+  DateTime? _lastDeepLinkTime;
   @override
   void initState() {
     super.initState();
@@ -48,7 +53,13 @@ class _HomePageState extends ConsumerState<HomePage>
         _openNotifications();
       }
     });
+    XDeepLinkChannel.setHandler((link) async {
+      if (!mounted) return false;
+      await _openXLink(link);
+      return true;
+    });
     _consumeLaunch();
+    _consumeInitialXLink();
   }
 
   void _onHomeTimelineChanged() {
@@ -148,6 +159,86 @@ class _HomePageState extends ConsumerState<HomePage>
     } catch (_) {}
   }
 
+  Future<void> _consumeInitialXLink() async {
+    try {
+      final link = await XDeepLinkChannel.consumeInitialLink();
+      if (link != null && mounted) await _openXLink(link);
+    } catch (_) {}
+  }
+
+  Future<void> _openXLink(String value) async {
+    final target = XLinkTarget.parse(value);
+    if (target == null || !mounted) return;
+    final now = DateTime.now();
+    if (_lastDeepLink == value &&
+        _lastDeepLinkTime != null &&
+        now.difference(_lastDeepLinkTime!) < const Duration(seconds: 2)) {
+      return;
+    }
+    _lastDeepLink = value;
+    _lastDeepLinkTime = now;
+
+    final controller = ref.read(appControllerProvider);
+    final requiresLogin = const {
+      XLinkKind.post,
+      XLinkKind.profile,
+      XLinkKind.search,
+      XLinkKind.notifications,
+      XLinkKind.bookmarks,
+    }.contains(target.kind);
+    if (requiresLogin && !controller.loggedIn) {
+      _login();
+      return;
+    }
+
+    void openPage(Widget page) {
+      unawaited(Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => page)));
+    }
+
+    switch (target.kind) {
+      case XLinkKind.post:
+        openPage(PostDetailPage.fromId(postId: target.postId!));
+      case XLinkKind.profile:
+        openPage(XProfileLinkPage(handle: target.handle!));
+      case XLinkKind.home:
+      case XLinkKind.explore:
+        final tab = target.kind == XLinkKind.explore ? 1 : 0;
+        _cancelPendingTapGestures();
+        if (_tab != tab || !_visited.contains(tab)) {
+          setState(() {
+            _tab = tab;
+            _visited.add(tab);
+          });
+        }
+      case XLinkKind.search:
+        final query = target.query?.trim() ?? '';
+        openPage(SearchPage(initialQuery: query, showExplore: query.isEmpty));
+      case XLinkKind.notifications:
+        _openNotifications();
+      case XLinkKind.bookmarks:
+        openPage(Scaffold(
+            appBar: AppBar(title: const Text('书签')),
+            body: TimelinePage(
+                load: (cursor) =>
+                    controller.adapter.bookmarks(cursor: cursor))));
+      case XLinkKind.other:
+        try {
+          final opened =
+              await launchUrl(target.uri, mode: LaunchMode.inAppBrowserView);
+          if (!opened && mounted) {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(const SnackBar(content: Text('无法在应用内打开此 X 链接')));
+          }
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(const SnackBar(content: Text('无法在应用内打开此 X 链接')));
+          }
+        }
+    }
+  }
+
   void _openNotifications() {
     if (!mounted || _openingNotifications) return;
     _openingNotifications = true;
@@ -161,6 +252,7 @@ class _HomePageState extends ConsumerState<HomePage>
   void dispose() {
     _cancelPendingTapGestures();
     NotificationPoll.channel.setMethodCallHandler(null);
+    XDeepLinkChannel.clearHandler();
     _homeTimelineController
       ..removeListener(_onHomeTimelineChanged)
       ..dispose();

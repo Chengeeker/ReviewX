@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/services/media_saver.dart';
+import '../core/widgets/cached_network_image.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../twitter/api/x_request_headers.dart';
@@ -289,35 +290,57 @@ class _MediaPageState extends ConsumerState<MediaPage>
                       );
                     }
 
-                    return LayoutBuilder(
-                      builder: (context, viewport) => SizedBox.expand(
-                        child: ExtendedImage.network(
-                          media.original,
-                          key: ValueKey(media.original),
-                          width: viewport.maxWidth,
-                          height: viewport.maxHeight,
-                          headers: XRequestHeaders.media,
-                          alignment: Alignment.center,
-                          cache: true,
-                          fit: BoxFit.contain,
-                          mode: ExtendedImageMode.gesture,
-                          enableSlideOutPage: false,
-                          onDoubleTap: (state) =>
-                              _handleImageDoubleTap(state, index),
-                          initGestureConfigHandler: (_) => GestureConfig(
-                            minScale: 0.8,
-                            animationMinScale: 0.6,
-                            maxScale: 8,
-                            animationMaxScale: 9,
-                            speed: 1,
-                            inertialSpeed: 120,
-                            initialScale: 1,
-                            cacheGesture: false,
-                            inPageView: true,
+                    return LayoutBuilder(builder: (context, viewport) {
+                      final imageUrl = media.viewerImage(
+                        viewportWidth: viewport.maxWidth,
+                        viewportHeight: viewport.maxHeight,
+                        devicePixelRatio:
+                            MediaQuery.devicePixelRatioOf(context),
+                      );
+                      return SizedBox.expand(
+                        child: Stack(fit: StackFit.expand, children: [
+                          if (imageUrl != media.preview)
+                            CachedNetworkImage(media.preview,
+                                fit: BoxFit.contain),
+                          ExtendedImage.network(
+                            imageUrl,
+                            key: ValueKey(imageUrl),
+                            width: viewport.maxWidth,
+                            height: viewport.maxHeight,
+                            headers: XRequestHeaders.media,
+                            alignment: Alignment.center,
+                            cache: true,
+                            fit: BoxFit.contain,
+                            mode: ExtendedImageMode.gesture,
+                            enableSlideOutPage: false,
+                            loadStateChanged: (state) {
+                              if (state.extendedImageLoadState ==
+                                      LoadState.loading ||
+                                  state.extendedImageLoadState ==
+                                      LoadState.failed) {
+                                // Keep the already cached feed image visible
+                                // while a genuinely larger original is fetched.
+                                return const SizedBox.expand();
+                              }
+                              return null;
+                            },
+                            onDoubleTap: (state) =>
+                                _handleImageDoubleTap(state, index),
+                            initGestureConfigHandler: (_) => GestureConfig(
+                              minScale: 0.8,
+                              animationMinScale: 0.6,
+                              maxScale: 8,
+                              animationMaxScale: 9,
+                              speed: 1,
+                              inertialSpeed: 120,
+                              initialScale: 1,
+                              cacheGesture: false,
+                              inPageView: true,
+                            ),
                           ),
-                        ),
-                      ),
-                    );
+                        ]),
+                      );
+                    });
                   },
                 ),
               ),

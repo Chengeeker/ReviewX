@@ -135,7 +135,7 @@ class AppDrawer extends ConsumerWidget {
                     icon: Icons.bookmarks_outlined,
                     title: '书签',
                     onTap: () => openAccountPage(Scaffold(
-                      appBar: AppBar(title: const Text('X 书签')),
+                      appBar: AppBar(title: const Text('书签')),
                       body: TimelinePage(
                           load: (cursor) =>
                               controller.adapter.bookmarks(cursor: cursor)),

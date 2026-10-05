@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import 'package:review_x/twitter/auth/session.dart';
 import 'package:review_x/twitter/models/social_models.dart';
 import 'package:review_x/presentation/post_card.dart';
 import 'package:review_x/presentation/discovery_pages.dart';
+import 'package:review_x/presentation/settings_pages.dart';
 import 'package:review_x/twitter/models/content_models.dart';
 
 const sampleUser = SocialUser(id: '1', name: 'Review X', handle: 'reviewx');
@@ -72,6 +74,13 @@ class SlowClient extends TwitterClient {
     calls++;
     return finish.future;
   }
+}
+
+class OfflineDetailClient extends TwitterClient {
+  @override
+  Future<Map<String, dynamic>> call(
+          String operation, Map<String, dynamic> variables) async =>
+      throw const TwitterFailure('模拟网络不可用');
 }
 
 class FeedClient extends TwitterClient {
@@ -149,8 +158,8 @@ void main() {
     expect(grid.padding, EdgeInsets.zero);
     expect(grid.primary, isFalse);
     final media = tester.getRect(find.byType(MediaGrid));
-    final actions = tester
-        .getRect(find.widgetWithIcon(TextButton, Icons.chat_bubble_outline));
+    final actions =
+        tester.getRect(find.byKey(const ValueKey('post-action-row')));
     expect(actions.top - media.bottom, lessThan(12));
     expect(tester.getTopLeft(find.text('带图片')).dx, 12);
     expect(tester.takeException(), isNull);
@@ -347,6 +356,81 @@ void main() {
     await tester.drag(list, const Offset(0, -450));
     await tester.pumpAndSettle();
     expect(scrollable.position.pixels, greaterThan(0));
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('notifications route has its own visible page scaffold',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = await StorageService.init();
+    final controller = AppController();
+    await tester.pumpWidget(ProviderScope(overrides: [
+      storageServiceProvider.overrideWithValue(storage),
+      appControllerProvider.overrideWith((ref) => controller),
+    ], child: const MaterialApp(home: NotificationsPage())));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Scaffold), findsOneWidget);
+    expect(find.text('通知'), findsOneWidget);
+    expect(find.byType(RefreshIndicator), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('history opens the post detail inside ReviewX', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'history_1': jsonEncode([
+        {
+          'id': '12345',
+          'url': 'https://x.com/alice/status/12345',
+          'title': '历史帖子',
+          'author': 'alice',
+          'time': '2026-10-05T00:00:00.000Z',
+        }
+      ])
+    });
+    final storage = await StorageService.init();
+    final client = OfflineDetailClient()
+      ..session = const TwitterSession('auth_token=stub; ct0=stub', '1');
+    final controller = AppController(client: client);
+    await tester.pumpWidget(ProviderScope(overrides: [
+      storageServiceProvider.overrideWithValue(storage),
+      appControllerProvider.overrideWith((ref) => controller),
+    ], child: const MaterialApp(home: HistoryPage())));
+    await tester.tap(find.text('历史帖子'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('帖子详情'), findsOneWidget);
+    expect(find.text('模拟网络不可用'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('post card keeps all six actions on one compact row',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+    final storage = await StorageService.init();
+    const post = SocialPost(
+        id: 'six-actions',
+        author: sampleUser,
+        text: '六个操作',
+        replies: 12345,
+        reposts: 23456,
+        likes: 34567,
+        views: 45678);
+    await tester.pumpWidget(ProviderScope(
+        overrides: [storageServiceProvider.overrideWithValue(storage)],
+        child: const MaterialApp(home: Scaffold(body: PostCard(post: post)))));
+    await tester.pumpAndSettle();
+
+    final row =
+        tester.widget<Row>(find.byKey(const ValueKey('post-action-row')));
+    final bounds =
+        tester.getRect(find.byKey(const ValueKey('post-action-row')));
+    expect(row.children, hasLength(6));
+    expect(bounds.height, 40);
+    for (final label in ['回复', '转发', '喜欢', '查看次数', '加入书签', '分享']) {
+      expect(find.byTooltip(label), findsOneWidget);
+    }
     expect(tester.takeException(), isNull);
   });
   testWidgets(

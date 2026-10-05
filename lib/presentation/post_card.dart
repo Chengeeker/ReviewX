@@ -309,8 +309,8 @@ class PostCard extends ConsumerWidget {
                                                               current.id),
                                                       child: Text(
                                                           current.bookmarked
-                                                              ? '移除 X 书签'
-                                                              : '保存到 X 书签')),
+                                                              ? '移除书签'
+                                                              : '保存到书签')),
                                                 ]),
                                       ),
                                     ],
@@ -438,44 +438,7 @@ class PostCard extends ConsumerWidget {
                         PostCard(post: current.quote!, quoted: true),
                       ],
                       if (!quoted)
-                        Wrap(alignment: WrapAlignment.spaceAround, children: [
-                          TextButton.icon(
-                              onPressed: detail
-                                  ? null
-                                  : () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) =>
-                                              PostDetailPage(post: current))),
-                              icon: const Icon(Icons.chat_bubble_outline,
-                                  size: 19),
-                              label: Text('${current.replies}')),
-                          TextButton.icon(
-                              onPressed: controller.actionBlocked(current.id)
-                                  ? null
-                                  : () => _action(
-                                      context, controller, current, false),
-                              icon: Icon(Icons.repeat,
-                                  size: 19,
-                                  color:
-                                      current.reposted ? scheme.primary : null),
-                              label: Text('${current.reposts}')),
-                          TextButton.icon(
-                              onPressed: controller.actionBlocked(current.id)
-                                  ? null
-                                  : () => _action(
-                                      context, controller, current, true),
-                              icon: Icon(
-                                  current.liked
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  size: 19,
-                                  color: current.liked ? scheme.error : null),
-                              label: Text('${current.likes}'))
-                        ]),
-                      if (!quoted && current.views > 0)
-                        Text('${current.views} 次浏览',
-                            style: Theme.of(context).textTheme.labelSmall),
+                        _PostActionRow(post: current, detail: detail),
                       if (controller.isUncertain(current.id))
                         const Padding(
                             padding: EdgeInsets.only(top: 8),
@@ -490,17 +453,146 @@ class PostCard extends ConsumerWidget {
       child: Padding(padding: const EdgeInsets.only(left: 16), child: card),
     );
   }
+}
 
-  Future<void> _action(BuildContext context, AppController controller,
-      SocialPost post, bool like) async {
-    try {
-      await controller.act(post, like: like);
-    } catch (error) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(error.toString())));
+class _PostActionRow extends ConsumerWidget {
+  const _PostActionRow({required this.post, required this.detail});
+  final SocialPost post;
+  final bool detail;
+
+  String _compact(int value) {
+    if (value >= 1000000) return _short(value / 1000000, 'M');
+    if (value >= 1000) return _short(value / 1000, 'K');
+    return '$value';
+  }
+
+  String _short(double value, String suffix) =>
+      '${value.toStringAsFixed(1).replaceFirst(RegExp(r'\.0$'), '')}$suffix';
+
+  Widget _action({
+    required BuildContext context,
+    required String label,
+    required IconData icon,
+    String? count,
+    Color? color,
+    VoidCallback? onTap,
+  }) =>
+      Expanded(
+          child: Tooltip(
+              message: label,
+              child: InkWell(
+                  onTap: onTap,
+                  borderRadius: BorderRadius.circular(18),
+                  child: SizedBox(
+                      height: 40,
+                      child: Center(
+                          child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(icon, size: 17, color: color),
+                                    if (count != null) ...[
+                                      const SizedBox(width: 3),
+                                      Text(count,
+                                          maxLines: 1,
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              color: color ??
+                                                  Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant)),
+                                    ]
+                                  ])))))));
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.watch(appControllerProvider);
+    final scheme = Theme.of(context).colorScheme;
+    final blocked = controller.actionBlocked(post.id);
+
+    Future<void> act(bool like) async {
+      try {
+        await controller.act(post, like: like);
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('$error')));
+        }
       }
     }
+
+    Future<void> bookmark() async {
+      try {
+        await controller.bookmark(post);
+      } catch (error) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('$error')));
+        }
+      }
+    }
+
+    Future<void> share() async {
+      try {
+        await const MethodChannel('com.review.x/media').invokeMethod<void>(
+            'shareText', {'text': post.url, 'title': '分享帖子'});
+      } catch (_) {
+        await Clipboard.setData(ClipboardData(text: post.url));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('帖子链接已复制')));
+        }
+      }
+    }
+
+    return Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Row(key: const ValueKey('post-action-row'), children: [
+          _action(
+              context: context,
+              label: '回复',
+              icon: Icons.chat_bubble_outline,
+              count: _compact(post.replies),
+              onTap: detail
+                  ? null
+                  : () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                          builder: (_) => PostDetailPage(post: post)))),
+          _action(
+              context: context,
+              label: post.reposted ? '取消转发' : '转发',
+              icon: Icons.repeat,
+              count: _compact(post.reposts),
+              color: post.reposted ? scheme.primary : null,
+              onTap: blocked ? null : () => act(false)),
+          _action(
+              context: context,
+              label: post.liked ? '取消喜欢' : '喜欢',
+              icon: post.liked ? Icons.favorite : Icons.favorite_border,
+              count: _compact(post.likes),
+              color: post.liked ? scheme.error : null,
+              onTap: blocked ? null : () => act(true)),
+          _action(
+              context: context,
+              label: '查看次数',
+              icon: Icons.bar_chart_rounded,
+              count: _compact(post.views)),
+          _action(
+              context: context,
+              label: post.bookmarked ? '移除书签' : '加入书签',
+              icon: post.bookmarked
+                  ? Icons.bookmark
+                  : Icons.bookmark_border_rounded,
+              color: post.bookmarked ? scheme.primary : null,
+              onTap: blocked ? null : bookmark),
+          _action(
+              context: context,
+              label: '分享',
+              icon: Icons.share_outlined,
+              onTap: share),
+        ]));
   }
 }
 

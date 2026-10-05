@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:intl/intl.dart';
 import 'content_models.dart';
 
@@ -294,6 +296,28 @@ class SocialMedia {
         ...Uri.parse(preview).queryParameters,
         'name': 'orig'
       }).toString();
+
+  /// Use the exact feed URL when it already has enough pixels for this screen.
+  /// Only request X's distinct `name=orig` cache key when fit-to-screen would
+  /// upscale the original beyond the available physical pixels.
+  String viewerImage({
+    required double viewportWidth,
+    required double viewportHeight,
+    required double devicePixelRatio,
+  }) {
+    if (video != null ||
+        width <= 0 ||
+        height <= 0 ||
+        viewportWidth <= 0 ||
+        viewportHeight <= 0 ||
+        devicePixelRatio <= 0) {
+      return preview;
+    }
+    final fitScale = math.min(viewportWidth / width, viewportHeight / height) *
+        devicePixelRatio;
+    return fitScale < 0.75 ? original : preview;
+  }
+
   static SocialMedia? parse(dynamic value) {
     final media = object(value);
     final preview = '${media['media_url_https'] ?? ''}';

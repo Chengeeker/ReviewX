@@ -287,7 +287,8 @@ void main() {
           picture.toImage(dimensions.width.toInt(), dimensions.height.toInt()));
       picture.dispose();
       final provider = ExtendedNetworkImageProvider(
-          SocialMedia(preview: url).original,
+          SocialMedia(preview: url).viewerImage(
+              viewportWidth: 360, viewportHeight: 800, devicePixelRatio: 3),
           cache: true,
           headers: XRequestHeaders.media);
       final key = await provider.obtainKey(ImageConfiguration.empty);

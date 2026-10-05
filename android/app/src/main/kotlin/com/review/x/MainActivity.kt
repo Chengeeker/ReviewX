@@ -28,10 +28,21 @@ class MainActivity : FlutterActivity() {
     private val mediaExecutor = Executors.newSingleThreadExecutor()
     private var pendingSave: Pair<Map<String, String>, MethodChannel.Result>? = null
     private var notificationChannel: MethodChannel? = null
+    private var deepLinkChannel: MethodChannel? = null
+    private var pendingDeepLink: String? = null
     private var pendingPermission: MethodChannel.Result? = null
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         NetworkRouting.register(flutterEngine, applicationContext)
+        pendingDeepLink = intent?.dataString
+        deepLinkChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.review.x/deep_links")
+        deepLinkChannel!!.setMethodCallHandler { call, result ->
+            if (call.method == "consumeInitialLink") {
+                val link = pendingDeepLink
+                pendingDeepLink = null
+                result.success(link)
+            } else result.notImplemented()
+        }
         notificationChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.review.x/notifications")
         notificationChannel!!.setMethodCallHandler { call, result ->
             when (call.method) {
@@ -147,6 +158,17 @@ class MainActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        val deepLink = intent.dataString
+        if (deepLink != null) {
+            pendingDeepLink = deepLink
+            deepLinkChannel?.invokeMethod("openLink", deepLink, object : MethodChannel.Result {
+                override fun success(result: Any?) {
+                    if (result == true && pendingDeepLink == deepLink) pendingDeepLink = null
+                }
+                override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) = Unit
+                override fun notImplemented() = Unit
+            })
+        }
         if (intent.getBooleanExtra("open_notifications", false)) {
             intent.removeExtra("open_notifications")
             notificationChannel?.invokeMethod("openNotifications", null)

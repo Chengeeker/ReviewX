@@ -301,6 +301,34 @@ void main() {
     expect(media.video, endsWith('high.mp4'));
     expect(safeMediaUrl('https://video.twimg.com.evil.test/a'), isFalse);
   });
+  test('gallery reuses feed image unless the original adds screen detail', () {
+    const photo = SocialMedia(
+        preview: 'https://pbs.twimg.com/media/photo.jpg?name=small',
+        width: 1000,
+        height: 1600);
+    expect(
+        photo.viewerImage(
+            viewportWidth: 400, viewportHeight: 800, devicePixelRatio: 3),
+        photo.preview);
+    expect(
+        photo.viewerImage(
+            viewportWidth: 400, viewportHeight: 800, devicePixelRatio: 3),
+        isNot(photo.original));
+    const largePhoto = SocialMedia(
+        preview: 'https://pbs.twimg.com/media/large.jpg?name=small',
+        width: 4000,
+        height: 6000);
+    expect(
+        largePhoto.viewerImage(
+            viewportWidth: 400, viewportHeight: 800, devicePixelRatio: 3),
+        largePhoto.original);
+    const unknownDimensions =
+        SocialMedia(preview: 'https://pbs.twimg.com/media/unknown.jpg');
+    expect(
+        unknownDimensions.viewerImage(
+            viewportWidth: 400, viewportHeight: 800, devicePixelRatio: 3),
+        unknownDimensions.preview);
+  });
   test('transaction XOR envelope contains key, little endian time and digest',
       () {
     final encoded = TransactionIds.encode(

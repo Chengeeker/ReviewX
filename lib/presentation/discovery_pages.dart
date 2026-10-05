@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../twitter/auth/app_controller.dart';
 import '../twitter/models/social_models.dart';
 import '../twitter/models/content_models.dart';
@@ -604,85 +603,86 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => RefreshIndicator(
-      onRefresh: () => _fetch(true),
-      child: ListView.builder(
-          physics: const AlwaysScrollableScrollPhysics(),
-          itemCount: _items.length + 2,
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return ListTile(
-                  title: const Text('X 通知'),
-                  subtitle: _uncertain ? const Text('已读结果待核对，请在 X 查看') : null,
-                  trailing: TextButton(
-                      onPressed:
-                          _top == null || _marking || _marked || _uncertain
+  Widget build(BuildContext context) => Scaffold(
+      appBar: AppBar(title: const Text('通知'), actions: [
+        TextButton(
+            onPressed: _top == null || _marking || _marked || _uncertain
+                ? null
+                : _markRead,
+            child: Text(_marked
+                ? '已读'
+                : _marking
+                    ? '提交中…'
+                    : '标记已读'))
+      ]),
+      body: RefreshIndicator(
+          onRefresh: () => _fetch(true),
+          child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: _items.length + 2,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return _uncertain
+                      ? const ListTile(subtitle: Text('已读结果待核对，请在 X 查看'))
+                      : const SizedBox(height: 4);
+                }
+                if (index == _items.length + 1) {
+                  return Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: _loading
+                          ? const Center(child: CircularProgressIndicator())
+                          : Column(children: [
+                              if (_error != null) Text(_error!),
+                              if (_cursor != null || _error != null)
+                                TextButton(
+                                    onPressed: () => _fetch(_items.isEmpty),
+                                    child:
+                                        Text(_error == null ? '加载更多' : '重新加载')),
+                              if (_items.isEmpty && _error == null)
+                                const Text('暂无通知')
+                            ]));
+                }
+                final n = _items[index - 1];
+                return Card(
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    child: Column(children: [
+                      ListTile(
+                          leading: Icon(n.icon.contains('heart')
+                              ? Icons.favorite
+                              : n.icon.contains('retweet')
+                                  ? Icons.repeat
+                                  : Icons.notifications_outlined),
+                          title: Text(n.message.isEmpty ? 'X 通知' : n.message),
+                          subtitle: n.createdAt == null
                               ? null
-                              : _markRead,
-                      child: Text(_marked
-                          ? '已在 X 标记已读'
-                          : _marking
-                              ? '提交中…'
-                              : '标记已读')));
-            }
-            if (index == _items.length + 1) {
-              return Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: _loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : Column(children: [
-                          if (_error != null) Text(_error!),
-                          if (_cursor != null || _error != null)
-                            TextButton(
-                                onPressed: () => _fetch(_items.isEmpty),
-                                child: Text(_error == null ? '加载更多' : '重新加载')),
-                          if (_items.isEmpty && _error == null)
-                            const Text('暂无通知')
-                        ]));
-            }
-            final n = _items[index - 1];
-            return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Column(children: [
-                  ListTile(
-                      leading: Icon(n.icon.contains('heart')
-                          ? Icons.favorite
-                          : n.icon.contains('retweet')
-                              ? Icons.repeat
-                              : Icons.notifications_outlined),
-                      title: Text(n.message.isEmpty ? 'X 通知' : n.message),
-                      subtitle: n.createdAt == null
-                          ? null
-                          : Text('${n.createdAt!.toLocal()}'.split('.').first),
-                      onTap: n.posts.isNotEmpty
-                          ? () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      PostDetailPage(post: n.posts.first)))
-                          : n.actors.isNotEmpty
+                              : Text(
+                                  '${n.createdAt!.toLocal()}'.split('.').first),
+                          onTap: n.posts.isNotEmpty
                               ? () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                       builder: (_) =>
-                                          ProfilePage(user: n.actors.first)))
-                              : safeLink(n.url) &&
-                                      const ['x.com', 'twitter.com']
-                                          .contains(Uri.parse(n.url).host)
-                                  ? () => launchUrl(Uri.parse(n.url),
-                                      mode: LaunchMode.externalApplication)
+                                          PostDetailPage(post: n.posts.first)))
+                              : n.actors.isNotEmpty
+                                  ? () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => ProfilePage(
+                                              user: n.actors.first)))
                                   : null),
-                  if (n.actors.isNotEmpty)
-                    Wrap(children: [
-                      for (final user in n.actors.take(8))
-                        TextButton(
-                            onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => ProfilePage(user: user))),
-                            child: Text('@${user.handle}'))
-                    ]),
-                  for (final post in n.posts.take(3)) PostCard(post: post)
-                ]));
-          }));
+                      if (n.actors.isNotEmpty)
+                        Wrap(children: [
+                          for (final user in n.actors.take(8))
+                            TextButton(
+                                onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            ProfilePage(user: user))),
+                                child: Text('@${user.handle}'))
+                        ]),
+                      for (final post in n.posts.take(3)) PostCard(post: post)
+                    ]));
+              })));
 }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../core/storage/storage_service.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
@@ -12,6 +11,7 @@ import '../core/services/image_cache_maintenance.dart';
 import '../core/services/settings_backup.dart';
 import '../twitter/auth/app_controller.dart';
 import '../core/services/notification_poll.dart';
+import 'timeline_page.dart';
 
 class NotificationSettingsPage extends ConsumerStatefulWidget {
   const NotificationSettingsPage({super.key});
@@ -331,14 +331,19 @@ class HistoryPage extends ConsumerWidget {
                         subtitle: Text('${item['author']} · ${item['time']}'
                             .split('.')
                             .first),
-                        onTap: () async {
-                          final uri = Uri.tryParse('${item['url']}');
-                          if (uri != null &&
-                              uri.scheme == 'https' &&
-                              uri.host == 'x.com') {
-                            await launchUrl(uri,
-                                mode: LaunchMode.externalApplication);
+                        onTap: () {
+                          final postId = '${item['id']}';
+                          if (!RegExp(r'^\d{1,30}$').hasMatch(postId)) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('这条历史记录没有有效的帖子编号')));
+                            return;
                           }
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute<void>(
+                                  builder: (_) =>
+                                      PostDetailPage.fromId(postId: postId)));
                         })
                 ]));
     });

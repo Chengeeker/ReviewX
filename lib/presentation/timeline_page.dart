@@ -65,12 +65,16 @@ class TimelinePage extends ConsumerStatefulWidget {
       required this.load,
       this.header,
       this.initial = const [],
+      this.initialCursor,
+      this.loadOnInit = true,
       this.cacheKey,
       this.conversationRoot,
       this.actions});
   final PageLoader load;
   final Widget? header;
   final List<SocialPost> initial;
+  final String? initialCursor;
+  final bool loadOnInit;
   final String? cacheKey;
   final SocialPost? conversationRoot;
   final ScrollPageActions? actions;
@@ -80,7 +84,8 @@ class TimelinePage extends ConsumerStatefulWidget {
 
 class _TimelinePageState extends ConsumerState<TimelinePage> {
   late List<SocialPost> _posts = widget.initial;
-  String? _cursor, _error;
+  late String? _cursor = widget.initialCursor;
+  String? _error;
   bool _loading = false;
   bool _refreshing = false;
   int _request = 0;
@@ -99,7 +104,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         onSingleTap: _handleBottomSingleTap,
         onDoubleTap: _handleBottomDoubleTap,
         onTopBarDoubleTap: _handleTopBarDoubleTap);
-    _fetch(refresh: true);
+    if (widget.loadOnInit) _fetch(refresh: true);
   }
 
   void _animateToTop() {
@@ -274,8 +279,14 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 }
 
 class PostDetailPage extends ConsumerStatefulWidget {
-  const PostDetailPage({super.key, required this.post});
-  final SocialPost post;
+  const PostDetailPage({Key? key, required SocialPost post})
+      : this._(post: post, key: key);
+  const PostDetailPage.fromId({Key? key, required String postId})
+      : this._(postId: postId, key: key);
+  const PostDetailPage._({super.key, this.post, this.postId});
+
+  final SocialPost? post;
+  final String? postId;
   @override
   ConsumerState<PostDetailPage> createState() => _PostDetailPageState();
 }
@@ -284,29 +295,110 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
   ReplySort _sort = ReplySort.relevance;
   int _sortGeneration = 0;
   SocialPost? _replyParent;
+  SocialPost? _post;
+  List<SocialPost> _initialReplies = const [];
+  String? _initialCursor, _loadError;
+  ReplySort? _initialSort;
   String? _conversationId;
+
   @override
   void initState() {
     super.initState();
+    _post = widget.post;
+    if (_post == null) {
+      unawaited(_loadPost());
+    } else {
+      _recordHistory(_post!);
+    }
+  }
+
+  void _recordHistory(SocialPost post) {
     final account = ref.read(appControllerProvider).client.session?.userId;
     if (account != null && ref.read(readingProvider)['saveHistory'] == true) {
       BrowsingHistory(ref.read(storageServiceProvider)).add(account,
-          id: widget.post.id,
-          url: widget.post.url,
-          title: widget.post.text,
-          author: widget.post.author.name);
+          id: post.id,
+          url: post.url,
+          title: post.text,
+          author: post.author.name);
+    }
+  }
+
+  Future<void> _loadPost() async {
+    final id = widget.postId;
+    if (id == null || !RegExp(r'^\d{1,30}$').hasMatch(id)) {
+      setState(() => _loadError = '帖子链接无效');
+      return;
+    }
+    final controller = ref.read(appControllerProvider),
+        epoch = ref.read(appControllerProvider).epoch,
+        sort = _sort,
+        generation = _sortGeneration;
+    try {
+      final page = await controller.adapter.detail(id, sort: sort);
+      if (!mounted ||
+          epoch != controller.epoch ||
+          generation != _sortGeneration ||
+          sort != _sort) {
+        return;
+      }
+      controller.ingest(page.posts);
+      final post = page.posts.where((item) => item.id == id).firstOrNull;
+      if (post == null) throw const TwitterFailure('X 未返回链接对应的帖子');
+      final rootIndex = page.posts.indexWhere((item) => item.id == id);
+      final replies = page.posts.skip(rootIndex + 1).where((item) {
+        return (post.conversationId == null ||
+                item.conversationId == null ||
+                item.conversationId == post.conversationId) &&
+            item.id != post.id;
+      }).toList();
+      final parent =
+          page.posts.where((item) => item.id == post.replyToId).firstOrNull;
+      setState(() {
+        _post = post;
+        _replyParent = parent;
+        _initialReplies = replies;
+        _initialCursor = page.cursor;
+        _initialSort = sort;
+        _conversationId = post.conversationId;
+        _loadError = null;
+      });
+      _recordHistory(post);
+    } catch (error) {
+      controller.report(error);
+      if (mounted &&
+          epoch == controller.epoch &&
+          generation == _sortGeneration) {
+        setState(() => _loadError = '$error');
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final post = widget.post;
+    final post = _post;
     final controller = ref.read(appControllerProvider);
+    if (post == null) {
+      return Scaffold(
+          appBar: AppBar(title: const Text('帖子详情')),
+          body: Center(
+              child: _loadError == null
+                  ? const CircularProgressIndicator()
+                  : Column(mainAxisSize: MainAxisSize.min, children: [
+                      Text(_loadError!, textAlign: TextAlign.center),
+                      const SizedBox(height: 12),
+                      FilledButton.tonal(
+                          onPressed: _loadPost, child: const Text('重试'))
+                    ])));
+    }
+    final useInitialPage = _initialSort == _sort;
     return Scaffold(
         appBar: AppBar(title: const Text('帖子详情')),
         body: TimelinePage(
             key: ValueKey('${post.id}/${_sort.name}/${controller.epoch}'),
             conversationRoot: post,
+            initial: useInitialPage ? _initialReplies : const [],
+            initialCursor: useInitialPage ? _initialCursor : null,
+            loadOnInit: !useInitialPage,
             header: Column(children: [
               PostCard(post: post, detail: true, replyParent: _replyParent),
               Padding(
@@ -389,8 +481,9 @@ class _PostDetailPageState extends ConsumerState<PostDetailPage> {
 }
 
 class ProfilePage extends ConsumerStatefulWidget {
-  const ProfilePage({super.key, required this.user});
+  const ProfilePage({super.key, required this.user, this.refreshOnOpen = true});
   final SocialUser user;
+  final bool refreshOnOpen;
   @override
   ConsumerState<ProfilePage> createState() => _ProfilePageState();
 }
@@ -414,7 +507,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    if (widget.refreshOnOpen) _loadProfile();
   }
 
   Future<void> _loadProfile() async {
