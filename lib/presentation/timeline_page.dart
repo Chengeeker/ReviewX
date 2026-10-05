@@ -489,6 +489,8 @@ class ProfilePage extends ConsumerStatefulWidget {
 }
 
 class _ProfilePageState extends ConsumerState<ProfilePage> {
+  final Object _profileBannerHeroScope = Object();
+  final Object _profileAvatarHeroScope = Object();
   late SocialUser _user = widget.user;
   String? _profileError;
   int _category = 0;
@@ -566,15 +568,15 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       .relationships(_user.id,
                           followers: followers, cursor: cursor)))));
 
-  void _image(String url) {
+  void _image(String url, Object heroScope) {
     if (safeMediaUrl(url)) {
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => MediaPage(
-                  media: [SocialMedia(preview: url)],
-                  index: 0,
-                  author: _user.handle)));
+      Navigator.of(context).push<void>(MediaGalleryRoute<void>(
+          child: MediaPage(
+              media: [SocialMedia(preview: url)],
+              index: 0,
+              author: _user.handle,
+              heroScope: heroScope,
+              heroThumbnailUsesCover: true)));
     }
   }
 
@@ -724,10 +726,18 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       ? GestureDetector(
                           onTap: () {
                             HapticFeedbackUtil.light();
-                            _image(_user.banner);
+                            _image(_user.banner, _profileBannerHeroScope);
                           },
-                          child: CachedNetworkImage(_user.banner,
-                              fit: BoxFit.cover))
+                          child: Hero(
+                              tag: mediaGalleryHeroTag(
+                                _profileBannerHeroScope,
+                                0,
+                                thumbnailUsesCover: true,
+                              ),
+                              flightShuttleBuilder:
+                                  mediaGalleryHeroFlightShuttleBuilder,
+                              child: CachedNetworkImage(_user.banner,
+                                  fit: BoxFit.cover)))
                       : ColoredBox(color: colors.surfaceContainerHighest)),
             Positioned(
                 left: 16,
@@ -736,7 +746,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     onTap: _user.avatar.isNotEmpty
                         ? () {
                             HapticFeedbackUtil.light();
-                            _image(_user.avatar.replaceAll('_bigger.', '.'));
+                            _image(_user.avatar.replaceAll('_bigger.', '.'),
+                                _profileAvatarHeroScope);
                           }
                         : null,
                     child: Container(
@@ -747,8 +758,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                             color: colors.surface, shape: BoxShape.circle),
                         child: ClipOval(
                             child: _user.avatar.isNotEmpty
-                                ? CachedNetworkImage(_user.avatar,
-                                    fit: BoxFit.cover)
+                                ? Hero(
+                                    tag: mediaGalleryHeroTag(
+                                      _profileAvatarHeroScope,
+                                      0,
+                                      thumbnailUsesCover: true,
+                                    ),
+                                    flightShuttleBuilder:
+                                        mediaGalleryHeroFlightShuttleBuilder,
+                                    child: CachedNetworkImage(_user.avatar,
+                                        fit: BoxFit.cover))
                                 : ColoredBox(
                                     color: colors.surfaceContainerHighest,
                                     child:

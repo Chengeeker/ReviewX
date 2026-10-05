@@ -709,6 +709,7 @@ class MediaGrid extends ConsumerStatefulWidget {
 
 class _MediaGridState extends ConsumerState<MediaGrid> {
   bool _revealed = false;
+  late final Object _heroScope = Object();
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(readingProvider), media = widget.post.media;
@@ -738,53 +739,77 @@ class _MediaGridState extends ConsumerState<MediaGrid> {
       return Align(
           alignment: Alignment.centerLeft,
           child: SizedBox(
-              width: width,
-              child: GridView.builder(
-                  padding: EdgeInsets.zero,
-                  primary: false,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: media.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: single ? 1 : 2,
-                      childAspectRatio: ratio,
-                      crossAxisSpacing: 6,
-                      mainAxisSpacing: 6),
-                  itemBuilder: (context, index) => GestureDetector(
-                      onTap: () {
-                        HapticFeedbackUtil.light();
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => MediaPage(
-                                    media: media,
-                                    index: index,
-                                    post: widget.post,
-                                    author: widget.post.author.handle)));
-                      },
-                      child: ClipRRect(
-                          borderRadius:
-                              BorderRadius.circular(settings['imageRadius']),
-                          child: Stack(fit: StackFit.expand, children: [
-                            CachedNetworkImage(media[index].preview,
-                                fit: BoxFit.cover),
-                            if (media[index].video != null)
-                              const Center(
-                                  child: Icon(Icons.play_circle_fill,
-                                      color: Colors.white, size: 48)),
-                            if (media[index].alt.isNotEmpty)
-                              const Positioned(
-                                  left: 8,
-                                  bottom: 8,
-                                  child: DecoratedBox(
-                                      decoration:
-                                          BoxDecoration(color: Colors.black54),
-                                      child: Padding(
-                                          padding: EdgeInsets.all(4),
-                                          child: Text('ALT',
-                                              style: TextStyle(
-                                                  color: Colors.white))))),
-                          ]))))));
+            width: width,
+            child: GridView.builder(
+                padding: EdgeInsets.zero,
+                primary: false,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: media.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: single ? 1 : 2,
+                    childAspectRatio: ratio,
+                    crossAxisSpacing: 6,
+                    mainAxisSpacing: 6),
+                itemBuilder: (context, index) {
+                  final item = media[index];
+                  final isVideo = item.video != null;
+                  final thumbnail = ClipRRect(
+                      borderRadius:
+                          BorderRadius.circular(settings['imageRadius']),
+                      child: Stack(fit: StackFit.expand, children: [
+                        CachedNetworkImage(item.preview, fit: BoxFit.cover),
+                        if (isVideo)
+                          const Center(
+                              child: Icon(Icons.play_circle_fill,
+                                  color: Colors.white, size: 48)),
+                        if (item.alt.isNotEmpty)
+                          const Positioned(
+                              left: 8,
+                              bottom: 8,
+                              child: DecoratedBox(
+                                  decoration:
+                                      BoxDecoration(color: Colors.black54),
+                                  child: Padding(
+                                      padding: EdgeInsets.all(4),
+                                      child: Text('ALT',
+                                          style: TextStyle(
+                                              color: Colors.white))))),
+                      ]));
+                  return GestureDetector(
+                    key: ValueKey('post-media-${widget.post.id}-$index'),
+                    onTap: () {
+                      HapticFeedbackUtil.light();
+                      final page = MediaPage(
+                          media: media,
+                          index: index,
+                          post: widget.post,
+                          author: widget.post.author.handle,
+                          heroScope: isVideo ? null : _heroScope,
+                          heroThumbnailUsesCover: !isVideo);
+                      Navigator.of(context).push<void>(isVideo
+                          ? MaterialPageRoute<void>(
+                              builder: (_) => page,
+                            )
+                          : MediaGalleryRoute<void>(child: page));
+                    },
+                    child: isVideo
+                        ? thumbnail
+                        : Hero(
+                            tag: mediaGalleryHeroTag(
+                              _heroScope,
+                              index,
+                              imageAspectRatio:
+                                  mediaGalleryImageAspectRatio(item),
+                              thumbnailUsesCover: true,
+                            ),
+                            flightShuttleBuilder:
+                                mediaGalleryHeroFlightShuttleBuilder,
+                            child: thumbnail,
+                          ),
+                  );
+                }),
+          ));
     });
   }
 }

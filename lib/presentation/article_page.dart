@@ -168,33 +168,59 @@ class _ArticlePageState extends ConsumerState<ArticlePage> {
   }
 }
 
-class ArticleMedia extends StatelessWidget {
+class ArticleMedia extends StatefulWidget {
   const ArticleMedia({super.key, required this.media, required this.author});
   final List<SocialMedia> media;
   final String author;
+
+  @override
+  State<ArticleMedia> createState() => _ArticleMediaState();
+}
+
+class _ArticleMediaState extends State<ArticleMedia> {
+  final Object _heroScope = Object();
+
   @override
   Widget build(BuildContext context) => Column(children: [
-        for (var i = 0; i < media.length; i++)
+        for (var i = 0; i < widget.media.length; i++)
           Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: GestureDetector(
-                  onTap: () {
-                    HapticFeedbackUtil.light();
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => MediaPage(
-                                media: media, index: i, author: author)));
-                  },
-                  child: Stack(alignment: Alignment.center, children: [
-                    ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: CachedNetworkImage(media[i].preview,
-                            width: double.infinity, fit: BoxFit.contain)),
-                    if (media[i].video != null)
-                      const Icon(Icons.play_circle,
-                          color: Colors.white, size: 48)
-                  ])))
+              child: GestureDetector(onTap: () {
+                HapticFeedbackUtil.light();
+                final item = widget.media[i];
+                final page = MediaPage(
+                    media: widget.media,
+                    index: i,
+                    author: widget.author,
+                    heroScope: item.video == null ? _heroScope : null,
+                    heroThumbnailUsesCover: false);
+                Navigator.of(context).push<void>(item.video != null
+                    ? MaterialPageRoute<void>(builder: (_) => page)
+                    : MediaGalleryRoute<void>(child: page));
+              }, child: Builder(builder: (context) {
+                final item = widget.media[i];
+                final thumbnail = Stack(alignment: Alignment.center, children: [
+                  ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: CachedNetworkImage(item.preview,
+                          width: double.infinity, fit: BoxFit.contain)),
+                  if (item.video != null)
+                    const Icon(Icons.play_circle, color: Colors.white, size: 48)
+                ]);
+                return item.video != null
+                    ? thumbnail
+                    : Hero(
+                        tag: mediaGalleryHeroTag(
+                          _heroScope,
+                          i,
+                          imageAspectRatio: mediaGalleryImageAspectRatio(item),
+                          thumbnailUsesCover: false,
+                        ),
+                        flightShuttleBuilder:
+                            mediaGalleryHeroFlightShuttleBuilder,
+                        child: thumbnail,
+                      );
+              })))
       ]);
 }
 
