@@ -33,6 +33,25 @@ class TwitterSession {
         .join('; ');
   }
 
+  static String fromCookies(Map<String, String> values) {
+    const allowed = ['auth_token', 'ct0', 'twid', 'gt'];
+    final cookies = <String, String>{};
+    for (final key in allowed) {
+      final value = values[key]?.trim();
+      if (value == null || value.isEmpty) continue;
+      if (value.contains(';') || value.contains('\r') || value.contains('\n')) {
+        throw const FormatException('X 会话 Cookie 格式不正确');
+      }
+      cookies[key] = value;
+    }
+    if (cookies['auth_token'] == null || cookies['ct0'] == null) {
+      throw const FormatException('X 登录尚未完成');
+    }
+    return normalize(cookies.entries
+        .map((entry) => '${entry.key}=${entry.value}')
+        .join('; '));
+  }
+
   static String? userIdFromCookie(String value) {
     final raw = cookies(value)['twid'];
     if (raw == null) return null;

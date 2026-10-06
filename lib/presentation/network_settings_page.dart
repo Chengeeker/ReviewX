@@ -93,11 +93,11 @@ class _NetworkSettingsPageState extends ConsumerState<NetworkSettingsPage> {
                   const SizedBox(height: 12),
                   Text(switch (_mode) {
                     ConnectionMode.automatic =>
-                      '启动时读取系统静态 HTTP 代理，VPN 由系统路由处理。不支持 PAC 自动代理脚本，也不会自动开启 VPN 或选择机场节点。',
+                      '启动时读取系统静态 HTTP 代理；Flutter 请求、视频和 X 登录网页使用系统网络路由。VPN 由系统处理，不支持 PAC 自动代理脚本。',
                     ConnectionMode.direct =>
-                      '不使用 HTTP 代理。手机已开启的 VPN 仍会影响连接，不会绕过 VPN。',
+                      'Flutter 请求、视频和 X 登录网页不使用 HTTP 代理。手机已开启的 VPN 仍会影响连接，不会绕过 VPN。',
                     ConnectionMode.manual =>
-                      '使用 HTTP 代理（支持 HTTPS CONNECT），不会在代理失败时回退直连。代理软件需保持运行。',
+                      'Flutter 请求、视频和 X 登录网页使用此 HTTP 代理（支持 HTTPS CONNECT）；代理失败时不会回退直连。代理软件需保持运行。',
                   }),
                   if (_mode == ConnectionMode.manual) ...[
                     const SizedBox(height: 20),

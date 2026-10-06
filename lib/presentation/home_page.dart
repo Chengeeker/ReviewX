@@ -289,7 +289,7 @@ class _HomePageState extends ConsumerState<HomePage>
               label: '设置'),
         ]);
     final floatingCapsuleBar = Container(
-      width: 280,
+      width: 264,
       height: 64,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(

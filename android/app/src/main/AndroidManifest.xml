@@ -33,6 +33,12 @@
                 <data android:scheme="http" android:host="mobile.twitter.com" />
             </intent-filter>
         </activity>
+        <activity android:name=".XLoginActivity" android:exported="false"
+            android:taskAffinity=""
+            android:theme="@style/NormalTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize" />
         <meta-data android:name="flutterEmbedding" android:value="2" />
     </application>
     <queries>

@@ -50,6 +50,7 @@ kotlin { compilerOptions { jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget
 flutter { source = "../.." }
 dependencies {
     implementation("androidx.work:work-runtime-ktx:2.11.2")
+    implementation("androidx.webkit:webkit:1.14.0")
 }
 gradle.taskGraph.whenReady {
     if (allTasks.any { it.name.contains("Release") } && System.getenv("REVIEW_X_STORE_FILE") == null) {

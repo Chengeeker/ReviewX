@@ -5,6 +5,7 @@ import android.os.Build
 import android.Manifest
 import android.content.ContentValues
 import android.content.Intent
+import android.app.Activity
 import android.app.NotificationManager
 import androidx.work.WorkManager
 import androidx.work.PeriodicWorkRequestBuilder
@@ -29,6 +30,8 @@ class MainActivity : FlutterActivity() {
     private var pendingSave: Pair<Map<String, String>, MethodChannel.Result>? = null
     private var notificationChannel: MethodChannel? = null
     private var deepLinkChannel: MethodChannel? = null
+    private var xAuthChannel: MethodChannel? = null
+    private var pendingXAuthResult: MethodChannel.Result? = null
     private var pendingDeepLink: String? = null
     private var pendingPermission: MethodChannel.Result? = null
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -42,6 +45,58 @@ class MainActivity : FlutterActivity() {
                 pendingDeepLink = null
                 result.success(link)
             } else result.notImplemented()
+        }
+        xAuthChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.review.x/x_auth")
+        XLoginActivity.candidateValidator = { cookies, reply ->
+            xAuthChannel?.invokeMethod("validateCandidate", cookies, object : MethodChannel.Result {
+                override fun success(result: Any?) = reply(result == true)
+                override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) = reply(false)
+                override fun notImplemented() = reply(false)
+            }) ?: reply(false)
+        }
+        xAuthChannel!!.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "startLogin" -> {
+                    if (pendingXAuthResult != null) {
+                        result.error("BUSY", "登录流程正在进行", null)
+                    } else {
+                        XLoginDiagnostics.begin(this)
+                        XLoginDiagnostics.record(this, "activity.launch_requested")
+                        pendingXAuthResult = result
+                        try {
+                            startActivityForResult(
+                                Intent(this, XLoginActivity::class.java), X_LOGIN_REQUEST)
+                        } catch (_: Exception) {
+                            XLoginDiagnostics.record(this, "activity.launch_failed")
+                            pendingXAuthResult = null
+                            result.error("UNAVAILABLE", "无法打开 X 登录页面", null)
+                        }
+                    }
+                }
+                "getLoginDiagnostics" -> result.success(XLoginDiagnostics.read(this))
+                "recordFlutterLifecycle" -> {
+                    val state = call.arguments as? String
+                    if (pendingXAuthResult != null && state != null && state in FLUTTER_LIFECYCLE_STATES) {
+                        XLoginDiagnostics.record(this, "flutter.app_$state")
+                        result.success(true)
+                    } else result.success(false)
+                }
+                "validateCandidate" -> {
+                    val supplied = call.arguments as? Map<*, *>
+                    val cookies = mutableMapOf<String, String>()
+                    supplied?.forEach { (key, value) ->
+                        if (key is String && value is String && key in SESSION_COOKIE_NAMES) {
+                            cookies[key] = value
+                        }
+                    }
+                    if (cookies["auth_token"].isNullOrEmpty() || cookies["ct0"].isNullOrEmpty()) {
+                        result.success(false)
+                    } else {
+                        XLoginActivity.validateCandidate(cookies, result)
+                    }
+                }
+                else -> result.notImplemented()
+            }
         }
         notificationChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.review.x/notifications")
         notificationChannel!!.setMethodCallHandler { call, result ->
@@ -174,6 +229,27 @@ class MainActivity : FlutterActivity() {
             notificationChannel?.invokeMethod("openNotifications", null)
         }
     }
+    @Deprecated("Deprecated in Android, retained for FlutterActivity result compatibility")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == X_LOGIN_REQUEST) {
+            XLoginDiagnostics.record(this, "activity.result", code = if (resultCode == Activity.RESULT_OK) 1 else 0)
+            XLoginDiagnostics.record(this, "activity.result_reason", code = data?.getIntExtra(XLoginActivity.EXTRA_EXIT_REASON, -1) ?: -1)
+            val result = pendingXAuthResult
+            pendingXAuthResult = null
+            result?.success(resultCode == Activity.RESULT_OK)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (pendingXAuthResult != null) XLoginDiagnostics.record(this, "main.activity_pause")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (pendingXAuthResult != null) XLoginDiagnostics.record(this, "main.activity_resume")
+    }
     private fun saveMedia(args: Map<String, String>, result: MethodChannel.Result) {
         mediaExecutor.execute {
             try {
@@ -215,11 +291,19 @@ class MainActivity : FlutterActivity() {
         if (Build.VERSION.SDK_INT >= 31 && config.fontWeightAdjustment != Configuration.FONT_WEIGHT_ADJUSTMENT_UNDEFINED)
             config.fontWeightAdjustment else 0
     override fun onDestroy() {
+        if (pendingXAuthResult != null) XLoginDiagnostics.record(this, "main.activity_destroy")
+        XLoginActivity.candidateValidator = null
         mediaExecutor.shutdown()
         super.onDestroy()
     }
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         themeChannel?.invokeMethod("onFontWeightAdjustmentChanged", fontWeightAdjustment(newConfig))
+    }
+
+    private companion object {
+        const val X_LOGIN_REQUEST = 721
+        val SESSION_COOKIE_NAMES = setOf("auth_token", "ct0", "twid", "gt")
+        val FLUTTER_LIFECYCLE_STATES = setOf("resumed", "inactive", "hidden", "paused", "detached")
     }
 }

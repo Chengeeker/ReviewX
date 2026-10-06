@@ -6,6 +6,7 @@ import '../api/twitter_client.dart';
 import '../models/social_models.dart';
 import '../repositories/twitter_adapter.dart';
 import 'session.dart';
+import 'x_web_auth.dart';
 import '../../core/services/notification_poll.dart';
 import '../cache/local_x_cache.dart';
 
@@ -98,13 +99,51 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> login(String rawCookie) async {
+    await _withLoginBusy((previous) async {
+      await _installSession(TwitterSession.normalize(rawCookie), previous);
+    });
+    await _syncNotifications();
+  }
+
+  Future<bool> loginWithWeb() async {
+    var accepted = false;
+    await _withLoginBusy((previous) async {
+      loginStage = '等待 X 登录';
+      final completed = await XWebAuth.login(validate: (cookies) async {
+        try {
+          await _installSession(TwitterSession.fromCookies(cookies), previous);
+          accepted = true;
+          return true;
+        } catch (_) {
+          client.session = previous;
+          return false;
+        }
+      });
+      accepted = completed && accepted;
+    });
+    if (accepted) await _syncNotifications();
+    return accepted;
+  }
+
+  Future<void> _withLoginBusy(
+      Future<void> Function(TwitterSession? previous) action) async {
     if (busy) throw const TwitterFailure('账号操作正在进行，请等待后重试');
     busy = true;
     notifyListeners();
     final previous = client.session;
     try {
-      loginStage = '检查会话格式';
-      final cookie = TwitterSession.normalize(rawCookie);
+      await action(previous);
+    } catch (_) {
+      client.session = previous;
+      rethrow;
+    } finally {
+      busy = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _installSession(String cookie, TwitterSession? previous) async {
+    try {
       loginStage = '确认用户 ID';
       final id = await client.initialUserId(cookie);
       if (id == null) throw const TwitterFailure('无法确认 X 登录身份，请重新登录');
@@ -116,7 +155,11 @@ class AppController extends ChangeNotifier {
       loginStage = '保存安全会话';
       await store.save(candidate);
       me = user.preservingCounts(me);
-      await localCache?.writeProfile(candidate.userId, me!);
+      try {
+        await localCache?.writeProfile(candidate.userId, me!);
+      } catch (_) {
+        // Profile snapshots are optional; they must not invalidate a saved login.
+      }
       expired = false;
       startupError = null;
       _updated.clear();
@@ -127,10 +170,10 @@ class AppController extends ChangeNotifier {
     } catch (_) {
       client.session = previous;
       rethrow;
-    } finally {
-      busy = false;
-      notifyListeners();
     }
+  }
+
+  Future<void> _syncNotifications() async {
     try {
       await NotificationPoll.sync();
     } catch (_) {/* Account login remains valid if scheduling fails. */}

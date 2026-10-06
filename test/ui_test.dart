@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -208,6 +207,20 @@ void main() {
     await tester.pump(const Duration(milliseconds: 360));
     expect(
         find.byKey(const ValueKey('gallery-thumbnail-strip')), findsOneWidget);
+    final galleryPage = find.byType(ExtendedImageGesturePageView);
+    final galleryViewport = tester.getRect(galleryPage);
+    expect(galleryViewport, const Rect.fromLTWH(0, 0, 1000, 1800));
+    expect(
+      galleryViewport.overlaps(
+        tester.getRect(find.byKey(const ValueKey('gallery-thumbnail-strip'))),
+      ),
+      isTrue,
+    );
+    await tester.tapAt(const Offset(500, 900));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(tester.getRect(galleryPage), galleryViewport);
+    await tester.tapAt(const Offset(500, 900));
+    await tester.pump(const Duration(milliseconds: 200));
     final galleryTags = tester
         .widgetList<Hero>(find.byType(Hero))
         .map((hero) => hero.tag)
@@ -566,7 +579,6 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues({});
     final storage = await StorageService.init();
-    final boundary = GlobalKey();
     await tester.pumpWidget(ProviderScope(
         overrides: [storageServiceProvider.overrideWithValue(storage)],
         child: MaterialApp(
@@ -581,23 +593,13 @@ void main() {
                 textTheme: AppTheme.lightTheme(colorIndex: 2)
                     .textTheme
                     .apply(fontFamily: 'PreviewFont')),
-            home: RepaintBoundary(key: boundary, child: const HomePage()))));
+            home: const HomePage())));
     await tester.pumpAndSettle();
     expect(find.text('登录 X'), findsOneWidget);
     expect(tester.takeException(), isNull);
-    final repaint =
-        boundary.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-    await tester.runAsync(() async {
-      final image = await repaint.toImage(pixelRatio: 1);
-      final png = await image.toByteData(format: ui.ImageByteFormat.png);
-      await Directory('build/previews').create(recursive: true);
-      await File('build/previews/landing.png')
-          .writeAsBytes(png!.buffer.asUint8List());
-      image.dispose();
-    });
     await tester.tap(find.text('登录 X'));
     await tester.pumpAndSettle();
-    expect(find.text('Cookie 登录 X'), findsOneWidget);
+    expect(find.text('Cookie 导入'), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
     await tester.tap(find.text('设置').last);

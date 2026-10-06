@@ -1,7 +1,7 @@
 name: review_x
 description: ReviewX — Material Design 3 client for X/Twitter.
 publish_to: 'none'
-version: 0.15.3+35
+version: 0.17.6+43
 environment:
   sdk: ^3.5.0
 dependencies:
@@ -27,6 +27,8 @@ dev_dependencies:
   video_player_platform_interface: ^6.9.0
 flutter:
   uses-material-design: true
+  shaders:
+    - shaders/gallery_glass_button.frag
   assets:
     - assets/twitter_protocol.json
     - assets/x_transaction_pairs.json

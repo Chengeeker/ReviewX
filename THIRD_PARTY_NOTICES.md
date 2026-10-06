@@ -6,7 +6,7 @@ ReviewX project code is Copyright (c) 2026 Chengeeker and is distributed under t
 
 ## Components adapted from Review
 
-ReviewX includes portions adapted from Review: the application theme and theme preferences, shared haptic helper, cached-image widget, bounded image-cache maintenance, settings cards/dialogs, personalisation screens, and the fullscreen image-gallery layout and gestures. Copyright (c) 2026 Chengeeker. The original MIT notice is preserved in `licenses/Review-MIT.txt`. Original project: https://github.com/Chengeeker/Review.
+ReviewX includes portions adapted from Review: the application theme and theme preferences, shared haptic helper, cached-image widget, bounded image-cache maintenance, settings cards/dialogs, personalisation screens, and the fullscreen image-gallery layout, gestures, and local glass action controls/shader. Copyright (c) 2026 Chengeeker. The original MIT notice is preserved in `licenses/Review-MIT.txt`. Original project: https://github.com/Chengeeker/Review.
 
 The video player's gesture controls, playback speed/quality menus and HUD, plus the Android window-brightness and media-volume controls, are adapted from Review's MIT-licensed `weibo_video_player_page.dart` and `MainActivity.kt`. ReviewX connects these controls to its own Twitter post actions and media services; Review's Weibo credentials and endpoints are not included.
 

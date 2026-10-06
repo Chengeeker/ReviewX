@@ -584,12 +584,10 @@ class _MediaPageState extends ConsumerState<MediaPage>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      IconButton(
-                        style: IconButton.styleFrom(
-                            backgroundColor: Colors.black45),
+                      _GalleryGlassIconButton(
+                        tooltip: '返回',
                         icon: const Icon(Icons.arrow_back_rounded,
                             color: Colors.white),
-                        tooltip: '返回',
                         onPressed: () => Navigator.of(context).maybePop(),
                       ),
                       Container(
@@ -628,9 +626,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
                                       ],
                                     )),
                           ),
-                        IconButton(
-                          style: IconButton.styleFrom(
-                              backgroundColor: Colors.black45),
+                        _GalleryGlassIconButton(
                           tooltip: '保存到相册',
                           onPressed: _saving ? null : _save,
                           icon: _saving
@@ -674,115 +670,108 @@ class _MediaPageState extends ConsumerState<MediaPage>
             children: [
               GestureDetector(
                 onTapUp: currentMedia.video == null ? _handleGalleryTap : null,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                      bottom: _hasThumbnailStrip
-                          ? MediaQuery.paddingOf(context).bottom + 120
-                          : 0),
-                  child: NotificationListener<ScrollStartNotification>(
-                    onNotification: (notification) {
-                      if (notification.depth == 0 &&
-                          notification.dragDetails != null) {
-                        _thumbnailSyncEpoch++;
-                        _thumbnailUserScrolling = false;
-                        _thumbnailSettling = false;
+                child: NotificationListener<ScrollStartNotification>(
+                  onNotification: (notification) {
+                    if (notification.depth == 0 &&
+                        notification.dragDetails != null) {
+                      _thumbnailSyncEpoch++;
+                      _thumbnailUserScrolling = false;
+                      _thumbnailSettling = false;
+                    }
+                    return false;
+                  },
+                  child: ExtendedImageGesturePageView.builder(
+                    controller: _pages,
+                    physics: currentMedia.video != null
+                        ? const NeverScrollableScrollPhysics()
+                        : const ClampingScrollPhysics(),
+                    itemCount: widget.media.length,
+                    onPageChanged: _onPageChanged,
+                    itemBuilder: (context, index) {
+                      final media = widget.media[index];
+                      if (media.video != null) {
+                        return ReviewVideoPlayer(
+                          key: ValueKey('$index/${media.video}'),
+                          media: media,
+                          active: _index == index,
+                          post: widget.post,
+                          author: widget.author,
+                          pageLabel: '${index + 1}/${widget.media.length}',
+                          onPrevious: index > 0 ? () => _goTo(index - 1) : null,
+                          onNext: index + 1 < widget.media.length
+                              ? () => _goTo(index + 1)
+                              : null,
+                        );
                       }
-                      return false;
-                    },
-                    child: ExtendedImageGesturePageView.builder(
-                      controller: _pages,
-                      physics: currentMedia.video != null
-                          ? const NeverScrollableScrollPhysics()
-                          : const ClampingScrollPhysics(),
-                      itemCount: widget.media.length,
-                      onPageChanged: _onPageChanged,
-                      itemBuilder: (context, index) {
-                        final media = widget.media[index];
-                        if (media.video != null) {
-                          return ReviewVideoPlayer(
-                            key: ValueKey('$index/${media.video}'),
-                            media: media,
-                            active: _index == index,
-                            post: widget.post,
-                            author: widget.author,
-                            pageLabel: '${index + 1}/${widget.media.length}',
-                            onPrevious:
-                                index > 0 ? () => _goTo(index - 1) : null,
-                            onNext: index + 1 < widget.media.length
-                                ? () => _goTo(index + 1)
-                                : null,
-                          );
-                        }
 
-                        return LayoutBuilder(builder: (context, viewport) {
-                          final imageUrl = media.viewerImage(
-                            viewportWidth: viewport.maxWidth,
-                            viewportHeight: viewport.maxHeight,
-                            devicePixelRatio:
-                                MediaQuery.devicePixelRatioOf(context),
-                          );
-                          final image = Stack(fit: StackFit.expand, children: [
-                            if (imageUrl != media.preview)
-                              CachedNetworkImage(media.preview,
-                                  fit: BoxFit.contain),
-                            ExtendedImage.network(
-                              imageUrl,
-                              key: ValueKey(imageUrl),
-                              width: viewport.maxWidth,
-                              height: viewport.maxHeight,
-                              headers: XRequestHeaders.media,
-                              alignment: Alignment.center,
-                              cache: true,
-                              fit: BoxFit.contain,
-                              mode: ExtendedImageMode.gesture,
-                              enableSlideOutPage: false,
-                              loadStateChanged: (state) {
-                                if (state.extendedImageLoadState ==
-                                        LoadState.loading ||
-                                    state.extendedImageLoadState ==
-                                        LoadState.failed) {
-                                  // Keep the already cached feed image visible
-                                  // while a genuinely larger original is fetched.
-                                  return const SizedBox.expand();
-                                }
-                                return null;
-                              },
-                              onDoubleTap: (state) =>
-                                  _handleImageDoubleTap(state, index),
-                              initGestureConfigHandler: (_) => GestureConfig(
-                                minScale: 0.8,
-                                animationMinScale: 0.6,
-                                maxScale: 8,
-                                animationMaxScale: 9,
-                                speed: 1,
-                                inertialSpeed: 120,
-                                initialScale: 1,
-                                cacheGesture: false,
-                                inPageView: true,
-                              ),
+                      return LayoutBuilder(builder: (context, viewport) {
+                        final imageUrl = media.viewerImage(
+                          viewportWidth: viewport.maxWidth,
+                          viewportHeight: viewport.maxHeight,
+                          devicePixelRatio:
+                              MediaQuery.devicePixelRatioOf(context),
+                        );
+                        final image = Stack(fit: StackFit.expand, children: [
+                          if (imageUrl != media.preview)
+                            CachedNetworkImage(media.preview,
+                                fit: BoxFit.contain),
+                          ExtendedImage.network(
+                            imageUrl,
+                            key: ValueKey(imageUrl),
+                            width: viewport.maxWidth,
+                            height: viewport.maxHeight,
+                            headers: XRequestHeaders.media,
+                            alignment: Alignment.center,
+                            cache: true,
+                            fit: BoxFit.contain,
+                            mode: ExtendedImageMode.gesture,
+                            enableSlideOutPage: false,
+                            loadStateChanged: (state) {
+                              if (state.extendedImageLoadState ==
+                                      LoadState.loading ||
+                                  state.extendedImageLoadState ==
+                                      LoadState.failed) {
+                                // Keep the already cached feed image visible
+                                // while a genuinely larger original is fetched.
+                                return const SizedBox.expand();
+                              }
+                              return null;
+                            },
+                            onDoubleTap: (state) =>
+                                _handleImageDoubleTap(state, index),
+                            initGestureConfigHandler: (_) => GestureConfig(
+                              minScale: 1.0,
+                              animationMinScale: 1.0,
+                              maxScale: 8,
+                              animationMaxScale: 9,
+                              speed: 1,
+                              inertialSpeed: 120,
+                              initialScale: 1,
+                              cacheGesture: false,
+                              inPageView: true,
                             ),
-                          ]);
-                          final heroScope = widget.heroScope;
-                          final imageWithHero =
-                              heroScope != null && index == _index
-                                  ? Hero(
-                                      tag: mediaGalleryHeroTag(
-                                        heroScope,
-                                        index,
-                                        imageAspectRatio:
-                                            mediaGalleryImageAspectRatio(media),
-                                        thumbnailUsesCover:
-                                            widget.heroThumbnailUsesCover,
-                                      ),
-                                      flightShuttleBuilder:
-                                          mediaGalleryHeroFlightShuttleBuilder,
-                                      child: image,
-                                    )
-                                  : image;
-                          return SizedBox.expand(child: imageWithHero);
-                        });
-                      },
-                    ),
+                          ),
+                        ]);
+                        final heroScope = widget.heroScope;
+                        final imageWithHero =
+                            heroScope != null && index == _index
+                                ? Hero(
+                                    tag: mediaGalleryHeroTag(
+                                      heroScope,
+                                      index,
+                                      imageAspectRatio:
+                                          mediaGalleryImageAspectRatio(media),
+                                      thumbnailUsesCover:
+                                          widget.heroThumbnailUsesCover,
+                                    ),
+                                    flightShuttleBuilder:
+                                        mediaGalleryHeroFlightShuttleBuilder,
+                                    child: image,
+                                  )
+                                : image;
+                        return SizedBox.expand(child: imageWithHero);
+                      });
+                    },
                   ),
                 ),
               ),
@@ -804,6 +793,129 @@ class _MediaPageState extends ConsumerState<MediaPage>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _GalleryGlassIconButton extends StatefulWidget {
+  const _GalleryGlassIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final Widget icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  State<_GalleryGlassIconButton> createState() =>
+      _GalleryGlassIconButtonState();
+}
+
+class _GalleryGlassIconButtonState extends State<_GalleryGlassIconButton> {
+  static Future<ui.FragmentProgram>? _programFuture;
+  ui.FragmentShader? _shader;
+
+  @override
+  void initState() {
+    super.initState();
+    if (ui.ImageFilter.isShaderFilterSupported) _loadShader();
+  }
+
+  Future<void> _loadShader() async {
+    try {
+      final program = await (_programFuture ??= ui.FragmentProgram.fromAsset(
+        'shaders/gallery_glass_button.frag',
+      ));
+      if (mounted) setState(() => _shader = program.fragmentShader());
+    } catch (_) {
+      // Keep the blur and translucent surface when shaders are unavailable.
+    }
+  }
+
+  @override
+  void dispose() {
+    _shader?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final blur = ui.ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5);
+    final shader = _shader;
+    final filter = shader == null
+        ? blur
+        : ui.ImageFilter.compose(
+            outer: ui.ImageFilter.shader(shader),
+            inner: blur,
+          );
+
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          SizedBox(
+            width: 44,
+            height: 44,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.20),
+                    blurRadius: 7,
+                    offset: const Offset(0, 2),
+                  ),
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    blurRadius: 5,
+                    offset: const Offset(0, -1),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                clipBehavior: Clip.antiAlias,
+                child: BackdropFilter(
+                  filter: filter,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.grey.shade200.withValues(alpha: 0.30),
+                          Colors.grey.shade500.withValues(alpha: 0.20),
+                          Colors.grey.shade800.withValues(alpha: 0.36),
+                        ],
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.34),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: widget.tooltip,
+            style: IconButton.styleFrom(
+              fixedSize: const Size.square(48),
+              padding: EdgeInsets.zero,
+              foregroundColor: Colors.white,
+              backgroundColor: Colors.transparent,
+              shape: const CircleBorder(),
+            ),
+            onPressed: widget.onPressed,
+            icon: widget.icon,
+          ),
+        ],
       ),
     );
   }

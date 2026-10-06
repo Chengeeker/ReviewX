@@ -10,7 +10,7 @@ import 'settings_pages.dart';
 import 'theme_settings_page.dart';
 import 'network_settings_page.dart';
 
-const _appVersion = '0.15.3';
+const _appVersion = '0.17.6';
 
 /// Review-style grouped settings, with X-specific account actions retained.
 class SettingsPane extends ConsumerWidget {
@@ -400,7 +400,7 @@ class SettingsPane extends ConsumerWidget {
                     ? (controller.me == null
                         ? '查看并复制当前 X 登录 Cookie'
                         : '@${controller.me!.handle} · 查看并复制登录 Cookie')
-                    : '使用 X Cookie 验证并登录',
+                    : '账号登录，或导入 Cookie',
                 onTap: controller.busy
                     ? null
                     : () => controller.loggedIn
