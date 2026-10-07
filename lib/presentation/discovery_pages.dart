@@ -6,6 +6,7 @@ import '../twitter/auth/app_controller.dart';
 import '../twitter/models/social_models.dart';
 import '../twitter/models/content_models.dart';
 import '../core/widgets/cached_network_image.dart';
+import '../core/widgets/frosted_app_bar.dart';
 import 'timeline_page.dart';
 import 'post_card.dart';
 import 'request_status.dart';
@@ -15,16 +16,23 @@ class SearchPage extends ConsumerStatefulWidget {
       {super.key,
       this.initialQuery = '',
       this.showExplore = false,
+      this.searchController,
+      this.topChromeHeight = 0,
+      this.personalized = true,
       this.actions});
   final String initialQuery;
   final bool showExplore;
+  final TextEditingController? searchController;
+  final double topChromeHeight;
+  final bool personalized;
   final ScrollPageActions? actions;
   @override
   ConsumerState<SearchPage> createState() => _SearchPageState();
 }
 
 class _SearchPageState extends ConsumerState<SearchPage> {
-  late final TextEditingController _text =
+  late final bool _ownsTextController = widget.searchController == null;
+  late final TextEditingController _text = widget.searchController ??
       TextEditingController(text: widget.initialQuery);
   late String _query = widget.initialQuery;
   String _product = 'Top';
@@ -33,7 +41,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   String? _trendsError;
   bool _trendsLoading = false;
   bool _trendsLoaded = false;
-  bool _personalized = true;
+  late bool _personalized;
   int _guideRequest = 0;
   List<SocialUser> _recommendations = const [];
   String? _recommendationsError;
@@ -44,10 +52,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   @override
   void initState() {
     super.initState();
+    _personalized = widget.personalized;
     widget.actions?.attach(this,
         onSingleTap: _handleBottomBarSingleTap,
         onDoubleTap: _handleBottomBarDoubleTap,
-        onTopBarDoubleTap: _handleTopBarDoubleTap);
+        onTopBarDoubleTap: _handleTopBarDoubleTap,
+        onSearchSubmitted: _submitQuery,
+        onExploreSelected: _selectExplore);
     if (widget.showExplore && widget.initialQuery.trim().isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _loadTrends();
@@ -171,6 +182,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     _loadTrends();
   }
 
+  void _submitQuery(String value) {
+    setState(() {
+      _query = value.trim();
+      _revision++;
+    });
+  }
+
   void _searchTrend(TrendingTopic trend) {
     _text.text = trend.name;
     setState(() {
@@ -184,85 +202,58 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   void dispose() {
     widget.actions?.detach(this);
     _exploreScrollController.dispose();
-    _text.dispose();
+    if (_ownsTextController) _text.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final adapter = ref.read(appControllerProvider).adapter;
+    final searchField = Padding(
+        padding: const EdgeInsets.all(12),
+        child: TextField(
+            controller: _text,
+            textInputAction: TextInputAction.search,
+            onSubmitted: _submitQuery,
+            decoration: InputDecoration(
+                hintText: '搜索 X',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: IconButton(
+                    icon: const Icon(Icons.arrow_forward),
+                    onPressed: () => _submitQuery(_text.text)),
+                filled: true,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(32),
+                    borderSide: BorderSide.none))));
+    final productFilters = SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: [
+          for (final entry in const {
+            'Top': '热门',
+            'Latest': '最新',
+            'People': '用户',
+            'Photos': '图片',
+            'Videos': '视频'
+          }.entries)
+            Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: ChoiceChip(
+                    label: Text(entry.value),
+                    selected: _product == entry.key,
+                    onSelected: (_) => setState(() {
+                          _product = entry.key;
+                          _revision++;
+                        })))
+        ]));
     return Column(children: [
-      Padding(
-          padding: const EdgeInsets.all(12),
-          child: TextField(
-              controller: _text,
-              textInputAction: TextInputAction.search,
-              onSubmitted: (value) => setState(() {
-                    _query = value.trim();
-                    _revision++;
-                  }),
-              decoration: InputDecoration(
-                  hintText: '搜索 X',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: IconButton(
-                      icon: const Icon(Icons.arrow_forward),
-                      onPressed: () => setState(() {
-                            _query = _text.text.trim();
-                            _revision++;
-                          })),
-                  filled: true,
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(32),
-                      borderSide: BorderSide.none)))),
-      if (widget.showExplore && _query.isEmpty)
-        Row(children: [
-          for (final personalized in [true, false])
-            Expanded(
-                child: InkWell(
-              onTap: () => _selectExplore(personalized),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                    border: Border(
-                        bottom: BorderSide(
-                            color: _personalized == personalized
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.outlineVariant,
-                            width: _personalized == personalized ? 3 : 1))),
-                child: Text(personalized ? '探索' : '当前趋势',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontWeight: _personalized == personalized
-                            ? FontWeight.bold
-                            : FontWeight.normal)),
-              ),
-            )),
-        ]),
-      if (!widget.showExplore || _query.isNotEmpty)
-        SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(children: [
-              for (final entry in const {
-                'Top': '热门',
-                'Latest': '最新',
-                'People': '用户',
-                'Photos': '图片',
-                'Videos': '视频'
-              }.entries)
-                Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: ChoiceChip(
-                        label: Text(entry.value),
-                        selected: _product == entry.key,
-                        onSelected: (_) => setState(() {
-                              _product = entry.key;
-                              _revision++;
-                            })))
-            ])),
+      if (!widget.showExplore) searchField,
+      if (widget.showExplore && _query.isNotEmpty)
+        SizedBox(height: widget.topChromeHeight),
+      if (!widget.showExplore || _query.isNotEmpty) productFilters,
       Expanded(
           child: _query.isEmpty
               ? widget.showExplore
-                  ? _buildTrends()
+                  ? _buildTrends(topPadding: widget.topChromeHeight)
                   : const Center(child: Text('输入关键词、@账号或 #话题'))
               : _product == 'People'
                   ? UserList(
@@ -278,62 +269,60 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     ]);
   }
 
-  Widget _buildTrends() => Column(children: [
-        RequestStatus(
-          loading: _trendsLoading || (_personalized && _recommendationsLoading),
-          error: _trendsError ?? (_personalized ? _recommendationsError : null),
-          onRetry: () => _refreshExplore(),
-        ),
-        Expanded(
-            child: RefreshIndicator(
-          onRefresh: () async {
-            await _refreshExplore();
-          },
-          child: ListView(
-            controller: _exploreScrollController,
-            padding: EdgeInsets.only(
-                bottom: MediaQuery.paddingOf(context).bottom + 16),
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                child: Text(_personalized ? '为你推荐的趋势' : '当前趋势',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        )),
-              ),
-              if (!_trendsLoading && _trendsError == null && _trends.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: Text('当前没有可显示的趋势')),
-                )
-              else
-                for (var index = 0; index < _trends.length; index++)
-                  _TrendTile(
-                    trend: _trends[index],
-                    onTap: () => _searchTrend(_trends[index]),
-                  ),
-              if (_personalized) ...[
-                const Divider(),
-                Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text('推荐关注',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold))),
-                for (final user in _recommendations)
-                  _RecommendedUserTile(key: ValueKey(user.id), user: user),
-                if (!_recommendationsLoading &&
-                    _recommendationsError == null &&
-                    _recommendations.isEmpty)
-                  const Padding(
-                      padding: EdgeInsets.all(16), child: Text('X 暂未返回推荐用户')),
-              ],
-            ],
+  Widget _buildTrends({double topPadding = 0}) => RefreshIndicator(
+      onRefresh: () async {
+        await _refreshExplore();
+      },
+      child: ListView(
+        controller: _exploreScrollController,
+        padding: EdgeInsets.only(
+            top: topPadding, bottom: MediaQuery.paddingOf(context).bottom + 16),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          RequestStatus(
+            loading:
+                _trendsLoading || (_personalized && _recommendationsLoading),
+            error:
+                _trendsError ?? (_personalized ? _recommendationsError : null),
+            onRetry: () => _refreshExplore(),
           ),
-        ))
-      ]);
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(_personalized ? '为你推荐的趋势' : '当前趋势',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    )),
+          ),
+          if (!_trendsLoading && _trendsError == null && _trends.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: Text('当前没有可显示的趋势')),
+            )
+          else
+            for (var index = 0; index < _trends.length; index++)
+              _TrendTile(
+                trend: _trends[index],
+                onTap: () => _searchTrend(_trends[index]),
+              ),
+          if (_personalized) ...[
+            const Divider(),
+            Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('推荐关注',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold))),
+            for (final user in _recommendations)
+              _RecommendedUserTile(key: ValueKey(user.id), user: user),
+            if (!_recommendationsLoading &&
+                _recommendationsError == null &&
+                _recommendations.isEmpty)
+              const Padding(
+                  padding: EdgeInsets.all(16), child: Text('X 暂未返回推荐用户')),
+          ],
+        ],
+      ));
 }
 
 class _TrendTile extends StatelessWidget {
@@ -603,86 +592,95 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(title: const Text('通知'), actions: [
-        TextButton(
-            onPressed: _top == null || _marking || _marked || _uncertain
-                ? null
-                : _markRead,
-            child: Text(_marked
-                ? '已读'
-                : _marking
-                    ? '提交中…'
-                    : '标记已读'))
-      ]),
+  Widget build(BuildContext context) {
+    final appBar =
+        buildFrostedAppBar(context, title: const Text('通知'), actions: [
+      TextButton(
+          onPressed: _top == null || _marking || _marked || _uncertain
+              ? null
+              : _markRead,
+          child: Text(_marked
+              ? '已读'
+              : _marking
+                  ? '提交中…'
+                  : '标记已读'))
+    ]);
+    final topChromeHeight =
+        MediaQuery.paddingOf(context).top + appBar.preferredSize.height;
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: appBar,
       body: RefreshIndicator(
-          onRefresh: () => _fetch(true),
-          child: ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemCount: _items.length + 2,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return _uncertain
-                      ? const ListTile(subtitle: Text('已读结果待核对，请在 X 查看'))
-                      : const SizedBox(height: 4);
-                }
-                if (index == _items.length + 1) {
-                  return Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: _loading
-                          ? const Center(child: CircularProgressIndicator())
-                          : Column(children: [
-                              if (_error != null) Text(_error!),
-                              if (_cursor != null || _error != null)
-                                TextButton(
-                                    onPressed: () => _fetch(_items.isEmpty),
-                                    child:
-                                        Text(_error == null ? '加载更多' : '重新加载')),
-                              if (_items.isEmpty && _error == null)
-                                const Text('暂无通知')
-                            ]));
-                }
-                final n = _items[index - 1];
-                return Card(
-                    margin:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    child: Column(children: [
-                      ListTile(
-                          leading: Icon(n.icon.contains('heart')
-                              ? Icons.favorite
-                              : n.icon.contains('retweet')
-                                  ? Icons.repeat
-                                  : Icons.notifications_outlined),
-                          title: Text(n.message.isEmpty ? 'X 通知' : n.message),
-                          subtitle: n.createdAt == null
-                              ? null
-                              : Text(
-                                  '${n.createdAt!.toLocal()}'.split('.').first),
-                          onTap: n.posts.isNotEmpty
-                              ? () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          PostDetailPage(post: n.posts.first)))
-                              : n.actors.isNotEmpty
-                                  ? () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) => ProfilePage(
-                                              user: n.actors.first)))
-                                  : null),
-                      if (n.actors.isNotEmpty)
-                        Wrap(children: [
-                          for (final user in n.actors.take(8))
-                            TextButton(
-                                onPressed: () => Navigator.push(
+        onRefresh: () => _fetch(true),
+        child: ListView.builder(
+            padding: EdgeInsets.only(top: topChromeHeight),
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: _items.length + 2,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return _uncertain
+                    ? const ListTile(subtitle: Text('已读结果待核对，请在 X 查看'))
+                    : const SizedBox(height: 4);
+              }
+              if (index == _items.length + 1) {
+                return Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: _loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : Column(children: [
+                            if (_error != null) Text(_error!),
+                            if (_cursor != null || _error != null)
+                              TextButton(
+                                  onPressed: () => _fetch(_items.isEmpty),
+                                  child:
+                                      Text(_error == null ? '加载更多' : '重新加载')),
+                            if (_items.isEmpty && _error == null)
+                              const Text('暂无通知')
+                          ]));
+              }
+              final n = _items[index - 1];
+              return Card(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: Column(children: [
+                    ListTile(
+                        leading: Icon(n.icon.contains('heart')
+                            ? Icons.favorite
+                            : n.icon.contains('retweet')
+                                ? Icons.repeat
+                                : Icons.notifications_outlined),
+                        title: Text(n.message.isEmpty ? 'X 通知' : n.message),
+                        subtitle: n.createdAt == null
+                            ? null
+                            : Text(
+                                '${n.createdAt!.toLocal()}'.split('.').first),
+                        onTap: n.posts.isNotEmpty
+                            ? () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        PostDetailPage(post: n.posts.first)))
+                            : n.actors.isNotEmpty
+                                ? () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                         builder: (_) =>
-                                            ProfilePage(user: user))),
-                                child: Text('@${user.handle}'))
-                        ]),
-                      for (final post in n.posts.take(3)) PostCard(post: post)
-                    ]));
-              })));
+                                            ProfilePage(user: n.actors.first)))
+                                : null),
+                    if (n.actors.isNotEmpty)
+                      Wrap(children: [
+                        for (final user in n.actors.take(8))
+                          TextButton(
+                              onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => ProfilePage(user: user))),
+                              child: Text('@${user.handle}'))
+                      ]),
+                    for (final post in n.posts.take(3)) PostCard(post: post)
+                  ]));
+            }),
+      ),
+    );
+  }
 }

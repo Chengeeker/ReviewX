@@ -14,7 +14,7 @@ import '../twitter/models/social_models.dart';
 import 'compose_page.dart';
 import 'timeline_page.dart';
 
-enum _DragMode { none, brightness, volume, seek }
+enum _DragMode { none, brightness, volume }
 
 enum _HudType { none, brightness, volume, seek, doubleTapSeek }
 
@@ -75,8 +75,7 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
   double _hudValue = 0.5; // 亮度或音量比例 (0.0 ~ 1.0)
   int _hudSeekDiff = 0; // 进度差异秒数 (+/-)
   Duration _targetSeekPosition = Duration.zero;
-  Duration _startPosition = Duration.zero;
-  Offset _panStartPos = Offset.zero;
+  Offset _verticalDragStartPos = Offset.zero;
   double _startBrightness = 0.5;
   double _startVolume = 0.5;
   double _currentBrightness = 0.5;
@@ -918,39 +917,21 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
                       },
                       onLongPressEnd: (_) => _onLongPressEnd(),
                       onLongPressCancel: _onLongPressEnd,
-                      onPanStart: (details) {
+                      onVerticalDragStart: (details) {
                         _hideControlsTimer?.cancel();
-                        _panStartPos = details.localPosition;
+                        _verticalDragStartPos = details.localPosition;
                         _dragMode = _DragMode.none;
                         _startBrightness = _currentBrightness;
                         _startVolume = _currentVolume;
-                        _startPosition =
-                            _controller?.value.position ?? Duration.zero;
-                        _targetSeekPosition = _startPosition;
                       },
-                      onPanUpdate: (details) {
-                        final dx = details.localPosition.dx - _panStartPos.dx;
-                        final dy = details.localPosition.dy - _panStartPos.dy;
+                      onVerticalDragUpdate: (details) {
+                        final dy =
+                            details.localPosition.dy - _verticalDragStartPos.dy;
 
-                        if (_dragMode == _DragMode.none) {
-                          if (dx.abs() > 14 && dx.abs() > dy.abs()) {
-                            // 水平滑动判断：
-                            // 横屏状态：任意区域左右滑动调整进度 (2.c)
-                            // 竖屏状态：底部左右滑动调整进度 (3.c)
-                            if (_isLandscape ||
-                                _panStartPos.dy > screenHeight * 0.55) {
-                              _dragMode = _DragMode.seek;
-                            }
-                          } else if (dy.abs() > 14 && dy.abs() > dx.abs()) {
-                            // 垂直滑动判断（以中间为界）：
-                            // 左侧上下滑动：调亮度 (2.a, 3.a)
-                            // 右侧上下滑动：调音量 (2.b, 3.b)
-                            if (_panStartPos.dx < screenWidth / 2) {
-                              _dragMode = _DragMode.brightness;
-                            } else {
-                              _dragMode = _DragMode.volume;
-                            }
-                          }
+                        if (_dragMode == _DragMode.none && dy.abs() > 14) {
+                          _dragMode = _verticalDragStartPos.dx < screenWidth / 2
+                              ? _DragMode.brightness
+                              : _DragMode.volume;
                         }
 
                         if (_dragMode == _DragMode.brightness) {
@@ -971,40 +952,15 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
                               type: _HudType.volume,
                               value: nextVal,
                               autoDismissMs: 0);
-                        } else if (_dragMode == _DragMode.seek) {
-                          final totalDuration =
-                              _controller?.value.duration ?? Duration.zero;
-                          if (totalDuration > Duration.zero) {
-                            final maxSec = totalDuration.inSeconds;
-                            // 滑动满半屏跨度约为 90 秒或全片长度
-                            final span =
-                                maxSec > 180 ? 90 : (maxSec > 30 ? 60 : maxSec);
-                            final diffSec =
-                                ((dx / (screenWidth * 0.5)) * span).toInt();
-                            final targetSec =
-                                (_startPosition.inSeconds + diffSec)
-                                    .clamp(0, maxSec);
-                            final target = Duration(seconds: targetSec);
-                            _targetSeekPosition = target;
-                            _showHud(
-                              type: _HudType.seek,
-                              diff: diffSec,
-                              targetPosition: target,
-                              autoDismissMs: 0,
-                            );
-                          }
                         }
                       },
-                      onPanCancel: () {
+                      onVerticalDragCancel: () {
                         _dragMode = _DragMode.none;
                         _showHud(type: _HudType.none);
                         _resetControlsTimer();
                       },
-                      onPanEnd: (_) {
+                      onVerticalDragEnd: (_) {
                         _resetControlsTimer();
-                        if (_dragMode == _DragMode.seek) {
-                          _controller?.seekTo(_targetSeekPosition);
-                        }
                         _dragMode = _DragMode.none;
                         _showHud(
                           type: _hudType,

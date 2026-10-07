@@ -68,8 +68,12 @@ class _NetworkSettingsPageState extends ConsumerState<NetworkSettingsPage> {
                 padding: EdgeInsets.fromLTRB(
                     16, 16, 16, MediaQuery.paddingOf(context).bottom + 24),
                 children: [
-                  const Text('连接方式',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    '连接方式',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<ConnectionMode>(
                     initialValue: _mode,
@@ -87,8 +91,11 @@ class _NetworkSettingsPageState extends ConsumerState<NetworkSettingsPage> {
                               _mode = value!;
                               _result = null;
                             }),
-                    decoration:
-                        const InputDecoration(border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(switch (_mode) {
@@ -109,7 +116,9 @@ class _NetworkSettingsPageState extends ConsumerState<NetworkSettingsPage> {
                         decoration: const InputDecoration(
                             labelText: '代理地址',
                             hintText: '例如 127.0.0.1',
-                            border: OutlineInputBorder()),
+                            border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(12)))),
                         validator: (value) {
                           try {
                             NetworkConfig(
@@ -131,7 +140,9 @@ class _NetworkSettingsPageState extends ConsumerState<NetworkSettingsPage> {
                         decoration: const InputDecoration(
                             labelText: '端口',
                             hintText: '填写代理软件提供的 HTTP 端口',
-                            border: OutlineInputBorder()),
+                            border: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(12)))),
                         validator: (value) {
                           final port = int.tryParse(value ?? '');
                           return port == null || port < 1 || port > 65535

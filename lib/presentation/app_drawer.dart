@@ -75,9 +75,7 @@ class AppDrawer extends ConsumerWidget {
 
     return Drawer(
       width: 280,
-      backgroundColor: theme.brightness == Brightness.dark
-          ? const Color(0xFF1B1B1E)
-          : theme.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,12 +132,7 @@ class AppDrawer extends ConsumerWidget {
                   drawerItem(
                     icon: Icons.bookmarks_outlined,
                     title: '书签',
-                    onTap: () => openAccountPage(Scaffold(
-                      appBar: AppBar(title: const Text('书签')),
-                      body: TimelinePage(
-                          load: (cursor) =>
-                              controller.adapter.bookmarks(cursor: cursor)),
-                    )),
+                    onTap: () => openAccountPage(const BookmarksPage()),
                   ),
                   drawerItem(
                     icon: Icons.notifications_outlined,

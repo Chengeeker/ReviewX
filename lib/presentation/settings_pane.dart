@@ -1,6 +1,8 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/widgets/app_section_card.dart';
 import '../core/theme/theme_provider.dart';
@@ -10,88 +12,13 @@ import 'settings_pages.dart';
 import 'theme_settings_page.dart';
 import 'network_settings_page.dart';
 
-const _appVersion = '0.17.6';
+const _appVersion = '1.0.0';
 
 /// Review-style grouped settings, with X-specific account actions retained.
 class SettingsPane extends ConsumerWidget {
-  const SettingsPane({super.key});
+  const SettingsPane({super.key, this.topChromeHeight = 0});
 
-  void _showExportCookie(BuildContext context, AppController controller) {
-    final session = controller.client.session;
-    if (session == null) return;
-    HapticFeedbackUtil.light();
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      constraints:
-          BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.75),
-      builder: (sheetContext) => Consumer(builder: (_, ref, __) {
-        final current = ref.watch(appControllerProvider);
-        final active = identical(current.client.session, session);
-        return SafeArea(
-            child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(children: [
-                Expanded(
-                    child: Text('导出 Cookie',
-                        style: Theme.of(sheetContext).textTheme.titleLarge)),
-                IconButton(
-                    tooltip: '关闭',
-                    onPressed: () => Navigator.pop(sheetContext),
-                    icon: const Icon(Icons.close)),
-              ]),
-              Text(active
-                  ? (current.me == null
-                      ? '当前 X 账号'
-                      : '${current.me!.name} · @${current.me!.handle}')
-                  : '登录账号已变更，请重新打开导出'),
-              const SizedBox(height: 12),
-              if (active)
-                AppSectionCard(
-                    child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: SelectableText(session.cookie,
-                      style: const TextStyle(
-                          fontFamily: 'monospace', fontSize: 13)),
-                )),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: !active
-                    ? null
-                    : () async {
-                        if (!identical(controller.client.session, session)) {
-                          return;
-                        }
-                        try {
-                          await Clipboard.setData(
-                              ClipboardData(text: session.cookie));
-                          if (sheetContext.mounted) Navigator.pop(sheetContext);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('已复制 Cookie 到剪贴板')));
-                          }
-                        } catch (_) {
-                          if (sheetContext.mounted) {
-                            ScaffoldMessenger.of(sheetContext).showSnackBar(
-                                const SnackBar(content: Text('复制失败，请重试')));
-                          }
-                        }
-                      },
-                icon: const Icon(Icons.copy_all_rounded),
-                label: const Text('复制全部'),
-              ),
-            ],
-          ),
-        ));
-      }),
-    );
-  }
+  final double topChromeHeight;
 
   void _showAboutDialog(BuildContext context) {
     HapticFeedbackUtil.light();
@@ -200,11 +127,13 @@ class SettingsPane extends ConsumerWidget {
               const SizedBox(height: 12),
               InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () => showLicensePage(
-                  context: dialogContext,
-                  applicationName: 'ReviewX',
-                  applicationVersion: _appVersion,
-                ),
+                onTap: () async {
+                  final uri =
+                      Uri.parse('https://github.com/Chengeeker/ReviewX');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -218,7 +147,7 @@ class SettingsPane extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.description_outlined,
+                      Icon(CupertinoIcons.chevron_left_slash_chevron_right,
                           color: colorScheme.primary, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
@@ -226,12 +155,12 @@ class SettingsPane extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              '开源许可与来源',
+                              'GitHub 开源地址',
                               style: TextStyle(
                                   fontSize: 13, fontWeight: FontWeight.bold),
                             ),
                             Text(
-                              'MIT 许可 · 第三方来源见许可声明',
+                              'github.com/Chengeeker/ReviewX',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: colorScheme.onSurfaceVariant,
@@ -308,111 +237,245 @@ class SettingsPane extends ConsumerWidget {
       required String title,
       String? subtitle,
       required VoidCallback? onTap,
-      Color? iconColor,
-      Color? titleColor,
+      Widget? leading,
     }) =>
         ListTile(
-          leading: Icon(icon, color: iconColor ?? colorScheme.primary),
-          title: Text(
-            title,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: titleColor,
-            ),
-          ),
-          subtitle: subtitle == null
-              ? null
-              : Text(subtitle, style: const TextStyle(fontSize: 12.5)),
-          trailing: const Icon(Icons.chevron_right_rounded),
+          leading: leading ?? Icon(icon, size: 24),
+          title: Text(title),
+          subtitle: subtitle == null ? null : Text(subtitle),
+          trailing: Icon(Icons.chevron_right_rounded,
+              size: 24, color: colorScheme.onSurfaceVariant),
           onTap: onTap,
         );
 
+    Widget section(String title, List<Widget> items) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: colorScheme.primary,
+                    ),
+              ),
+            ),
+            AppSectionCard(
+              margin: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  for (var i = 0; i < items.length; i++) ...[
+                    if (i > 0)
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color:
+                            colorScheme.outlineVariant.withValues(alpha: 0.5),
+                      ),
+                    items[i],
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+
+    final accountId = controller.me?.id ?? controller.client.session?.userId;
     return ListView(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, bottomClearance),
+      padding:
+          EdgeInsets.fromLTRB(16, topChromeHeight + 20, 16, bottomClearance),
       children: [
-        AppSectionCard(
-          child: Column(
-            children: [
-              row(
-                icon: Icons.palette_outlined,
-                title: '个性化',
-                subtitle: '明暗、色彩、字重、导航、屏幕与触感',
-                onTap: () => open(const ThemeSettingsPage()),
-              ),
-              const Divider(height: 1, indent: 56),
-              row(
-                icon: Icons.article_outlined,
-                title: '帖子与阅读样式',
-                subtitle: '时间、正文、链接、卡片与媒体显示',
-                onTap: () => open(const ReadingSettingsPage()),
-              ),
-            ],
+        section('偏好与功能', [
+          row(
+            icon: Icons.palette_outlined,
+            title: '个性化',
+            onTap: () => open(const ThemeSettingsPage()),
           ),
-        ),
-        const SizedBox(height: 14),
-        AppSectionCard(
-          child: row(
+          row(
+            icon: Icons.article_outlined,
+            title: '帖子与阅读样式',
+            onTap: () => open(const ReadingSettingsPage()),
+          ),
+          row(
             icon: Icons.language_outlined,
             title: '网络设置',
-            subtitle: '自动、直连或手动 HTTP 代理',
             onTap: () => open(const NetworkSettingsPage()),
           ),
-        ),
-        const SizedBox(height: 14),
-        AppSectionCard(
-          child: row(
+          row(
             icon: Icons.notifications_active_outlined,
             title: '订阅消息提醒',
-            subtitle: '管理后台提醒类型与系统通知权限',
             onTap: () => open(const NotificationSettingsPage()),
           ),
-        ),
-        const SizedBox(height: 14),
-        AppSectionCard(
+        ]),
+        const SizedBox(height: 32),
+        section('存储与备份', [
+          row(
+            icon: Icons.folder_open_outlined,
+            title: '存储与缓存',
+            onTap: () => open(const StorageSettingsPage()),
+          ),
+          row(
+            icon: Icons.cloud_sync_outlined,
+            title: 'WebDAV 设置备份',
+            onTap: () => open(const BackupSettingsPage()),
+          ),
+        ]),
+        const SizedBox(height: 32),
+        section('账号与应用', [
+          row(
+            icon: Icons.person_outline_rounded,
+            title: controller.loggedIn
+                ? (controller.me?.name ?? 'X 账号')
+                : '登录 X 账号',
+            subtitle: controller.loggedIn && accountId != null
+                ? 'UID：$accountId'
+                : null,
+            onTap: controller.busy
+                ? null
+                : () => controller.loggedIn
+                    ? open(const AccountSettingsPage())
+                    : open(const LoginPage()),
+          ),
+          row(
+            icon: Icons.info_outline_rounded,
+            title: '关于 ReviewX',
+            onTap: () => _showAboutDialog(context),
+          ),
+        ]),
+      ],
+    );
+  }
+}
+
+class AccountSettingsPage extends ConsumerWidget {
+  const AccountSettingsPage({super.key});
+
+  void _showExportCookie(BuildContext context, AppController controller) {
+    final session = controller.client.session;
+    if (session == null) return;
+    HapticFeedbackUtil.light();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      constraints:
+          BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.75),
+      builder: (sheetContext) => Consumer(builder: (_, ref, __) {
+        final current = ref.watch(appControllerProvider);
+        final active = identical(current.client.session, session);
+        return SafeArea(
+            child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              row(
-                icon: Icons.folder_open_outlined,
-                title: '存储与缓存',
-                subtitle: '媒体保存目录、磁盘缓存和清理',
-                onTap: () => open(const StorageSettingsPage()),
-              ),
-              const Divider(height: 1, indent: 56),
-              row(
-                icon: Icons.cloud_sync_outlined,
-                title: 'WebDAV 设置备份',
-                subtitle: '仅备份外观与阅读设置，不含账号凭据',
-                onTap: () => open(const BackupSettingsPage()),
+              Row(children: [
+                Expanded(
+                    child: Text('导出 Cookie',
+                        style: Theme.of(sheetContext).textTheme.titleLarge)),
+                IconButton(
+                    tooltip: '关闭',
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.close)),
+              ]),
+              Text(active
+                  ? (current.me == null
+                      ? '当前 X 账号'
+                      : '${current.me!.name} · @${current.me!.handle}')
+                  : '登录账号已变更，请重新打开导出'),
+              const SizedBox(height: 12),
+              if (active)
+                AppSectionCard(
+                    child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: SelectableText(session.cookie,
+                      style: const TextStyle(
+                          fontFamily: 'monospace', fontSize: 13)),
+                )),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: !active
+                    ? null
+                    : () async {
+                        if (!identical(controller.client.session, session)) {
+                          return;
+                        }
+                        try {
+                          await Clipboard.setData(
+                              ClipboardData(text: session.cookie));
+                          if (sheetContext.mounted) Navigator.pop(sheetContext);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('已复制 Cookie 到剪贴板')));
+                          }
+                        } catch (_) {
+                          if (sheetContext.mounted) {
+                            ScaffoldMessenger.of(sheetContext).showSnackBar(
+                                const SnackBar(content: Text('复制失败，请重试')));
+                          }
+                        }
+                      },
+                icon: const Icon(Icons.copy_all_rounded),
+                label: const Text('复制全部'),
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 14),
-        AppSectionCard(
-          child: Column(
-            children: [
-              row(
-                icon: controller.loggedIn
-                    ? Icons.copy_all_rounded
-                    : Icons.login_rounded,
-                title: controller.loggedIn ? '导出 Cookie' : '登录 X 账号',
-                subtitle: controller.loggedIn
-                    ? (controller.me == null
-                        ? '查看并复制当前 X 登录 Cookie'
-                        : '@${controller.me!.handle} · 查看并复制登录 Cookie')
-                    : '账号登录，或导入 Cookie',
-                onTap: controller.busy
+        ));
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.watch(appControllerProvider);
+    final colors = Theme.of(context).colorScheme;
+    final user = controller.me;
+    final accountId = user?.id ?? controller.client.session?.userId;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('账号管理')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          AppSectionCard(
+            margin: EdgeInsets.zero,
+            child: ListTile(
+              leading: CircleAvatar(
+                radius: 20,
+                backgroundColor: colors.surfaceContainerHighest,
+                foregroundImage: user?.avatar.isNotEmpty == true
+                    ? NetworkImage(user!.avatar)
+                    : null,
+                child: user?.avatar.isNotEmpty == true
                     ? null
-                    : () => controller.loggedIn
-                        ? _showExportCookie(context, controller)
-                        : open(const LoginPage()),
+                    : Icon(Icons.person_outline,
+                        color: colors.onSurfaceVariant),
               ),
-              if (controller.loggedIn) ...[
-                const Divider(height: 1, indent: 56),
-                row(
-                  icon: Icons.verified_user_outlined,
-                  title: '验证登录状态',
-                  subtitle: controller.busy ? '正在验证账号…' : '通过 X 官方接口确认当前账号',
+              title: Text(user?.name ?? 'X 账号'),
+              subtitle: accountId == null ? null : Text('UID：$accountId'),
+            ),
+          ),
+          const SizedBox(height: 24),
+          AppSectionCard(
+            margin: EdgeInsets.zero,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.copy_all_rounded, size: 24),
+                  title: const Text('导出 Cookie'),
+                  trailing: Icon(Icons.chevron_right_rounded,
+                      size: 24, color: colors.onSurfaceVariant),
+                  onTap: () => _showExportCookie(context, controller),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.verified_user_outlined, size: 24),
+                  title: const Text('验证登录状态'),
+                  subtitle: controller.busy ? const Text('正在验证账号…') : null,
+                  trailing: Icon(Icons.chevron_right_rounded,
+                      size: 24, color: colors.onSurfaceVariant),
                   onTap: controller.busy
                       ? null
                       : () async {
@@ -433,22 +496,11 @@ class SettingsPane extends ConsumerWidget {
                           }
                         },
                 ),
-              ],
-              const Divider(height: 1, indent: 56),
-              row(
-                icon: Icons.info_outline_rounded,
-                title: '关于 ReviewX',
-                subtitle: '版本 $_appVersion',
-                onTap: () => _showAboutDialog(context),
-              ),
-              if (controller.loggedIn) ...[
-                const Divider(height: 1, indent: 56),
-                row(
-                  icon: Icons.logout_rounded,
-                  title: '退出登录',
-                  subtitle: '清除本机安全存储中的 X 会话',
-                  iconColor: colorScheme.error,
-                  titleColor: colorScheme.error,
+                const Divider(height: 1),
+                ListTile(
+                  leading:
+                      Icon(Icons.logout_rounded, size: 24, color: colors.error),
+                  title: Text('退出登录', style: TextStyle(color: colors.error)),
                   onTap: controller.busy
                       ? null
                       : () async {
@@ -475,6 +527,7 @@ class SettingsPane extends ConsumerWidget {
                           if (confirmed != true) return;
                           try {
                             await controller.logout();
+                            if (context.mounted) Navigator.pop(context);
                           } catch (_) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -485,10 +538,10 @@ class SettingsPane extends ConsumerWidget {
                         },
                 ),
               ],
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

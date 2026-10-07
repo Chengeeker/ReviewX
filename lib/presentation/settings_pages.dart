@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/storage/storage_service.dart';
+import '../core/widgets/frosted_app_bar.dart';
+import '../core/widgets/app_section_card.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../core/theme/theme_provider.dart';
@@ -59,7 +61,6 @@ class _NotificationSettingsPageState
                   '定期读取 X 官方通知；首次读取只建立基线。Android 系统安排至少 15 分钟一次的任务，省电策略可能延迟，无法保证即时通知。')),
           SwitchListTile(
               title: const Text('启用消息提醒'),
-              subtitle: loggedIn ? null : const Text('请先登录 X'),
               value: storage.getBool('notification_enabled'),
               onChanged: _busy || !loggedIn
                   ? null
@@ -111,11 +112,6 @@ class ReadingSettingsPage extends ConsumerWidget {
           }.entries)
             SwitchListTile(
                 title: Text(entry.value),
-                subtitle: entry.key == 'grokAutoTranslate'
-                    ? const Text('仅在 X 返回可用的中文全文翻译时生效')
-                    : entry.key == 'defaultMutedVideo'
-                        ? const Text('视频打开时静音；滑动调节音量会恢复声音，仅调整应用内音量')
-                        : null,
                 value: state[entry.key],
                 onChanged: (value) => notifier.set(entry.key, value)),
           for (final entry in const {
@@ -192,9 +188,6 @@ class _DisplaySettingsPageState extends ConsumerState<DisplaySettingsPage> {
             : _modes == null
                 ? const Center(child: CircularProgressIndicator())
                 : ListView(children: [
-                    const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('选择设备支持的模式。系统省电策略可能覆盖应用请求。')),
                     ListTile(
                         leading: Icon(selected == 0
                             ? Icons.radio_button_checked
@@ -247,7 +240,6 @@ class _StorageSettingsPageState extends ConsumerState<StorageSettingsPage> {
       body: ListView(children: [
         ListTile(
             title: const Text('媒体保存目录'),
-            subtitle: const Text('图片 Pictures/ReviewX，视频 Movies/ReviewX'),
             trailing: DropdownButton<String>(
                 value: ref.watch(readingProvider)['storageFolder'],
                 items: const [
@@ -262,7 +254,7 @@ class _StorageSettingsPageState extends ConsumerState<StorageSettingsPage> {
                 })),
         ListTile(
             title: const Text('图片磁盘缓存'),
-            subtitle: Text('$_size · 退出时保留 · 自动整理上限 512 MiB / 60 天'),
+            subtitle: Text(_size),
             trailing: TextButton(
                 onPressed: _busy
                     ? null
@@ -293,59 +285,69 @@ class HistoryPage extends ConsumerWidget {
     final history = BrowsingHistory(ref.watch(storageServiceProvider));
     return StatefulBuilder(builder: (context, setState) {
       final items = id == null ? <Map<String, dynamic>>[] : history.read(id);
+      final appBar = buildFrostedAppBar(
+        context,
+        title: const Text('本机浏览历史'),
+        actions: [
+          IconButton(
+              tooltip: '清空本机历史',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: id == null || items.isEmpty
+                  ? null
+                  : () async {
+                      final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                                  title: const Text('清空本机历史？'),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: const Text('取消')),
+                                    TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: const Text('清空'))
+                                  ]));
+                      if (confirmed == true) {
+                        await history.clear(id);
+                        if (context.mounted) setState(() {});
+                      }
+                    })
+        ],
+      );
+      final topChromeHeight =
+          MediaQuery.paddingOf(context).top + appBar.preferredSize.height;
       return Scaffold(
-          appBar: AppBar(title: const Text('本机浏览历史'), actions: [
-            IconButton(
-                tooltip: '清空本机历史',
-                icon: const Icon(Icons.delete_outline),
-                onPressed: id == null || items.isEmpty
-                    ? null
-                    : () async {
-                        final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                                    title: const Text('清空本机历史？'),
-                                    actions: [
-                                      TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, false),
-                                          child: const Text('取消')),
-                                      TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, true),
-                                          child: const Text('清空'))
-                                    ]));
-                        if (confirmed == true) {
-                          await history.clear(id);
-                          if (context.mounted) setState(() {});
-                        }
-                      })
-          ]),
+          extendBodyBehindAppBar: true,
+          appBar: appBar,
           body: items.isEmpty
               ? const Center(child: Text('暂无本机浏览历史'))
-              : ListView(children: [
-                  for (final item in items)
-                    ListTile(
-                        title: Text('${item['title']}',
-                            maxLines: 2, overflow: TextOverflow.ellipsis),
-                        subtitle: Text('${item['author']} · ${item['time']}'
-                            .split('.')
-                            .first),
-                        onTap: () {
-                          final postId = '${item['id']}';
-                          if (!RegExp(r'^\d{1,30}$').hasMatch(postId)) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('这条历史记录没有有效的帖子编号')));
-                            return;
-                          }
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute<void>(
-                                  builder: (_) =>
-                                      PostDetailPage.fromId(postId: postId)));
-                        })
-                ]));
+              : ListView(
+                  padding: EdgeInsets.only(top: topChromeHeight),
+                  children: [
+                      for (final item in items)
+                        ListTile(
+                            title: Text('${item['title']}',
+                                maxLines: 2, overflow: TextOverflow.ellipsis),
+                            subtitle: Text('${item['author']} · ${item['time']}'
+                                .split('.')
+                                .first),
+                            onTap: () {
+                              final postId = '${item['id']}';
+                              if (!RegExp(r'^\d{1,30}$').hasMatch(postId)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('这条历史记录没有有效的帖子编号')));
+                                return;
+                              }
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                      builder: (_) => PostDetailPage.fromId(
+                                          postId: postId)));
+                            })
+                    ]));
     });
   }
 }
@@ -438,34 +440,102 @@ class _BackupSettingsPageState extends ConsumerState<BackupSettingsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Widget section(String title, Widget child) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+              child: Text(title, style: theme.textTheme.titleSmall),
+            ),
+            AppSectionCard(margin: EdgeInsets.zero, child: child),
+          ],
+        );
+
+    return Scaffold(
       appBar: AppBar(title: const Text('WebDAV 设置备份')),
-      body: ListView(padding: const EdgeInsets.all(16), children: [
-        const Text('指定已存在的 HTTPS WebDAV 文件夹。备份外观和阅读设置；账号凭据、浏览历史与设备刷新率留在本机。'),
-        const SizedBox(height: 16),
-        TextField(
-            controller: _url,
-            enabled: !_busy,
-            decoration: const InputDecoration(labelText: 'HTTPS WebDAV 文件夹')),
-        TextField(
-            controller: _user,
-            enabled: !_busy,
-            decoration: const InputDecoration(labelText: '用户名')),
-        TextField(
-            controller: _password,
-            enabled: !_busy,
-            obscureText: true,
-            enableSuggestions: false,
-            autocorrect: false,
-            decoration: const InputDecoration(labelText: '密码')),
-        const SizedBox(height: 20),
-        FilledButton(
-            onPressed: _busy ? null : () => _run(true),
-            child: const Text('立即备份')),
-        OutlinedButton(
-            onPressed: _busy ? null : () => _run(false),
-            child: const Text('恢复设置')),
-        if (_busy) const LinearProgressIndicator(),
-        if (_status != null) Text(_status!),
-      ]));
+      body: ListView(
+        padding: EdgeInsets.fromLTRB(
+            16, 12, 16, MediaQuery.paddingOf(context).bottom + 24),
+        children: [
+          section(
+            '连接信息',
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Text(
+                    '指定已存在的 HTTPS WebDAV 文件夹。备份外观和阅读设置；账号凭据、浏览历史与设备刷新率留在本机。',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                      controller: _url,
+                      enabled: !_busy,
+                      decoration:
+                          const InputDecoration(labelText: 'HTTPS WebDAV 文件夹')),
+                  const SizedBox(height: 12),
+                  TextField(
+                      controller: _user,
+                      enabled: !_busy,
+                      decoration: const InputDecoration(labelText: '用户名')),
+                  const SizedBox(height: 12),
+                  TextField(
+                      controller: _password,
+                      enabled: !_busy,
+                      obscureText: true,
+                      enableSuggestions: false,
+                      autocorrect: false,
+                      decoration: const InputDecoration(labelText: '密码')),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          section(
+            '设置同步',
+            Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.cloud_upload_outlined),
+                  title: const Text('立即备份'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  enabled: !_busy,
+                  onTap: _busy ? null : () => _run(true),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.cloud_download_outlined),
+                  title: const Text('恢复设置'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  enabled: !_busy,
+                  onTap: _busy ? null : () => _run(false),
+                ),
+                if (_busy) ...[
+                  const Divider(height: 1),
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: LinearProgressIndicator(),
+                  ),
+                ],
+                if (_status != null) ...[
+                  const Divider(height: 1),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      _status!,
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

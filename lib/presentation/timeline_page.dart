@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/widgets/cached_network_image.dart';
+import '../core/widgets/frosted_app_bar.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../core/storage/storage_service.dart';
@@ -35,15 +36,21 @@ bool _continuesConversation(SocialPost parent, SocialPost reply) =>
 class ScrollPageActions {
   Object? _owner;
   VoidCallback? _singleTap, _doubleTap, _topBarDoubleTap;
+  ValueChanged<String>? _searchSubmitted;
+  ValueChanged<bool>? _exploreSelected;
 
   void attach(Object owner,
       {required VoidCallback onSingleTap,
       required VoidCallback onDoubleTap,
-      required VoidCallback onTopBarDoubleTap}) {
+      required VoidCallback onTopBarDoubleTap,
+      ValueChanged<String>? onSearchSubmitted,
+      ValueChanged<bool>? onExploreSelected}) {
     _owner = owner;
     _singleTap = onSingleTap;
     _doubleTap = onDoubleTap;
     _topBarDoubleTap = onTopBarDoubleTap;
+    _searchSubmitted = onSearchSubmitted;
+    _exploreSelected = onExploreSelected;
   }
 
   void detach(Object owner) {
@@ -52,11 +59,15 @@ class ScrollPageActions {
     _singleTap = null;
     _doubleTap = null;
     _topBarDoubleTap = null;
+    _searchSubmitted = null;
+    _exploreSelected = null;
   }
 
   void handleSingleTap() => _singleTap?.call();
   void handleDoubleTap() => _doubleTap?.call();
   void handleTopBarDoubleTap() => _topBarDoubleTap?.call();
+  void submitSearch(String query) => _searchSubmitted?.call(query);
+  void selectExplore(bool personalized) => _exploreSelected?.call(personalized);
 }
 
 class TimelinePage extends ConsumerStatefulWidget {
@@ -69,6 +80,7 @@ class TimelinePage extends ConsumerStatefulWidget {
       this.loadOnInit = true,
       this.cacheKey,
       this.conversationRoot,
+      this.topPadding = 0,
       this.actions});
   final PageLoader load;
   final Widget? header;
@@ -77,6 +89,7 @@ class TimelinePage extends ConsumerStatefulWidget {
   final bool loadOnInit;
   final String? cacheKey;
   final SocialPost? conversationRoot;
+  final double topPadding;
   final ScrollPageActions? actions;
   @override
   ConsumerState<TimelinePage> createState() => _TimelinePageState();
@@ -212,69 +225,89 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       if (widget.conversationRoot != null)
         for (final post in _posts) post.id: post,
     };
-    return Column(children: [
-      RequestStatus(
-          loading: _loading,
-          error: _error,
-          onRetry: () => _fetch(refresh: true)),
-      Expanded(
-          child: RefreshIndicator(
-              onRefresh: () => _fetch(refresh: true),
-              child: ListView.builder(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.only(
-                      bottom: MediaQuery.paddingOf(context).bottom > 24
-                          ? MediaQuery.paddingOf(context).bottom
-                          : 24),
-                  itemCount: _posts.length + 2,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return widget.header ?? const SizedBox.shrink();
-                    }
-                    if (index <= _posts.length) {
-                      final post = _posts[index - 1];
-                      final connectedAbove = widget.conversationRoot == null &&
-                          index > 1 &&
-                          _continuesConversation(_posts[index - 2], post);
-                      final connectedBelow = widget.conversationRoot == null &&
-                          index < _posts.length &&
-                          _continuesConversation(post, _posts[index]);
-                      final parent = widget.conversationRoot == null
-                          ? null
-                          : known[post.replyToId];
-                      var depth = 0;
-                      var ancestor = parent;
-                      final seen = <String>{post.id};
-                      while (ancestor != null &&
-                          ancestor.id != widget.conversationRoot?.id &&
-                          depth < 2 &&
-                          seen.add(ancestor.id)) {
-                        depth++;
-                        ancestor = known[ancestor.replyToId];
-                      }
-                      return Padding(
-                          key: ValueKey(post.id),
-                          padding: EdgeInsets.only(left: depth * 12.0),
-                          child: PostCard(
-                              post: post,
-                              connectedAbove: connectedAbove,
-                              connectedBelow: connectedBelow,
-                              replyParent: parent,
-                              showReplyParentPreview:
-                                  parent?.id != widget.conversationRoot?.id));
-                    }
-                    return Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(children: [
-                          if (!_loading && _error == null && _cursor != null)
-                            FilledButton.tonal(
-                                onPressed: _fetch, child: const Text('加载更多')),
-                          if (!_loading && _error == null && _cursor == null)
-                            Text(_posts.isEmpty ? '暂无帖子，下拉刷新' : '没有更多帖子')
-                        ]));
-                  })))
-    ]);
+    return RefreshIndicator(
+        onRefresh: () => _fetch(refresh: true),
+        child: ListView.builder(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.only(
+                top: widget.topPadding,
+                bottom: MediaQuery.paddingOf(context).bottom > 24
+                    ? MediaQuery.paddingOf(context).bottom
+                    : 24),
+            itemCount: _posts.length + 3,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return RequestStatus(
+                    loading: _loading,
+                    error: _error,
+                    onRetry: () => _fetch(refresh: true));
+              }
+              if (index == 1) {
+                return widget.header ?? const SizedBox.shrink();
+              }
+              if (index <= _posts.length + 1) {
+                final post = _posts[index - 2];
+                final connectedAbove = widget.conversationRoot == null &&
+                    index > 2 &&
+                    _continuesConversation(_posts[index - 3], post);
+                final connectedBelow = widget.conversationRoot == null &&
+                    index < _posts.length + 1 &&
+                    _continuesConversation(post, _posts[index - 1]);
+                final parent = widget.conversationRoot == null
+                    ? null
+                    : known[post.replyToId];
+                var depth = 0;
+                var ancestor = parent;
+                final seen = <String>{post.id};
+                while (ancestor != null &&
+                    ancestor.id != widget.conversationRoot?.id &&
+                    depth < 2 &&
+                    seen.add(ancestor.id)) {
+                  depth++;
+                  ancestor = known[ancestor.replyToId];
+                }
+                return Padding(
+                    key: ValueKey(post.id),
+                    padding: EdgeInsets.only(left: depth * 12.0),
+                    child: PostCard(
+                        post: post,
+                        connectedAbove: connectedAbove,
+                        connectedBelow: connectedBelow,
+                        replyParent: parent,
+                        showReplyParentPreview:
+                            parent?.id != widget.conversationRoot?.id));
+              }
+              return Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(children: [
+                    if (!_loading && _error == null && _cursor != null)
+                      FilledButton.tonal(
+                          onPressed: _fetch, child: const Text('加载更多')),
+                    if (!_loading && _error == null && _cursor == null)
+                      Text(_posts.isEmpty ? '暂无帖子，下拉刷新' : '没有更多帖子')
+                  ]));
+            }));
+  }
+}
+
+class BookmarksPage extends ConsumerWidget {
+  const BookmarksPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.watch(appControllerProvider);
+    final appBar = buildFrostedAppBar(context, title: const Text('书签'));
+    final topChromeHeight =
+        MediaQuery.paddingOf(context).top + appBar.preferredSize.height;
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: appBar,
+      body: TimelinePage(
+        topPadding: topChromeHeight,
+        load: (cursor) => controller.adapter.bookmarks(cursor: cursor),
+      ),
+    );
   }
 }
 

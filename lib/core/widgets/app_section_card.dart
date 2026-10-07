@@ -17,7 +17,8 @@ class AppSectionCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Card(
       margin: margin ?? const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+      color: scheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: child,
     );
   }

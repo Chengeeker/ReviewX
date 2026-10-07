@@ -563,84 +563,97 @@ class _MediaPageState extends ConsumerState<MediaPage>
     super.dispose();
   }
 
-  Widget _buildChrome(SocialMedia media) => Positioned(
-        top: 0,
-        left: 0,
-        right: 0,
-        child: AnimatedSlide(
-          offset: _showChrome ? Offset.zero : const Offset(0, -1),
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          child: AnimatedOpacity(
-            opacity: _showChrome ? 1 : 0,
-            duration: const Duration(milliseconds: 160),
+  Widget _afterRouteTransition(
+          Animation<double>? routeAnimation, Widget child) =>
+      AnimatedBuilder(
+        animation: routeAnimation ?? const AlwaysStoppedAnimation<double>(1),
+        child: child,
+        builder: (context, child) {
+          final routeSettled = routeAnimation == null ||
+              routeAnimation.status == AnimationStatus.completed;
+          return Opacity(
+            opacity: routeSettled ? 1 : 0,
             child: IgnorePointer(
-              ignoring: !_showChrome,
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
+              ignoring: !routeSettled,
+              child: child,
+            ),
+          );
+        },
+      );
+
+  Widget _buildChrome(SocialMedia media) => AnimatedSlide(
+        offset: _showChrome ? Offset.zero : const Offset(0, -1),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        child: AnimatedOpacity(
+          opacity: _showChrome ? 1 : 0,
+          duration: const Duration(milliseconds: 160),
+          child: IgnorePointer(
+            ignoring: !_showChrome,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _GalleryGlassIconButton(
+                      tooltip: '返回',
+                      icon: const Icon(Icons.arrow_back_rounded,
+                          color: Colors.white),
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black45,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        '${_index + 1} / ${widget.media.length}',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      if (media.alt.isNotEmpty)
+                        IconButton(
+                          style: IconButton.styleFrom(
+                              backgroundColor: Colors.black45),
+                          icon: const Icon(Icons.info_outline,
+                              color: Colors.white),
+                          tooltip: '图片说明',
+                          onPressed: () => showDialog<void>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                    title: const Text('图片说明'),
+                                    content: SelectableText(media.alt),
+                                    actions: [
+                                      TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text('关闭'))
+                                    ],
+                                  )),
+                        ),
                       _GalleryGlassIconButton(
-                        tooltip: '返回',
-                        icon: const Icon(Icons.arrow_back_rounded,
-                            color: Colors.white),
-                        onPressed: () => Navigator.of(context).maybePop(),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.black45,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          '${_index + 1} / ${widget.media.length}',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      Row(mainAxisSize: MainAxisSize.min, children: [
-                        if (media.alt.isNotEmpty)
-                          IconButton(
-                            style: IconButton.styleFrom(
-                                backgroundColor: Colors.black45),
-                            icon: const Icon(Icons.info_outline,
+                        tooltip: '保存到相册',
+                        onPressed: _saving ? null : _save,
+                        icon: _saving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.download_rounded,
                                 color: Colors.white),
-                            tooltip: '图片说明',
-                            onPressed: () => showDialog<void>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                      title: const Text('图片说明'),
-                                      content: SelectableText(media.alt),
-                                      actions: [
-                                        TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context),
-                                            child: const Text('关闭'))
-                                      ],
-                                    )),
-                          ),
-                        _GalleryGlassIconButton(
-                          tooltip: '保存到相册',
-                          onPressed: _saving ? null : _save,
-                          icon: _saving
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.download_rounded,
-                                  color: Colors.white),
-                        ),
-                      ]),
-                    ],
-                  ),
+                      ),
+                    ]),
+                  ],
                 ),
               ),
             ),
@@ -651,6 +664,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
   @override
   Widget build(BuildContext context) {
     final currentMedia = widget.media[_index];
+    final routeAnimation = ModalRoute.of(context)?.animation;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ExtendedImageSlidePage(
@@ -682,9 +696,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
                   },
                   child: ExtendedImageGesturePageView.builder(
                     controller: _pages,
-                    physics: currentMedia.video != null
-                        ? const NeverScrollableScrollPhysics()
-                        : const ClampingScrollPhysics(),
+                    physics: const ClampingScrollPhysics(),
                     itemCount: widget.media.length,
                     onPageChanged: _onPageChanged,
                     itemBuilder: (context, index) {
@@ -775,21 +787,33 @@ class _MediaPageState extends ConsumerState<MediaPage>
                   ),
                 ),
               ),
-              if (_hasThumbnailStrip)
+              if (_hasThumbnailStrip && currentMedia.video == null)
                 Positioned(
                   left: 12,
                   right: 12,
                   bottom: MediaQuery.paddingOf(context).bottom + 32,
-                  child: AnimatedOpacity(
-                    opacity: _showChrome ? 1 : 0,
-                    duration: const Duration(milliseconds: 160),
-                    child: IgnorePointer(
-                      ignoring: !_showChrome,
-                      child: _buildThumbnailStrip(),
+                  child: _afterRouteTransition(
+                    routeAnimation,
+                    AnimatedOpacity(
+                      opacity: _showChrome ? 1 : 0,
+                      duration: const Duration(milliseconds: 160),
+                      child: IgnorePointer(
+                        ignoring: !_showChrome,
+                        child: _buildThumbnailStrip(),
+                      ),
                     ),
                   ),
                 ),
-              if (currentMedia.video == null) _buildChrome(currentMedia),
+              if (currentMedia.video == null)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: _afterRouteTransition(
+                    routeAnimation,
+                    _buildChrome(currentMedia),
+                  ),
+                ),
             ],
           ),
         ),

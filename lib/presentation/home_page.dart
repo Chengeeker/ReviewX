@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,6 +7,7 @@ import '../core/theme/app_theme.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/theme/theme_provider.dart';
 import '../core/widgets/cached_network_image.dart';
+import '../core/widgets/frosted_app_bar.dart';
 import '../twitter/auth/app_controller.dart';
 import 'app_drawer.dart';
 import 'login_page.dart';
@@ -36,6 +36,9 @@ class _HomePageState extends ConsumerState<HomePage>
   final ScrollPageActions _forYouActions = ScrollPageActions();
   final ScrollPageActions _followingActions = ScrollPageActions();
   final ScrollPageActions _exploreActions = ScrollPageActions();
+  final TextEditingController _exploreSearchController =
+      TextEditingController();
+  bool _explorePersonalized = true;
   DateTime? _lastNavigationTapTime;
   Timer? _navigationSingleTapTimer;
   int? _pendingNavigationTapIndex;
@@ -217,11 +220,7 @@ class _HomePageState extends ConsumerState<HomePage>
       case XLinkKind.notifications:
         _openNotifications();
       case XLinkKind.bookmarks:
-        openPage(Scaffold(
-            appBar: AppBar(title: const Text('书签')),
-            body: TimelinePage(
-                load: (cursor) =>
-                    controller.adapter.bookmarks(cursor: cursor))));
+        openPage(const BookmarksPage());
       case XLinkKind.other:
         try {
           final opened =
@@ -256,6 +255,7 @@ class _HomePageState extends ConsumerState<HomePage>
     _homeTimelineController
       ..removeListener(_onHomeTimelineChanged)
       ..dispose();
+    _exploreSearchController.dispose();
     super.dispose();
   }
 
@@ -267,7 +267,8 @@ class _HomePageState extends ConsumerState<HomePage>
         theme = ref.watch(themeProvider);
     final brightness = Theme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
-    final colorScheme = Theme.of(context).colorScheme;
+    final materialTheme = Theme.of(context);
+    final colorScheme = materialTheme.colorScheme;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final standardNavBar = NavigationBar(
         selectedIndex: _tab,
@@ -329,80 +330,186 @@ class _HomePageState extends ConsumerState<HomePage>
         ],
       ),
     );
-    final appBar = AppBar(
-        leading: IconButton(
-            tooltip: '打开侧边栏',
-            onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-            icon: controller.me?.avatar.isNotEmpty == true
-                ? ClipOval(
-                    child: CachedNetworkImage(controller.me!.avatar,
-                        width: 32, height: 32, fit: BoxFit.cover))
-                : const Icon(Icons.menu_rounded)),
-        title: Text(const ['ReviewX', '探索', '设置'][_tab]),
-        bottom: controller.loggedIn && _tab == 0
-            ? TabBar(
-                controller: _homeTimelineController,
-                tabs: const [
-                  Tab(text: '为你推荐'),
-                  Tab(text: '正在关注'),
-                ],
-              )
-            : null,
-        actions: [
-          if (controller.loggedIn && _tab == 0)
-            IconButton(
-                tooltip: '发布帖子',
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const ComposePage()))),
-        ]);
+    final appBar = buildFrostedAppBar(
+      context,
+      automaticallyImplyLeading: false,
+      toolbarHeight:
+          controller.loggedIn && _tab == 0 ? kToolbarHeight - 8 : null,
+      leading: _tab == 0
+          ? IconButton(
+              tooltip: '打开侧边栏',
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              icon: controller.me?.avatar.isNotEmpty == true
+                  ? ClipOval(
+                      child: CachedNetworkImage(controller.me!.avatar,
+                          width: 32, height: 32, fit: BoxFit.cover))
+                  : const Icon(Icons.menu_rounded))
+          : null,
+      title: _tab == 0
+          ? const Text('ReviewX')
+          : _tab == 1
+              ? TextField(
+                  controller: _exploreSearchController,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: _exploreActions.submitSearch,
+                  decoration: InputDecoration(
+                    hintText: '搜索 X',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: IconButton(
+                      tooltip: '搜索',
+                      icon: const Icon(Icons.arrow_forward_rounded),
+                      onPressed: () => _exploreActions
+                          .submitSearch(_exploreSearchController.text),
+                    ),
+                    isDense: true,
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(32),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                )
+              : null,
+      bottom: controller.loggedIn && _tab == 0
+          ? TabBar(
+              controller: _homeTimelineController,
+              tabs: const [
+                Tab(text: '为你推荐'),
+                Tab(text: '正在关注'),
+              ],
+            )
+          : _tab == 1
+              ? PreferredSize(
+                  preferredSize: const Size.fromHeight(48),
+                  child: Row(
+                    children: [
+                      for (final personalized in [true, false])
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              if (_explorePersonalized == personalized) return;
+                              setState(
+                                  () => _explorePersonalized = personalized);
+                              _exploreActions.selectExplore(personalized);
+                            },
+                            child: Container(
+                              height: 48,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: _explorePersonalized == personalized
+                                        ? colorScheme.primary
+                                        : colorScheme.outlineVariant,
+                                    width: _explorePersonalized == personalized
+                                        ? 3
+                                        : 1,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                personalized ? '探索' : '当前趋势',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontWeight: context.adjustWeight(
+                                    _explorePersonalized == personalized
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              : null,
+      actions: [
+        if (controller.loggedIn && _tab == 0)
+          IconButton(
+              tooltip: '发布帖子',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const ComposePage()))),
+      ],
+    );
+    final statusBarHeight = MediaQuery.paddingOf(context).top;
+    final topChromeHeight = _tab == 2
+        ? statusBarHeight
+        : statusBarHeight + appBar.preferredSize.height;
     return Scaffold(
         key: _scaffoldKey,
         drawer: const AppDrawer(),
         extendBody: theme.useFloatingNavBar,
-        appBar: PreferredSize(
-            preferredSize: appBar.preferredSize,
-            child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: _onTopBarTap,
-                child: appBar)),
+        extendBodyBehindAppBar: _tab != 2,
+        appBar: _tab == 2
+            ? null
+            : PreferredSize(
+                preferredSize: appBar.preferredSize,
+                child: _tab == 0
+                    ? GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: _onTopBarTap,
+                        child: appBar)
+                    : appBar),
         body: Column(children: [
           if (controller.expired)
-            MaterialBanner(content: const Text('X 会话已过期，请重新登录'), actions: [
-              TextButton(onPressed: _login, child: const Text('重新登录'))
-            ]),
+            Padding(
+              padding: EdgeInsets.only(top: topChromeHeight),
+              child: MaterialBanner(
+                  content: const Text('X 会话已过期，请重新登录'),
+                  actions: [
+                    TextButton(onPressed: _login, child: const Text('重新登录'))
+                  ]),
+            ),
           Expanded(
-              child: _tab == 2
-                  ? const SettingsPane()
-                  : controller.loggedIn
-                      ? IndexedStack(
-                          key: ValueKey(controller.epoch),
-                          index: _tab,
-                          children: [
-                              TabBarView(
-                                controller: _homeTimelineController,
-                                children: [
-                                  TimelinePage(
-                                      cacheKey: 'for_you',
-                                      actions: _forYouActions,
+              child: controller.loggedIn
+                  ? IndexedStack(
+                      key: ValueKey(controller.epoch),
+                      index: _tab,
+                      children: [
+                          TabBarView(
+                            controller: _homeTimelineController,
+                            children: [
+                              TimelinePage(
+                                  cacheKey: 'for_you',
+                                  topPadding:
+                                      controller.expired ? 0 : topChromeHeight,
+                                  actions: _forYouActions,
+                                  load: (cursor) => controller.adapter
+                                      .forYou(cursor: cursor)),
+                              _visitedHomeTimelineTabs.contains(1)
+                                  ? TimelinePage(
+                                      cacheKey: 'following',
+                                      topPadding: controller.expired
+                                          ? 0
+                                          : topChromeHeight,
+                                      actions: _followingActions,
                                       load: (cursor) => controller.adapter
-                                          .forYou(cursor: cursor)),
-                                  _visitedHomeTimelineTabs.contains(1)
-                                      ? TimelinePage(
-                                          cacheKey: 'following',
-                                          actions: _followingActions,
-                                          load: (cursor) => controller.adapter
-                                              .following(cursor: cursor))
-                                      : const SizedBox.shrink(),
-                                ],
-                              ),
-                              _visited.contains(1)
-                                  ? SearchPage(
-                                      showExplore: true,
-                                      actions: _exploreActions,
-                                    )
+                                          .following(cursor: cursor))
                                   : const SizedBox.shrink(),
-                            ])
+                            ],
+                          ),
+                          _visited.contains(1)
+                              ? SearchPage(
+                                  showExplore: true,
+                                  searchController: _exploreSearchController,
+                                  topChromeHeight:
+                                      controller.expired ? 0 : topChromeHeight,
+                                  personalized: _explorePersonalized,
+                                  actions: _exploreActions,
+                                )
+                              : const SizedBox.shrink(),
+                          SettingsPane(
+                              topChromeHeight:
+                                  controller.expired ? 0 : statusBarHeight),
+                        ])
+                  : _tab == 2
+                      ? SettingsPane(
+                          topChromeHeight:
+                              controller.expired ? 0 : statusBarHeight)
                       : Center(
                           child: Padding(
                               padding: const EdgeInsets.all(32),
