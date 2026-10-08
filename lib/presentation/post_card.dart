@@ -9,6 +9,7 @@ import '../core/storage/reading_settings.dart';
 import '../twitter/auth/app_controller.dart';
 import '../twitter/models/social_models.dart';
 import '../twitter/models/content_models.dart';
+import '../twitter/models/translation_diagnostics.dart';
 import 'media_page.dart';
 import 'timeline_page.dart';
 import 'article_page.dart';
@@ -94,6 +95,17 @@ class PostCard extends ConsumerWidget {
     final current = controller.effective(post);
     final scheme = Theme.of(context).colorScheme;
     final settings = ref.watch(readingProvider);
+    if (controller.isDeleted(current.id)) {
+      if (!quoted) return const SizedBox.shrink();
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: scheme.outlineVariant),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text('该帖子已删除', style: Theme.of(context).textTheme.bodySmall),
+      );
+    }
     final connected = !quoted && (connectedAbove || connectedBelow);
     final card = Container(
         decoration: BoxDecoration(
@@ -285,6 +297,139 @@ class PostCard extends ConsumerWidget {
                                                   }
                                                 }
                                               }
+                                              if (action == 'undo_repost') {
+                                                try {
+                                                  await controller.act(current,
+                                                      like: false);
+                                                } catch (error) {
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(SnackBar(
+                                                            content: Text(
+                                                                '$error')));
+                                                  }
+                                                }
+                                              }
+                                              if (action == 'delete') {
+                                                if (!context.mounted) {
+                                                  return;
+                                                }
+                                                final confirmed =
+                                                    await showDialog<bool>(
+                                                  context: context,
+                                                  builder: (context) =>
+                                                      AlertDialog(
+                                                    title: const Text('删除帖子？'),
+                                                    content:
+                                                        const Text('删除后无法恢复。'),
+                                                    actions: [
+                                                      TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.pop(
+                                                                  context,
+                                                                  false),
+                                                          child:
+                                                              const Text('取消')),
+                                                      TextButton(
+                                                          onPressed: () =>
+                                                              Navigator.pop(
+                                                                  context,
+                                                                  true),
+                                                          child: Text('删除',
+                                                              style: TextStyle(
+                                                                  color: scheme
+                                                                      .error))),
+                                                    ],
+                                                  ),
+                                                );
+                                                if (confirmed != true) {
+                                                  return;
+                                                }
+                                                if (!context.mounted) {
+                                                  return;
+                                                }
+                                                try {
+                                                  await controller
+                                                      .deletePost(current);
+                                                  if (!context.mounted) return;
+                                                  if (detail) {
+                                                    Navigator.of(context).pop();
+                                                  } else {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(
+                                                            const SnackBar(
+                                                                content: Text(
+                                                                    '已删除帖子')));
+                                                  }
+                                                } catch (error) {
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(
+                                                            context)
+                                                        .showSnackBar(SnackBar(
+                                                            content: Text(
+                                                                '$error')));
+                                                  }
+                                                }
+                                              }
+                                              if (action == 'translation_diag') {
+                                                final diag =
+                                                    TranslationDiagnostics
+                                                        .getForPost(current.id);
+                                                final text = diag != null
+                                                    ? diag.toFormattedReport()
+                                                    : '[推文 ID]: ${current.id}\n'
+                                                        '[作者]: @${current.author.handle}\n'
+                                                        '[状态]: ${current.translatedText.isNotEmpty ? "当前存在译文 (${current.translatedText.length}字)" : "当前无可用译文"}\n'
+                                                        '[诊断提示]: 暂未捕获到独立日志（可能因快速切换或快照未记录）。';
+                                                if (context.mounted) {
+                                                  showDialog<void>(
+                                                    context: context,
+                                                    builder: (ctx) =>
+                                                        AlertDialog(
+                                                      title: const Text(
+                                                          '推文翻译诊断日志'),
+                                                      content:
+                                                          SingleChildScrollView(
+                                                        child: SelectableText(
+                                                          text,
+                                                          style: const TextStyle(
+                                                              fontSize: 13,
+                                                              height: 1.4),
+                                                        ),
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                          onPressed: () {
+                                                            Clipboard.setData(
+                                                                ClipboardData(
+                                                                    text:
+                                                                        text));
+                                                            Navigator.pop(ctx);
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                              const SnackBar(
+                                                                  content: Text(
+                                                                      '推文翻译诊断已复制')),
+                                                            );
+                                                          },
+                                                          child:
+                                                              const Text('复制诊断'),
+                                                        ),
+                                                        FilledButton(
+                                                          onPressed: () =>
+                                                              Navigator.pop(
+                                                                  ctx),
+                                                          child:
+                                                              const Text('关闭'),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                }
+                                              }
                                             },
                                             itemBuilder: (_) => [
                                                   const PopupMenuItem(
@@ -311,6 +456,28 @@ class PostCard extends ConsumerWidget {
                                                           current.bookmarked
                                                               ? '移除书签'
                                                               : '保存到书签')),
+                                                  if (current.reposted)
+                                                    PopupMenuItem(
+                                                        value: 'undo_repost',
+                                                        enabled: !controller
+                                                            .actionBlocked(
+                                                                current.id),
+                                                        child:
+                                                            const Text('撤销转推')),
+                                                  if (controller
+                                                      .ownsPost(current))
+                                                    PopupMenuItem(
+                                                        value: 'delete',
+                                                        enabled: !controller
+                                                            .actionBlocked(
+                                                                current.id),
+                                                        child: Text('删除帖子',
+                                                            style: TextStyle(
+                                                                color: scheme
+                                                                    .error))),
+                                                   const PopupMenuItem(
+                                                       value: 'translation_diag',
+                                                       child: Text('翻译诊断与日志')),
                                                 ]),
                                       ),
                                     ],

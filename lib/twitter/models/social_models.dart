@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:intl/intl.dart';
 import 'content_models.dart';
+import 'translation_diagnostics.dart';
 
 Map<String, dynamic> object(dynamic value) =>
     value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
@@ -452,7 +453,7 @@ class SocialPost {
     final quote = depth < 1
         ? SocialPost.fromCacheJson(post['quote'], depth: depth + 1)
         : null;
-    return SocialPost(
+    final cachedPost = SocialPost(
       id: id,
       author: author,
       text: _cacheText(post['text'], limit: 50000),
@@ -489,6 +490,28 @@ class SocialPost {
           ? _cacheText(post['conversationId'], limit: 32)
           : null,
     );
+    if (TranslationDiagnostics.getForPost(id) == null) {
+      final hasTrans = cachedPost.translatedText.isNotEmpty;
+      TranslationDiagnostics.record(TranslationLogEntry(
+        postId: id,
+        authorHandle: author.handle,
+        textPreview: cachedPost.text.length > 80
+            ? '${cachedPost.text.substring(0, 80)}...'
+            : cachedPost.text,
+        hasGrokField: hasTrans,
+        isAvailable: hasTrans,
+        destinationLanguage: hasTrans ? 'cached' : 'none',
+        translationPreview: cachedPost.translatedText.length > 80
+            ? '${cachedPost.translatedText.substring(0, 80)}...'
+            : cachedPost.translatedText,
+        resultStatus: hasTrans ? '来自本地缓存 (含译文)' : '来自本地缓存 (无译文)',
+        detailReason: hasTrans
+            ? '该推文从最近14天的本地缓存读取，包含之前已解析保存的译文。'
+            : '该推文从本地离线缓存读取，之前写入缓存时未能获取到译文。下拉刷新可尝试重新从网络请求。',
+        timestamp: DateTime.now(),
+      ));
+    }
+    return cachedPost;
   }
 
   static LinkCard? _cacheLinkCard(dynamic value) {
@@ -603,32 +626,87 @@ class SocialPost {
         .replaceAll('&amp;', '&')
         .replaceAll('&lt;', '<')
         .replaceAll('&gt;', '>');
-    final translationState =
-        object(post['grok_translated_post_with_availability']);
+    final rawGrok = post['grok_translated_post_with_availability'] ??
+        (value is Map ? value['grok_translated_post_with_availability'] : null) ??
+        object(post['tweet'])['grok_translated_post_with_availability'] ??
+        legacy['grok_translated_post_with_availability'] ??
+        note['grok_translated_post_with_availability'];
+    final translationState = object(rawGrok);
     final translationData = object(translationState['data']);
     final destinationLanguage =
         '${translationData['destination_language'] ?? ''}'
             .trim()
             .toLowerCase()
             .replaceAll('_', '-');
+    final isAvailable = translationState['is_available'] == true;
+    final rawTranslation = '${translationData['translation'] ?? ''}'.trim();
+
     var translatedText = '';
-    if (translationState['is_available'] == true &&
-        const {'zh', 'zh-cn', 'zh-hans', 'zh-hans-cn'}
-            .contains(destinationLanguage)) {
-      translatedText = '${translationData['translation'] ?? ''}'.trim();
+    String diagnosticStatus;
+    String diagnosticReason;
+
+    if (rawGrok == null || (rawGrok is Map && rawGrok.isEmpty)) {
+      diagnosticStatus = 'X未下发Grok数据';
+      diagnosticReason =
+          'X官方接口未返回该推文的 grok_translated_post_with_availability 字段。常见原因：X服务端未对此推文生成Grok翻译，或当前X账号未在Grok翻译灰度名单中。';
+    } else if (!isAvailable) {
+      diagnosticStatus = 'Grok标记为不可用 (is_available=false)';
+      diagnosticReason =
+          'X返回了Grok字段但标记 is_available=false。说明X认为原文语言不需要翻译（如与账号常用语言一致）或暂无可用译文。';
+    } else if (rawTranslation.isEmpty) {
+      diagnosticStatus = '译文内容为空';
+      diagnosticReason = 'X返回了 is_available=true 但 translation 为空。';
+    } else {
+      final isChineseDest = destinationLanguage == 'zh' ||
+          destinationLanguage.startsWith('zh-') ||
+          destinationLanguage == 'cmn' ||
+          destinationLanguage == 'yue' ||
+          destinationLanguage == 'chinese';
+      final hasChineseChars =
+          RegExp(r'[\u4e00-\u9fa5]').hasMatch(rawTranslation);
+
+      var resolved = rawTranslation;
       for (final url
           in array(object(translationData['entities'])['urls']).map(object)) {
         if (url['url'] is String && url['expanded_url'] is String) {
-          translatedText =
-              translatedText.replaceAll(url['url'], url['expanded_url']);
+          resolved = resolved.replaceAll(url['url'], url['expanded_url']);
         }
       }
-      translatedText = translatedText
+      resolved = resolved
           .replaceAll('&amp;', '&')
           .replaceAll('&lt;', '<')
           .replaceAll('&gt;', '>')
           .trim();
+
+      if (isChineseDest || hasChineseChars || destinationLanguage.isEmpty) {
+        translatedText = resolved;
+        diagnosticStatus = '成功解析译文';
+        diagnosticReason =
+            '目标语言为 ${destinationLanguage.isEmpty ? "未标注" : destinationLanguage}'
+            '${hasChineseChars ? " (含中文字符)" : ""}，已成功提取并渲染。';
+      } else {
+        translatedText = resolved;
+        diagnosticStatus = '非中文目标语言 ($destinationLanguage)';
+        diagnosticReason =
+            'X返回的目标语言为 $destinationLanguage。推文仍提取了该译文以供参考。若希望获取中文翻译，请在 X 网页端账号设置中确认“显示语言”与“掌握的语言”包含简体中文。';
+      }
     }
+
+    TranslationDiagnostics.record(TranslationLogEntry(
+      postId: id,
+      authorHandle: author.handle,
+      textPreview: text.length > 80 ? '${text.substring(0, 80)}...' : text,
+      hasGrokField: rawGrok != null && (rawGrok is! Map || rawGrok.isNotEmpty),
+      isAvailable:
+          translationState.containsKey('is_available') ? isAvailable : null,
+      destinationLanguage: destinationLanguage,
+      translationPreview: translatedText.length > 80
+          ? '${translatedText.substring(0, 80)}...'
+          : translatedText,
+      resultStatus: diagnosticStatus,
+      detailReason: diagnosticReason,
+      timestamp: DateTime.now(),
+    ));
     DateTime? date;
     try {
       final value = '${legacy['created_at']}';

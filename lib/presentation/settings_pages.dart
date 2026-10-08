@@ -14,6 +14,7 @@ import '../core/services/settings_backup.dart';
 import '../twitter/auth/app_controller.dart';
 import '../core/services/notification_poll.dart';
 import 'timeline_page.dart';
+import 'translation_diagnostics_page.dart';
 
 class NotificationSettingsPage extends ConsumerStatefulWidget {
   const NotificationSettingsPage({super.key});
@@ -85,10 +86,70 @@ class _NotificationSettingsPageState
   }
 }
 
-class ReadingSettingsPage extends ConsumerWidget {
+class ReadingSettingsPage extends ConsumerStatefulWidget {
   const ReadingSettingsPage({super.key});
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReadingSettingsPage> createState() =>
+      _ReadingSettingsPageState();
+}
+
+class _ReadingSettingsPageState extends ConsumerState<ReadingSettingsPage> {
+  final Map<String, int> _lastSliderStep = {};
+
+  int _step(double value) => (value * 10).round();
+
+  Future<void> _saveSlider(String key, double value) async {
+    try {
+      await ref.read(readingProvider.notifier).set(key, value);
+    } catch (_) {
+      if (mounted) {
+        ref.read(readingProvider.notifier).reload();
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('设置保存失败')));
+      }
+    } finally {
+      _lastSliderStep.remove(key);
+    }
+  }
+
+  Widget _sliderTile(
+      MapEntry<String, String> entry, Map<String, dynamic> state) {
+    final storedValue = (state[entry.key] as num).toDouble();
+    final value = storedValue;
+    final min = entry.key == 'fontSize'
+        ? 12.0
+        : entry.key == 'lineHeight'
+            ? 1.1
+            : 0.0;
+    final max = entry.key == 'fontSize'
+        ? 24.0
+        : entry.key == 'lineHeight'
+            ? 2.0
+            : 28.0;
+    final divisions = ((max - min) * 10).round();
+    return ListTile(
+      title: Text('${entry.value} ${value.toStringAsFixed(1)}'),
+      subtitle: Slider(
+        value: value,
+        min: min,
+        max: max,
+        divisions: divisions,
+        onChangeStart: (_) => _lastSliderStep[entry.key] = _step(storedValue),
+        onChanged: (next) {
+          final step = _step(next);
+          if (_lastSliderStep[entry.key] != step) {
+            HapticFeedbackUtil.selection(bypassCooldown: true);
+            _lastSliderStep[entry.key] = step;
+          }
+          ref.read(readingProvider.notifier).preview(entry.key, next);
+        },
+        onChangeEnd: (next) => _saveSlider(entry.key, next),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(readingProvider),
         notifier = ref.read(readingProvider.notifier);
     return Scaffold(
@@ -113,29 +174,31 @@ class ReadingSettingsPage extends ConsumerWidget {
             SwitchListTile(
                 title: Text(entry.value),
                 value: state[entry.key],
-                onChanged: (value) => notifier.set(entry.key, value)),
+                onChanged: (value) {
+                  HapticFeedbackUtil.selection();
+                  notifier.set(entry.key, value);
+                }),
           for (final entry in const {
             'fontSize': '正文字号',
             'lineHeight': '正文行距',
             'imageRadius': '图片圆角'
           }.entries)
-            ListTile(
-                title: Text(
-                    '${entry.value} ${(state[entry.key] as num).toStringAsFixed(1)}'),
-                subtitle: Slider(
-                    value: state[entry.key],
-                    min: entry.key == 'fontSize'
-                        ? 12
-                        : entry.key == 'lineHeight'
-                            ? 1.1
-                            : 0,
-                    max: entry.key == 'fontSize'
-                        ? 24
-                        : entry.key == 'lineHeight'
-                            ? 2
-                            : 28,
-                    onChangeStart: (_) => HapticFeedbackUtil.selection(),
-                    onChanged: (value) => notifier.set(entry.key, value))),
+            _sliderTile(entry, state),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.assessment_outlined),
+            title: const Text('翻译日志与排查诊断'),
+            subtitle: const Text('查看近期帖子的翻译解析记录、状态与原因'),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () {
+              HapticFeedbackUtil.selection();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const TranslationDiagnosticsPage()),
+              );
+            },
+          ),
         ]));
   }
 }

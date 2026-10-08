@@ -185,6 +185,7 @@ class TwitterClient {
             'x-twitter-active-user': 'yes',
             'x-twitter-auth-type': 'OAuth2Session',
             'x-twitter-client-language': 'zh-cn',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
             'x-client-transaction-id': transaction,
             'User-Agent': userAgent,
             'Origin': 'https://x.com',
