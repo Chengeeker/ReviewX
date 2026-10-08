@@ -56,7 +56,8 @@ class XLoginActivity : Activity() {
         )
         private val LOGIN_HOSTS = setOf(
             "x.com", "twitter.com", "google.com", "gstatic.com", "googleusercontent.com",
-            "apple.com", "captcha-delivery.com", "recaptcha.net"
+            "apple.com", "captcha-delivery.com", "recaptcha.net",
+            "arkoselabs.com", "arkose.com", "funcaptcha.com", "arkoselabs.net"
         )
 
         fun validateCandidate(cookies: Map<String, String>, result: MethodChannel.Result) {
@@ -112,7 +113,7 @@ class XLoginActivity : Activity() {
         CookieManager.getInstance().setAcceptCookie(true)
         XLoginDiagnostics.record(this, "site_data.clear_started")
         status.text = "正在准备 X 登录页面…"
-        clearLoginSiteData {
+        clearAuthSessionCookies {
             if (!isFinishing) {
                 siteDataCleared = true
                 loadLoginPage()
@@ -205,6 +206,22 @@ class XLoginActivity : Activity() {
         settings.javaScriptCanOpenWindowsAutomatically = true
         settings.setSupportMultipleWindows(true)
         if (android.os.Build.VERSION.SDK_INT >= 26) settings.safeBrowsingEnabled = true
+
+        // Disguise User-Agent as standard standalone Chrome browser (strip WebView indicators)
+        val rawUa = settings.userAgentString
+        val sanitizedUa = rawUa
+            .replace(Regex(";\\s*wv\\b"), "")
+            .replace(Regex("Version/\\d+\\.\\d+\\s*"), "")
+        settings.userAgentString = sanitizedUa
+
+        try {
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.REQUESTED_WITH_HEADER_ALLOW_LIST)) {
+                WebSettingsCompat.setRequestedWithHeaderOriginAllowList(settings, emptySet())
+                XLoginDiagnostics.record(this@XLoginActivity, "webview.requested_with_disabled")
+            }
+        } catch (_: Exception) {
+        }
+
         try {
             if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_AUTHENTICATION)) {
                 WebSettingsCompat.setWebAuthenticationSupport(
@@ -542,6 +559,35 @@ class XLoginActivity : Activity() {
             }
         }
         clearSessionCookies(done)
+    }
+
+    private fun clearAuthSessionCookies(done: () -> Unit) {
+        val manager = CookieManager.getInstance()
+        val operations = mutableListOf<Pair<String, String>>()
+        COOKIE_URLS.forEach { url ->
+            val root = if (Uri.parse(url).host.orEmpty().endsWith("twitter.com")) "twitter.com" else "x.com"
+            manager.getCookie(url).orEmpty().split(';').forEach { part ->
+                val name = part.substringBefore('=').trim()
+                if (name in SESSION_COOKIE_NAMES) {
+                    operations += url to "$name=; Max-Age=0; Path=/; Domain=.$root; Secure"
+                    operations += url to "$name=; Max-Age=0; Path=/; Secure"
+                }
+            }
+        }
+        if (operations.isEmpty()) {
+            done()
+            return
+        }
+        var remaining = operations.size
+        operations.forEach { (url, value) ->
+            manager.setCookie(url, value) {
+                remaining--
+                if (remaining == 0) {
+                    manager.flush()
+                    done()
+                }
+            }
+        }
     }
 
     private fun clearSessionCookies(done: () -> Unit) {
