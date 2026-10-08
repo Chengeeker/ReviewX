@@ -22,9 +22,10 @@ if (!(Get-Command $FlutterCommand -ErrorAction SilentlyContinue)) {
   throw 'Flutter was not found. Add it to PATH or pass -FlutterCommand.'
 }
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$tempRoot = Join-Path $projectRoot 'build/.signing-temp'
-New-Item -ItemType Directory -Force $tempRoot | Out-Null
-$temporaryStore = Join-Path $tempRoot 'release.p12'
+$tempRoot = Join-Path $projectRoot ".build-temp-$PID"
+$signingTempRoot = Join-Path $projectRoot '.signing-temp'
+New-Item -ItemType Directory -Force $tempRoot, $signingTempRoot | Out-Null
+$temporaryStore = Join-Path $signingTempRoot 'release.p12'
 $taskPassword = [Console]::ReadLine()
 if ([string]::IsNullOrEmpty($taskPassword)) { throw 'Supply signing password through standard input.' }
 $signingEnvironmentNames = @(

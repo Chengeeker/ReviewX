@@ -1,6 +1,8 @@
 .dart_tool/
 .flutter-plugins*
 build/
+.build-temp-*/
+.signing-temp/
 .reference/
 android/.gradle/
 android/local.properties

@@ -5,6 +5,17 @@ import '../utils/haptic_feedback_util.dart';
 class AppTheme {
   AppTheme._();
 
+  static const _overlayPageTransitions = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: _OverlayPageTransitionsBuilder(),
+      TargetPlatform.iOS: _OverlayPageTransitionsBuilder(),
+      TargetPlatform.linux: _OverlayPageTransitionsBuilder(),
+      TargetPlatform.macOS: _OverlayPageTransitionsBuilder(),
+      TargetPlatform.windows: _OverlayPageTransitionsBuilder(),
+      TargetPlatform.fuchsia: _OverlayPageTransitionsBuilder(),
+    },
+  );
+
   // Preset Theme Color Palettes
   static const List<Map<String, dynamic>> themeColors = [
     {'name': '经典红', 'color': Color(0xFFFA2F3A)},
@@ -127,6 +138,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      pageTransitionsTheme: _overlayPageTransitions,
       splashFactory: const HapticSplashFactory(),
       colorScheme: scheme,
       textTheme: textTheme,
@@ -295,6 +307,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      pageTransitionsTheme: _overlayPageTransitions,
       splashFactory: const HapticSplashFactory(),
       colorScheme: effectiveScheme,
       textTheme: textTheme,
@@ -445,5 +458,39 @@ extension FontAdjustmentExtension on BuildContext {
         theme.textTheme.bodyMedium?.fontWeight ?? FontWeight.w400;
     final delta = (baseBodyWeight.value - FontWeight.w400.value);
     return AppTheme.adjustFontWeight(base, delta);
+  }
+}
+
+class _OverlayPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _OverlayPageTransitionsBuilder();
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 320);
+
+  @override
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 220);
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    if (MediaQuery.disableAnimationsOf(context)) return child;
+    final curvedAnimation = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    final startX = Directionality.of(context) == TextDirection.ltr ? 1.0 : -1.0;
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: Offset(startX, 0),
+        end: Offset.zero,
+      ).animate(curvedAnimation),
+      child: child,
+    );
   }
 }

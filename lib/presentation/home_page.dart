@@ -33,6 +33,12 @@ class _HomePageState extends ConsumerState<HomePage>
   bool _openingNotifications = false;
   final Set<int> _visitedHomeTimelineTabs = {0};
   late final TabController _homeTimelineController;
+  late final AnimationController _tabTransitionController;
+  late final CurvedAnimation _tabTransitionCurve;
+  late Animation<Offset> _tabIncomingTransition;
+  late Animation<Offset> _tabOutgoingTransition;
+  int _previousTab = 0;
+  bool _isTabTransitioning = false;
   final ScrollPageActions _forYouActions = ScrollPageActions();
   final ScrollPageActions _followingActions = ScrollPageActions();
   final ScrollPageActions _exploreActions = ScrollPageActions();
@@ -49,6 +55,24 @@ class _HomePageState extends ConsumerState<HomePage>
   @override
   void initState() {
     super.initState();
+    _tabTransitionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+      value: 1,
+    );
+    _tabTransitionCurve = CurvedAnimation(
+      parent: _tabTransitionController,
+      curve: Curves.easeOutCubic,
+    );
+    _tabIncomingTransition = const AlwaysStoppedAnimation(Offset.zero);
+    _tabOutgoingTransition = const AlwaysStoppedAnimation(Offset.zero);
+    _tabTransitionController.addStatusListener((status) {
+      if (status == AnimationStatus.completed &&
+          _isTabTransitioning &&
+          mounted) {
+        setState(() => _isTabTransitioning = false);
+      }
+    });
     _homeTimelineController = TabController(length: 2, vsync: this)
       ..addListener(_onHomeTimelineChanged);
     NotificationPoll.channel.setMethodCallHandler((call) async {
@@ -93,11 +117,7 @@ class _HomePageState extends ConsumerState<HomePage>
 
   void _onNavigationItemSelected(int index) {
     if (index != _tab) {
-      _cancelPendingTapGestures();
-      setState(() {
-        _tab = index;
-        _visited.add(index);
-      });
+      _selectTab(index);
       return;
     }
 
@@ -150,6 +170,87 @@ class _HomePageState extends ConsumerState<HomePage>
         _lastTopBarTapTime = null;
       });
     }
+  }
+
+  void _selectTab(int index) {
+    if (index == _tab) {
+      if (!_visited.contains(index)) setState(() => _visited.add(index));
+      return;
+    }
+
+    _cancelPendingTapGestures();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _tabTransitionController.stop();
+      setState(() {
+        _previousTab = index;
+        _tab = index;
+        _visited.add(index);
+        _isTabTransitioning = false;
+        _tabIncomingTransition = const AlwaysStoppedAnimation(Offset.zero);
+        _tabOutgoingTransition = const AlwaysStoppedAnimation(Offset.zero);
+      });
+      _tabTransitionController.value = 1;
+      return;
+    }
+
+    final currentOffset =
+        _isTabTransitioning ? _tabIncomingTransition.value : Offset.zero;
+    var direction = index > _tab ? 1.0 : -1.0;
+    if (Directionality.of(context) == TextDirection.rtl) direction *= -1;
+    setState(() {
+      _previousTab = _tab;
+      _tab = index;
+      _visited.add(index);
+      _isTabTransitioning = true;
+      _tabIncomingTransition = Tween<Offset>(
+        begin: Offset(direction, 0),
+        end: Offset.zero,
+      ).animate(_tabTransitionCurve);
+      _tabOutgoingTransition = Tween<Offset>(
+        begin: currentOffset,
+        end: Offset(-direction, 0),
+      ).animate(_tabTransitionCurve);
+    });
+    _tabTransitionController.forward(from: 0);
+  }
+
+  Widget _buildTabContent(List<Widget> pages) {
+    final pageOrder = List<int>.generate(pages.length, (index) => index)
+      ..sort((a, b) => _tabPageLayer(a).compareTo(_tabPageLayer(b)));
+    return Stack(
+      clipBehavior: Clip.hardEdge,
+      children: [
+        for (final index in pageOrder)
+          Positioned.fill(
+            key: ValueKey(index),
+            child: Offstage(
+              offstage: index != _tab &&
+                  (!_isTabTransitioning || index != _previousTab),
+              child: TickerMode(
+                enabled: index == _tab ||
+                    (_isTabTransitioning && index == _previousTab),
+                child: IgnorePointer(
+                  ignoring: index != _tab,
+                  child: SlideTransition(
+                    position: index == _tab
+                        ? _tabIncomingTransition
+                        : index == _previousTab && _isTabTransitioning
+                            ? _tabOutgoingTransition
+                            : const AlwaysStoppedAnimation(Offset.zero),
+                    child: pages[index],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  int _tabPageLayer(int index) {
+    if (_isTabTransitioning && index == _previousTab) return 1;
+    if (index == _tab) return 2;
+    return 0;
   }
 
   Future<void> _consumeLaunch() async {
@@ -208,12 +309,7 @@ class _HomePageState extends ConsumerState<HomePage>
       case XLinkKind.explore:
         final tab = target.kind == XLinkKind.explore ? 1 : 0;
         _cancelPendingTapGestures();
-        if (_tab != tab || !_visited.contains(tab)) {
-          setState(() {
-            _tab = tab;
-            _visited.add(tab);
-          });
-        }
+        _selectTab(tab);
       case XLinkKind.search:
         final query = target.query?.trim() ?? '';
         openPage(SearchPage(initialQuery: query, showExplore: query.isEmpty));
@@ -255,6 +351,8 @@ class _HomePageState extends ConsumerState<HomePage>
     _homeTimelineController
       ..removeListener(_onHomeTimelineChanged)
       ..dispose();
+    _tabTransitionCurve.dispose();
+    _tabTransitionController.dispose();
     _exploreSearchController.dispose();
     super.dispose();
   }
@@ -436,9 +534,59 @@ class _HomePageState extends ConsumerState<HomePage>
       ],
     );
     final statusBarHeight = MediaQuery.paddingOf(context).top;
-    final topChromeHeight = _tab == 2
-        ? statusBarHeight
-        : statusBarHeight + appBar.preferredSize.height;
+    final pageTopChromeHeight = statusBarHeight + appBar.preferredSize.height;
+    final topChromeHeight = _tab == 2 ? statusBarHeight : pageTopChromeHeight;
+    final loginPrompt = Center(
+        child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.forum_outlined, size: 72, color: colorScheme.primary),
+              const SizedBox(height: 24),
+              Text('ReviewX', style: materialTheme.textTheme.headlineLarge),
+              const SizedBox(height: 12),
+              const Text('登录 X，阅读你的关注时间线', textAlign: TextAlign.center),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                  onPressed: _login,
+                  icon: const Icon(Icons.login),
+                  label: const Text('登录 X')),
+            ])));
+    final pages = <Widget>[
+      controller.loggedIn
+          ? TabBarView(
+              controller: _homeTimelineController,
+              children: [
+                TimelinePage(
+                    cacheKey: 'for_you',
+                    topPadding: controller.expired ? 0 : pageTopChromeHeight,
+                    actions: _forYouActions,
+                    load: (cursor) =>
+                        controller.adapter.forYou(cursor: cursor)),
+                _visitedHomeTimelineTabs.contains(1)
+                    ? TimelinePage(
+                        cacheKey: 'following',
+                        topPadding:
+                            controller.expired ? 0 : pageTopChromeHeight,
+                        actions: _followingActions,
+                        load: (cursor) =>
+                            controller.adapter.following(cursor: cursor))
+                    : const SizedBox.shrink(),
+              ],
+            )
+          : loginPrompt,
+      controller.loggedIn
+          ? _visited.contains(1)
+              ? SearchPage(
+                  showExplore: true,
+                  searchController: _exploreSearchController,
+                  topChromeHeight: controller.expired ? 0 : pageTopChromeHeight,
+                  personalized: _explorePersonalized,
+                  actions: _exploreActions,
+                )
+              : const SizedBox.shrink()
+          : loginPrompt,
+      SettingsPane(topChromeHeight: controller.expired ? 0 : statusBarHeight),
+    ];
     return Scaffold(
         key: _scaffoldKey,
         drawer: const AppDrawer(),
@@ -464,77 +612,7 @@ class _HomePageState extends ConsumerState<HomePage>
                     TextButton(onPressed: _login, child: const Text('重新登录'))
                   ]),
             ),
-          Expanded(
-              child: controller.loggedIn
-                  ? IndexedStack(
-                      key: ValueKey(controller.epoch),
-                      index: _tab,
-                      children: [
-                          TabBarView(
-                            controller: _homeTimelineController,
-                            children: [
-                              TimelinePage(
-                                  cacheKey: 'for_you',
-                                  topPadding:
-                                      controller.expired ? 0 : topChromeHeight,
-                                  actions: _forYouActions,
-                                  load: (cursor) => controller.adapter
-                                      .forYou(cursor: cursor)),
-                              _visitedHomeTimelineTabs.contains(1)
-                                  ? TimelinePage(
-                                      cacheKey: 'following',
-                                      topPadding: controller.expired
-                                          ? 0
-                                          : topChromeHeight,
-                                      actions: _followingActions,
-                                      load: (cursor) => controller.adapter
-                                          .following(cursor: cursor))
-                                  : const SizedBox.shrink(),
-                            ],
-                          ),
-                          _visited.contains(1)
-                              ? SearchPage(
-                                  showExplore: true,
-                                  searchController: _exploreSearchController,
-                                  topChromeHeight:
-                                      controller.expired ? 0 : topChromeHeight,
-                                  personalized: _explorePersonalized,
-                                  actions: _exploreActions,
-                                )
-                              : const SizedBox.shrink(),
-                          SettingsPane(
-                              topChromeHeight:
-                                  controller.expired ? 0 : statusBarHeight),
-                        ])
-                  : _tab == 2
-                      ? SettingsPane(
-                          topChromeHeight:
-                              controller.expired ? 0 : statusBarHeight)
-                      : Center(
-                          child: Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.forum_outlined,
-                                        size: 72,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary),
-                                    const SizedBox(height: 24),
-                                    Text('ReviewX',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headlineLarge),
-                                    const SizedBox(height: 12),
-                                    const Text('登录 X，阅读你的关注时间线',
-                                        textAlign: TextAlign.center),
-                                    const SizedBox(height: 24),
-                                    FilledButton.icon(
-                                        onPressed: _login,
-                                        icon: const Icon(Icons.login),
-                                        label: const Text('登录 X'))
-                                  ]))))
+          Expanded(child: _buildTabContent(pages)),
         ]),
         bottomNavigationBar: theme.useFloatingNavBar
             ? SafeArea(

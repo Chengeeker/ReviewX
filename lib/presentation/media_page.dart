@@ -315,10 +315,26 @@ class _MediaPageState extends ConsumerState<MediaPage>
   bool _saving = false, _showChrome = true;
   bool _thumbnailUserScrolling = false, _thumbnailSettling = false;
   int _thumbnailSyncEpoch = 0;
+  double _videoBottomControlsHeight = 0;
+  double? _thumbnailScrollBottom;
 
-  bool get _hasThumbnailStrip =>
-      widget.media.length > 1 &&
-      widget.media.every((media) => media.video == null);
+  bool get _hasThumbnailStrip => widget.media.length > 1;
+
+  double get _thumbnailBottom =>
+      _thumbnailScrollBottom ??
+      (widget.media[_index].video != null && _videoBottomControlsHeight > 0
+          ? _videoBottomControlsHeight + 8
+          : MediaQuery.paddingOf(context).bottom + 32);
+
+  void _setChromeVisible(bool visible) {
+    if (!mounted || _showChrome == visible) return;
+    setState(() => _showChrome = visible);
+  }
+
+  void _setVideoBottomControlsHeight(double height) {
+    if (!mounted || _videoBottomControlsHeight == height) return;
+    setState(() => _videoBottomControlsHeight = height);
+  }
 
   late final AnimationController _doubleTapAnimationController =
       AnimationController(
@@ -443,7 +459,10 @@ class _MediaPageState extends ConsumerState<MediaPage>
           duration: duration, curve: Curves.easeOutCubic),
     ]).whenComplete(() {
       if (!mounted || epoch != _thumbnailSyncEpoch) return;
-      _thumbnailSettling = false;
+      setState(() {
+        _thumbnailSettling = false;
+        _thumbnailScrollBottom = null;
+      });
     }));
   }
 
@@ -451,6 +470,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
     if (notification.depth != 0) return false;
     if (notification is ScrollStartNotification &&
         notification.dragDetails != null) {
+      _thumbnailScrollBottom = _thumbnailBottom;
       _thumbnailSyncEpoch++;
       _thumbnailSettling = false;
       _thumbnailUserScrolling = true;
@@ -465,6 +485,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
     if (index == _index) return;
     HapticFeedbackUtil.light();
     _thumbnailSyncEpoch++;
+    _thumbnailScrollBottom = null;
     _thumbnailUserScrolling = false;
     _thumbnailSettling = false;
     if (_thumbnailController.hasClients) {
@@ -688,6 +709,9 @@ class _MediaPageState extends ConsumerState<MediaPage>
                   onNotification: (notification) {
                     if (notification.depth == 0 &&
                         notification.dragDetails != null) {
+                      if (_thumbnailScrollBottom != null) {
+                        setState(() => _thumbnailScrollBottom = null);
+                      }
                       _thumbnailSyncEpoch++;
                       _thumbnailUserScrolling = false;
                       _thumbnailSettling = false;
@@ -713,6 +737,11 @@ class _MediaPageState extends ConsumerState<MediaPage>
                           onNext: index + 1 < widget.media.length
                               ? () => _goTo(index + 1)
                               : null,
+                          onToggleChrome: _toggleChrome,
+                          onFullscreenChanged: (isFullscreen) =>
+                              _setChromeVisible(!isFullscreen),
+                          onBottomControlsHeightChanged:
+                              _setVideoBottomControlsHeight,
                         );
                       }
 
@@ -787,11 +816,11 @@ class _MediaPageState extends ConsumerState<MediaPage>
                   ),
                 ),
               ),
-              if (_hasThumbnailStrip && currentMedia.video == null)
+              if (_hasThumbnailStrip)
                 Positioned(
                   left: 12,
                   right: 12,
-                  bottom: MediaQuery.paddingOf(context).bottom + 32,
+                  bottom: _thumbnailBottom,
                   child: _afterRouteTransition(
                     routeAnimation,
                     AnimatedOpacity(

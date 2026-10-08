@@ -27,12 +27,18 @@ class ReviewVideoPlayer extends ConsumerStatefulWidget {
       this.author = '',
       this.pageLabel = '',
       this.onPrevious,
-      this.onNext});
+      this.onNext,
+      this.onToggleChrome,
+      this.onFullscreenChanged,
+      this.onBottomControlsHeightChanged});
   final SocialMedia media;
   final bool active;
   final SocialPost? post;
   final String author, pageLabel;
   final VoidCallback? onPrevious, onNext;
+  final VoidCallback? onToggleChrome;
+  final ValueChanged<bool>? onFullscreenChanged;
+  final ValueChanged<double>? onBottomControlsHeightChanged;
   @override
   ConsumerState<ReviewVideoPlayer> createState() => _ReviewVideoPlayerState();
 }
@@ -45,6 +51,7 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
   bool _hasError = false;
   bool _showControls = true;
   Timer? _hideControlsTimer;
+  final GlobalKey _bottomControlsKey = GlobalKey();
 
   // 横竖屏状态
   bool _isLandscape = false;
@@ -235,6 +242,7 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
     if (_isLandscape) {
       _isLandscape = false;
       _restorePortraitAndSystemUI();
+      widget.onFullscreenChanged?.call(false);
     }
   }
 
@@ -324,7 +332,35 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
     } else {
       _restorePortraitAndSystemUI();
     }
+    widget.onFullscreenChanged?.call(nextLandscape);
     _resetControlsTimer();
+  }
+
+  void _reportBottomControlsHeight() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final box = _bottomControlsKey.currentContext?.findRenderObject();
+      if (box is RenderBox && box.hasSize) {
+        widget.onBottomControlsHeightChanged?.call(box.size.height);
+      }
+    });
+  }
+
+  Widget _measureBottomControls(Widget controls) {
+    if (widget.onBottomControlsHeightChanged == null) return controls;
+    if (_bottomControlsKey.currentContext == null) {
+      _reportBottomControlsHeight();
+    }
+    return NotificationListener<SizeChangedLayoutNotification>(
+      onNotification: (_) {
+        _reportBottomControlsHeight();
+        return false;
+      },
+      child: SizeChangedLayoutNotifier(
+        key: _bottomControlsKey,
+        child: controls,
+      ),
+    );
   }
 
   void _resetControlsTimer() {
@@ -894,6 +930,7 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
                         setState(() {
                           _showControls = !_showControls;
                         });
+                        if (!_isLandscape) widget.onToggleChrome?.call();
                         _resetControlsTimer();
                       },
                       onDoubleTap: () {
@@ -1086,7 +1123,7 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        child: Container(
+                        child: _measureBottomControls(Container(
                             decoration: const BoxDecoration(
                                 gradient: LinearGradient(
                                     begin: Alignment.bottomCenter,
@@ -1107,7 +1144,7 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
                                         children: [
                                       _postActions(),
                                       _transport(player),
-                                    ]))))),
+                                    ])))))),
                 ]);
               }))));
 
