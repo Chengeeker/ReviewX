@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:review_x/core/services/google_translate_service.dart';
 import 'package:review_x/twitter/api/transaction_id.dart';
 import 'package:review_x/twitter/api/twitter_client.dart';
 import 'package:review_x/twitter/auth/session.dart';
 import 'package:review_x/twitter/models/social_models.dart';
-import 'package:review_x/twitter/models/translation_diagnostics.dart';
 
 class TestTransactions extends TransactionIds {
   @override
@@ -31,55 +31,6 @@ class TestTransport implements HttpClientAdapter {
 }
 
 void main() {
-  setUp(() {
-    TranslationDiagnostics.clear();
-  });
-
-  group('TranslationDiagnostics', () {
-    test('records and retrieves log entries correctly', () {
-      final entry = TranslationLogEntry(
-        postId: '1001',
-        authorHandle: 'testuser',
-        textPreview: 'Hello world',
-        hasGrokField: true,
-        isAvailable: true,
-        destinationLanguage: 'zh-cn',
-        translationPreview: '你好世界',
-        resultStatus: '成功解析译文',
-        detailReason: '目标语言为 zh-cn，成功提取',
-        timestamp: DateTime(2026, 10, 8, 12, 0),
-      );
-
-      TranslationDiagnostics.record(entry);
-      expect(TranslationDiagnostics.logs.length, 1);
-      final retrieved = TranslationDiagnostics.getForPost('1001');
-      expect(retrieved, isNotNull);
-      expect(retrieved?.authorHandle, 'testuser');
-      expect(retrieved?.resultStatus, '成功解析译文');
-      expect(retrieved?.toFormattedReport(), contains('你好世界'));
-    });
-
-    test('exports formatted report for all logs', () {
-      TranslationDiagnostics.record(TranslationLogEntry(
-        postId: '1002',
-        authorHandle: 'alice',
-        textPreview: 'Test 1',
-        hasGrokField: false,
-        isAvailable: null,
-        destinationLanguage: '',
-        translationPreview: '',
-        resultStatus: 'X未下发Grok数据',
-        detailReason: '接口未返回字段',
-        timestamp: DateTime(2026, 10, 8, 12, 1),
-      ));
-
-      final report = TranslationDiagnostics.exportAll();
-      expect(report, contains('=== ReviewX 翻译诊断与日志导出报告 ==='));
-      expect(report, contains('[推文 ID]: 1002'));
-      expect(report, contains('X未下发Grok数据'));
-    });
-  });
-
   group('SocialPost translation parsing', () {
     Map<String, dynamic> sampleUser() => {
           '__typename': 'User',
@@ -123,11 +74,9 @@ void main() {
       final post = SocialPost.parse(data);
       expect(post, isNotNull);
       expect(post?.translatedText, '大家早上好！');
-      final diag = TranslationDiagnostics.getForPost('2001');
-      expect(diag?.resultStatus, '成功解析译文');
     });
 
-    test('parses Grok translation with empty destination language but Chinese chars', () {
+    test('parses Grok translation with empty destination language', () {
       final data = sampleTweet(grokField: {
         'is_available': true,
         'data': {
@@ -140,11 +89,9 @@ void main() {
       final post = SocialPost.parse(data);
       expect(post, isNotNull);
       expect(post?.translatedText, '大家好！这是自动翻译的内容。');
-      final diag = TranslationDiagnostics.getForPost('2001');
-      expect(diag?.resultStatus, '成功解析译文');
     });
 
-    test('handles is_available: false with proper diagnostic logging', () {
+    test('handles is_available: false', () {
       final data = sampleTweet(grokField: {
         'is_available': false,
         'data': {
@@ -156,17 +103,13 @@ void main() {
       final post = SocialPost.parse(data);
       expect(post, isNotNull);
       expect(post?.translatedText, isEmpty);
-      final diag = TranslationDiagnostics.getForPost('2001');
-      expect(diag?.resultStatus, contains('is_available=false'));
     });
 
-    test('handles missing Grok field with proper diagnostic logging', () {
+    test('handles missing Grok field', () {
       final data = sampleTweet(); // No grok field
       final post = SocialPost.parse(data);
       expect(post, isNotNull);
       expect(post?.translatedText, isEmpty);
-      final diag = TranslationDiagnostics.getForPost('2001');
-      expect(diag?.resultStatus, 'X未下发Grok数据');
     });
 
     test('handles outer grok_translated_post_with_availability in TweetWithVisibilityResults', () {
@@ -178,7 +121,7 @@ void main() {
           'is_available': true,
           'data': {
             'destination_language': 'zh',
-            'translation': '外层包裹的翻译测试',
+            'translation': '外层包装解包成功',
             'entities': {'urls': []}
           }
         }
@@ -186,26 +129,34 @@ void main() {
 
       final post = SocialPost.parse(wrapped);
       expect(post, isNotNull);
-      expect(post?.translatedText, '外层包裹的翻译测试');
+      expect(post?.translatedText, '外层包装解包成功');
+    });
+  });
+
+  group('GoogleTranslateService', () {
+    test('needsTranslation identifies non-Chinese text', () {
+      expect(GoogleTranslateService.needsTranslation('Hello world'), isTrue);
+      expect(GoogleTranslateService.needsTranslation('你好，世界'), isFalse);
     });
   });
 
   group('TwitterClient request headers', () {
     test('sends Accept-Language header prioritizing Chinese', () async {
       final transport = TestTransport({
-        'data': {'home': {}}
+        'data': {'user': {}}
       });
       final dio = Dio()..httpClientAdapter = transport;
-      final client = TwitterClient(dio: dio, transactions: TestTransactions())
-        ..session = const TwitterSession('auth_token=a; ct0=b', '123');
+      final client = TwitterClient(dio: dio, transactions: TestTransactions());
+      client.session = const TwitterSession(
+        'auth_token=test-auth; ct0=test-ct0',
+        '12345',
+      );
 
-      try {
-        await client.trendsGuide();
-      } catch (_) {}
+      await client.accountSettings();
 
-      expect(transport.requests.isNotEmpty, isTrue);
+      expect(transport.requests.length, 1);
       final headers = transport.requests.first.headers;
-      expect(headers['Accept-Language'], contains('zh-CN'));
+      expect(headers['Accept-Language'], contains('zh-CN,zh;q=0.9'));
       expect(headers['x-twitter-client-language'], 'zh-cn');
     });
   });

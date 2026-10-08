@@ -1,7 +1,7 @@
 name: review_x
 description: ReviewX — Material Design 3 client for X/Twitter.
 publish_to: 'none'
-version: 1.0.3+64
+version: 1.0.4+65
 environment:
   sdk: ^3.5.0
 dependencies:

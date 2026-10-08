@@ -14,7 +14,6 @@ import '../core/services/settings_backup.dart';
 import '../twitter/auth/app_controller.dart';
 import '../core/services/notification_poll.dart';
 import 'timeline_page.dart';
-import 'translation_diagnostics_page.dart';
 
 class NotificationSettingsPage extends ConsumerStatefulWidget {
   const NotificationSettingsPage({super.key});
@@ -162,7 +161,7 @@ class _ReadingSettingsPageState extends ConsumerState<ReadingSettingsPage> {
             'showSeconds': '显示秒数',
             'utcTime': '使用 UTC 时间',
             'showSource': '显示发布来源',
-            'grokAutoTranslate': '自动显示 Grok 翻译',
+            'grokAutoTranslate': '自动翻译外文推文',
             'showBanner': '显示主页背景图',
             'cardBackground': '帖子背景',
             'largeImages': '单图保留图片比例',
@@ -184,21 +183,6 @@ class _ReadingSettingsPageState extends ConsumerState<ReadingSettingsPage> {
             'imageRadius': '图片圆角'
           }.entries)
             _sliderTile(entry, state),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.assessment_outlined),
-            title: const Text('翻译日志与排查诊断'),
-            subtitle: const Text('查看近期帖子的翻译解析记录、状态与原因'),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () {
-              HapticFeedbackUtil.selection();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const TranslationDiagnosticsPage()),
-              );
-            },
-          ),
         ]));
   }
 }

@@ -7,9 +7,9 @@ import '../core/widgets/cached_network_image.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../twitter/auth/app_controller.dart';
-import '../twitter/models/social_models.dart';
 import '../twitter/models/content_models.dart';
-import '../twitter/models/translation_diagnostics.dart';
+import '../twitter/models/social_models.dart';
+import '../core/services/google_translate_service.dart';
 import 'media_page.dart';
 import 'timeline_page.dart';
 import 'article_page.dart';
@@ -373,63 +373,6 @@ class PostCard extends ConsumerWidget {
                                                   }
                                                 }
                                               }
-                                              if (action == 'translation_diag') {
-                                                final diag =
-                                                    TranslationDiagnostics
-                                                        .getForPost(current.id);
-                                                final text = diag != null
-                                                    ? diag.toFormattedReport()
-                                                    : '[推文 ID]: ${current.id}\n'
-                                                        '[作者]: @${current.author.handle}\n'
-                                                        '[状态]: ${current.translatedText.isNotEmpty ? "当前存在译文 (${current.translatedText.length}字)" : "当前无可用译文"}\n'
-                                                        '[诊断提示]: 暂未捕获到独立日志（可能因快速切换或快照未记录）。';
-                                                if (context.mounted) {
-                                                  showDialog<void>(
-                                                    context: context,
-                                                    builder: (ctx) =>
-                                                        AlertDialog(
-                                                      title: const Text(
-                                                          '推文翻译诊断日志'),
-                                                      content:
-                                                          SingleChildScrollView(
-                                                        child: SelectableText(
-                                                          text,
-                                                          style: const TextStyle(
-                                                              fontSize: 13,
-                                                              height: 1.4),
-                                                        ),
-                                                      ),
-                                                      actions: [
-                                                        TextButton(
-                                                          onPressed: () {
-                                                            Clipboard.setData(
-                                                                ClipboardData(
-                                                                    text:
-                                                                        text));
-                                                            Navigator.pop(ctx);
-                                                            ScaffoldMessenger
-                                                                    .of(context)
-                                                                .showSnackBar(
-                                                              const SnackBar(
-                                                                  content: Text(
-                                                                      '推文翻译诊断已复制')),
-                                                            );
-                                                          },
-                                                          child:
-                                                              const Text('复制诊断'),
-                                                        ),
-                                                        FilledButton(
-                                                          onPressed: () =>
-                                                              Navigator.pop(
-                                                                  ctx),
-                                                          child:
-                                                              const Text('关闭'),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
-                                                }
-                                              }
                                             },
                                             itemBuilder: (_) => [
                                                   const PopupMenuItem(
@@ -475,9 +418,6 @@ class PostCard extends ConsumerWidget {
                                                             style: TextStyle(
                                                                 color: scheme
                                                                     .error))),
-                                                   const PopupMenuItem(
-                                                       value: 'translation_diag',
-                                                       child: Text('翻译诊断与日志')),
                                                 ]),
                                       ),
                                     ],
@@ -812,6 +752,14 @@ class _GrokTranslationText extends StatefulWidget {
 
 class _GrokTranslationTextState extends State<_GrokTranslationText> {
   bool? _showTranslationOverride;
+  String? _googleTranslated;
+  bool _loadingGoogle = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAutoGoogleTranslate();
+  }
 
   @override
   void didUpdateWidget(covariant _GrokTranslationText oldWidget) {
@@ -820,35 +768,104 @@ class _GrokTranslationTextState extends State<_GrokTranslationText> {
         oldWidget.original != widget.original ||
         oldWidget.translated != widget.translated) {
       _showTranslationOverride = null;
+      _googleTranslated = null;
+      _checkAutoGoogleTranslate();
+    }
+  }
+
+  void _checkAutoGoogleTranslate() {
+    if (widget.translated.isEmpty &&
+        widget.autoTranslate &&
+        GoogleTranslateService.needsTranslation(widget.original)) {
+      _fetchGoogleTranslate();
+    }
+  }
+
+  Future<void> _fetchGoogleTranslate() async {
+    if (_loadingGoogle) return;
+    setState(() => _loadingGoogle = true);
+    final result = await GoogleTranslateService.translate(widget.original);
+    if (mounted) {
+      setState(() {
+        _loadingGoogle = false;
+        if (result != null && result.isNotEmpty) {
+          _googleTranslated = result;
+        }
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.translated.isEmpty) {
-      return RichContentText(
-          text: widget.original,
-          maxLines: widget.maxLines,
-          selectable: widget.selectable,
-          style: widget.style);
+    // 1. If Grok translation is available from X API
+    if (widget.translated.isNotEmpty) {
+      final showTranslation = _showTranslationOverride ?? widget.autoTranslate;
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        RichContentText(
+            text: showTranslation ? widget.translated : widget.original,
+            maxLines: widget.maxLines,
+            selectable: widget.selectable,
+            style: widget.style),
+        TextButton.icon(
+            style: TextButton.styleFrom(
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 4)),
+            onPressed: () =>
+                setState(() => _showTranslationOverride = !showTranslation),
+            icon: const Icon(Icons.translate, size: 18),
+            label: Text(showTranslation ? '显示原文' : 'Grok 翻译')),
+      ]);
     }
 
-    final showTranslation = _showTranslationOverride ?? widget.autoTranslate;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      RichContentText(
-          text: showTranslation ? widget.translated : widget.original,
-          maxLines: widget.maxLines,
-          selectable: widget.selectable,
-          style: widget.style),
-      TextButton.icon(
-          style: TextButton.styleFrom(
-              minimumSize: const Size(0, 32),
-              padding: const EdgeInsets.symmetric(horizontal: 4)),
-          onPressed: () =>
-              setState(() => _showTranslationOverride = !showTranslation),
-          icon: const Icon(Icons.translate, size: 18),
-          label: Text(showTranslation ? '显示原文' : 'Grok 翻译')),
-    ]);
+    // 2. If Google translation is available
+    if (_googleTranslated != null && _googleTranslated!.isNotEmpty) {
+      final showTranslation = _showTranslationOverride ?? true;
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        RichContentText(
+            text: showTranslation ? _googleTranslated! : widget.original,
+            maxLines: widget.maxLines,
+            selectable: widget.selectable,
+            style: widget.style),
+        TextButton.icon(
+            style: TextButton.styleFrom(
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 4)),
+            onPressed: () =>
+                setState(() => _showTranslationOverride = !showTranslation),
+            icon: const Icon(Icons.translate, size: 18),
+            label: Text(showTranslation ? '显示原文' : '由 Google 翻译')),
+      ]);
+    }
+
+    // 3. Foreign text without translation: provide Google Translate button
+    if (GoogleTranslateService.needsTranslation(widget.original)) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        RichContentText(
+            text: widget.original,
+            maxLines: widget.maxLines,
+            selectable: widget.selectable,
+            style: widget.style),
+        TextButton.icon(
+            style: TextButton.styleFrom(
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 4)),
+            onPressed: _loadingGoogle ? null : _fetchGoogleTranslate,
+            icon: _loadingGoogle
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.translate, size: 18),
+            label: Text(_loadingGoogle ? '正在翻译…' : '由 Google 翻译')),
+      ]);
+    }
+
+    // Native Chinese text
+    return RichContentText(
+        text: widget.original,
+        maxLines: widget.maxLines,
+        selectable: widget.selectable,
+        style: widget.style);
   }
 }
 
