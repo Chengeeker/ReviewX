@@ -46,7 +46,7 @@ class XLoginActivity : Activity() {
         @Volatile var candidateValidator: ((Map<String, String>, (Boolean) -> Unit) -> Unit)? = null
         const val EXTRA_EXIT_REASON = "x_login_exit_reason"
         private const val POLL_INTERVAL_MS = 2_000L
-        private const val RETRY_INTERVAL_MS = 60_000L
+        private const val RETRY_INTERVAL_MS = 3_000L
         private const val LOGIN_PAGE_URL = "https://x.com/i/flow/login"
         private const val MAX_RENDERER_RECOVERIES = 1
         private val SESSION_COOKIE_NAMES = setOf("auth_token", "ct0", "twid", "gt")
@@ -257,6 +257,7 @@ class XLoginActivity : Activity() {
             )
             progress.visibility = View.VISIBLE
             if (view === webView && url != null && isAllowedLoginUrl(url)) lastLoginUrl = url
+            checkLoginSuccess(url)
         }
 
         override fun onPageFinished(view: WebView, url: String?) {
@@ -267,6 +268,12 @@ class XLoginActivity : Activity() {
             )
             progress.visibility = View.GONE
             if (view === webView && url != null && isAllowedLoginUrl(url)) lastLoginUrl = url
+            checkLoginSuccess(url)
+        }
+
+        override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+            super.doUpdateVisitedHistory(view, url, isReload)
+            checkLoginSuccess(url)
         }
 
         override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
@@ -453,21 +460,58 @@ class XLoginActivity : Activity() {
         view.destroy()
     }
 
+    private fun checkLoginSuccess(url: String?) {
+        if (closing) return
+        CookieManager.getInstance().flush()
+        val uri = url?.let { Uri.parse(it) }
+        val path = uri?.path.orEmpty()
+        val isPostLoginUrl = path.startsWith("/home") || path == "/" ||
+            path.startsWith("/explore") || path.startsWith("/notifications") ||
+            path.startsWith("/messages")
+        val candidate = readCandidate()
+        if (candidate != null) {
+            requestValidation(candidate, force = isPostLoginUrl)
+        } else if (isPostLoginUrl) {
+            handler.postDelayed({
+                if (!closing) {
+                    CookieManager.getInstance().flush()
+                    readCandidate()?.let { requestValidation(it, force = true) }
+                }
+            }, 500L)
+            handler.postDelayed({
+                if (!closing) {
+                    CookieManager.getInstance().flush()
+                    readCandidate()?.let { requestValidation(it, force = true) }
+                }
+            }, 1500L)
+        }
+    }
+
     private fun readCandidate(): Map<String, String>? {
-        val raw = CookieManager.getInstance().getCookie("https://x.com") ?: return null
+        val manager = CookieManager.getInstance()
         val parsed = mutableMapOf<String, String>()
-        raw.split(';').forEach { part ->
-            val at = part.indexOf('=')
-            if (at > 0) {
-                val key = part.substring(0, at).trim()
-                if (key in SESSION_COOKIE_NAMES) parsed[key] = part.substring(at + 1).trim()
+        val urlsToCheck = mutableListOf<String>().apply {
+            addAll(COOKIE_URLS)
+            webView?.url?.let { add(it) }
+        }
+        urlsToCheck.forEach { url ->
+            val raw = manager.getCookie(url) ?: return@forEach
+            raw.split(';').forEach { part ->
+                val at = part.indexOf('=')
+                if (at > 0) {
+                    val key = part.substring(0, at).trim()
+                    if (key in SESSION_COOKIE_NAMES && !parsed.containsKey(key)) {
+                        val value = part.substring(at + 1).trim()
+                        if (value.isNotEmpty()) parsed[key] = value
+                    }
+                }
             }
         }
         if (parsed["auth_token"].isNullOrEmpty() || parsed["ct0"].isNullOrEmpty()) return null
         return parsed
     }
 
-    private fun requestValidation(cookies: Map<String, String>) {
+    private fun requestValidation(cookies: Map<String, String>, force: Boolean = false) {
         if (closing || validating) return
         val fingerprint = MessageDigest.getInstance("SHA-256")
             .digest(cookies.toSortedMap().entries.joinToString(";") { "${it.key}=${it.value}" }.toByteArray())
@@ -478,7 +522,7 @@ class XLoginActivity : Activity() {
             rejectedFingerprint = null
             XLoginDiagnostics.record(this, "session.candidate_changed")
         }
-        if (fingerprint == rejectedFingerprint &&
+        if (!force && fingerprint == rejectedFingerprint &&
             SystemClock.elapsedRealtime() - rejectedAt < RETRY_INTERVAL_MS) return
         val validator = candidateValidator ?: run {
             if (candidateChanged) XLoginDiagnostics.record(this, "session.validator_missing")

@@ -253,9 +253,10 @@ class TwitterClient {
           options: Options(
               headers: {'Cookie': cookie, 'User-Agent': userAgent},
               responseType: ResponseType.plain));
-      return RegExp(r'"user_id":"(\d+)"')
-          .firstMatch(response.data ?? '')
-          ?.group(1);
+      final html = response.data ?? '';
+      return RegExp(r'"user_id"\s*:\s*"(\d+)"').firstMatch(html)?.group(1) ??
+          RegExp(r'"userId"\s*:\s*"(\d+)"').firstMatch(html)?.group(1) ??
+          RegExp(r'"rest_id"\s*:\s*"(\d+)"').firstMatch(html)?.group(1);
     } catch (_) {
       throw const TwitterFailure('无法确认登录身份，请检查网络后重试');
     }
