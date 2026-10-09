@@ -44,6 +44,7 @@ const post = SocialPost(
 
 class FakeVideoPlatform extends VideoPlayerPlatform {
   final urls = <String>[],
+      headers = <Map<String, String>>[],
       disposed = <int>[],
       plays = <int>[],
       pauses = <int>[];
@@ -66,6 +67,7 @@ class FakeVideoPlatform extends VideoPlayerPlatform {
   Future<int?> createWithOptions(VideoCreationOptions options) async {
     final id = urls.length + 1;
     urls.add(options.dataSource.uri!);
+    headers.add(options.dataSource.httpHeaders);
     positions[id] = Duration.zero;
     return id;
   }
@@ -171,11 +173,17 @@ void main() {
     });
   });
   Widget player(
-          {bool active = true, double scale = 1, SocialMedia media = video}) =>
+          {Key? key,
+          bool active = true,
+          double scale = 1,
+          ReadingNotifier? readingNotifier,
+          SocialMedia media = video}) =>
       ProviderScope(
           overrides: [
             appControllerProvider.overrideWith((ref) => app),
             storageServiceProvider.overrideWithValue(storage),
+            if (readingNotifier != null)
+              readingProvider.overrideWith((ref) => readingNotifier),
           ],
           child: MaterialApp(
               home: MediaQuery(
@@ -183,6 +191,7 @@ void main() {
                       size: const Size(360, 640),
                       textScaler: TextScaler.linear(scale)),
                   child: ReviewVideoPlayer(
+                      key: key,
                       media: media,
                       active: active,
                       post: post,
@@ -252,7 +261,7 @@ void main() {
   });
 
   testWidgets(
-      'default mute persists and gesture restores player gain, not system volume',
+      'default mute can be toggled and gestures adjust player gain, not system volume',
       (tester) async {
     final settings = ReadingNotifier(storage);
     await settings.set('defaultMutedVideo', true);
@@ -260,8 +269,15 @@ void main() {
     await tester.pumpWidget(player());
     await tester.pumpAndSettle();
     expect(platform.volumes.last, 0);
-    expect(find.byTooltip('静音'), findsNothing);
-    expect(find.byTooltip('取消静音'), findsNothing);
+    expect(find.byTooltip('取消静音'), findsOneWidget);
+    await tester.tap(find.byTooltip('取消静音'));
+    await tester.pump();
+    expect(platform.volumes.last, 1);
+    expect(find.byTooltip('静音'), findsOneWidget);
+    await tester.tap(find.byTooltip('静音'));
+    await tester.pump();
+    expect(platform.volumes.last, 0);
+    expect(find.byTooltip('取消静音'), findsOneWidget);
     final size = tester.view.physicalSize / tester.view.devicePixelRatio;
     await tester.dragFrom(
         Offset(size.width * .8, size.height * .4), const Offset(0, 50));
@@ -269,6 +285,14 @@ void main() {
     expect(platform.volumes.last, greaterThan(.7));
     expect(platform.volumes.last, lessThan(1));
     expect(nativeCalls, isNot(contains('setVolume')));
+    await tester.dragFrom(
+        Offset(size.width * .8, size.height * .4), Offset(0, size.height));
+    await tester.pump();
+    expect(platform.volumes.last, 0);
+    expect(find.byTooltip('取消静音'), findsOneWidget);
+    await tester.tap(find.byTooltip('取消静音'));
+    await tester.pump();
+    expect(platform.volumes.last, 1);
     await tester.pumpWidget(const SizedBox());
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -336,6 +360,7 @@ void main() {
     await tester.pumpWidget(player());
     await tester.pumpAndSettle();
     expect(platform.urls, [video.video]);
+    expect(platform.headers.first, XRequestHeaders.media);
     expect(find.byTooltip('加入书签'), findsOneWidget);
     await tester.tap(find.text('1.0X'));
     await tester.pumpAndSettle();
@@ -352,6 +377,7 @@ void main() {
     });
     await tester.pumpAndSettle();
     expect(platform.urls.last, video.videoQualities['360p']);
+    expect(platform.headers.last, XRequestHeaders.media);
     expect(platform.positions[2], const Duration(seconds: 40));
     expect(platform.disposed, contains(1));
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
@@ -364,6 +390,54 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump();
     expect(nativeCalls, contains('restorePlayerBrightness'));
+  });
+
+  testWidgets(
+      'video quality preference respects balanced, high and data_saver settings',
+      (tester) async {
+    const multiQualityVideo = SocialMedia(
+      preview: 'https://pbs.twimg.com/cover.jpg',
+      video: 'https://video.twimg.com/1080x1920/1080p.mp4',
+      videoQualities: {
+        '1080p': 'https://video.twimg.com/1080x1920/1080p.mp4',
+        '720p': 'https://video.twimg.com/720x1280/720p.mp4',
+        '480p': 'https://video.twimg.com/480x854/480p.mp4',
+        '360p': 'https://video.twimg.com/360x640/360p.mp4',
+      },
+    );
+
+    final settings = ReadingNotifier(storage);
+
+    // Default 'balanced' preference picks 720p
+    await tester.pumpWidget(player(
+        key: const ValueKey('balanced'),
+        media: multiQualityVideo,
+        readingNotifier: settings));
+    await tester.pumpAndSettle();
+    expect(platform.urls.last, multiQualityVideo.videoQualities['720p']);
+    expect(platform.headers.last, XRequestHeaders.media);
+
+    // 'high' preference picks 1080p
+    await settings.set('videoQuality', 'high');
+    app = AppController(client: client)..ready = true;
+    await tester.pumpWidget(player(
+        key: const ValueKey('high'),
+        media: multiQualityVideo,
+        readingNotifier: settings));
+    await tester.pumpAndSettle();
+    expect(platform.urls.last, multiQualityVideo.videoQualities['1080p']);
+
+    // 'data_saver' preference picks 360p
+    await settings.set('videoQuality', 'data_saver');
+    app = AppController(client: client)..ready = true;
+    await tester.pumpWidget(player(
+        key: const ValueKey('data_saver'),
+        media: multiQualityVideo,
+        readingNotifier: settings));
+    await tester.pumpAndSettle();
+    expect(platform.urls.last, multiQualityVideo.videoQualities['360p']);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
   });
 
   testWidgets(

@@ -247,6 +247,30 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         ]));
     return Column(children: [
       if (!widget.showExplore) searchField,
+      if (widget.showExplore && widget.actions == null && _query.isEmpty)
+        Row(children: [
+          for (final personalized in [true, false])
+            Expanded(
+                child: InkWell(
+              onTap: () => _selectExplore(personalized),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                    border: Border(
+                        bottom: BorderSide(
+                            color: _personalized == personalized
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outlineVariant,
+                            width: _personalized == personalized ? 3 : 1))),
+                child: Text(personalized ? '探索' : '当前趋势',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontWeight: _personalized == personalized
+                            ? FontWeight.bold
+                            : FontWeight.normal)),
+              ),
+            )),
+        ]),
       if (widget.showExplore && _query.isNotEmpty)
         SizedBox(height: widget.topChromeHeight),
       if (!widget.showExplore || _query.isNotEmpty) productFilters,
@@ -270,6 +294,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   Widget _buildTrends({double topPadding = 0}) => RefreshIndicator(
+      edgeOffset: topPadding,
       onRefresh: () async {
         await _refreshExplore();
       },
@@ -611,6 +636,7 @@ class _NotificationsPageState extends ConsumerState<NotificationsPage> {
       extendBodyBehindAppBar: true,
       appBar: appBar,
       body: RefreshIndicator(
+        edgeOffset: topChromeHeight,
         onRefresh: () => _fetch(true),
         child: ListView.builder(
             padding: EdgeInsets.only(top: topChromeHeight),

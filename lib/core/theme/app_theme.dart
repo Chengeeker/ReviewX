@@ -448,6 +448,31 @@ class AppTheme {
       ),
     );
   }
+
+  static NavigationBarThemeData scaleNavigationBarTheme(
+    NavigationBarThemeData theme,
+    TextScaler textScaler,
+  ) {
+    final labelStyles = theme.labelTextStyle;
+    if (labelStyles == null) return theme;
+
+    final regularSize = labelStyles.resolve(const {})?.fontSize ?? 12;
+    final selectedSize =
+        labelStyles.resolve({WidgetState.selected})?.fontSize ?? regularSize;
+    final baseSize = selectedSize > regularSize ? selectedSize : regularSize;
+    final scaledSize = textScaler.scale(baseSize);
+    final baseHeight = theme.height ?? 80;
+
+    return theme.copyWith(
+      height: baseHeight + (scaledSize > baseSize ? scaledSize - baseSize : 0),
+      labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>((states) {
+        final style = labelStyles.resolve(states);
+        return style?.copyWith(
+          fontSize: textScaler.scale(style.fontSize ?? baseSize),
+        );
+      }),
+    );
+  }
 }
 
 extension FontAdjustmentExtension on BuildContext {

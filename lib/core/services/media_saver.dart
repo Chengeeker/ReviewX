@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../twitter/api/x_request_headers.dart';
 import '../../twitter/models/social_models.dart';
 
 class MediaSaver {
@@ -28,6 +29,7 @@ class MediaSaver {
     final file = File(
         '${(await getTemporaryDirectory()).path}${Platform.pathSeparator}$name');
     final dio = Dio(BaseOptions(
+        headers: XRequestHeaders.media,
         followRedirects: false,
         maxRedirects: 0,
         connectTimeout: const Duration(seconds: 15),

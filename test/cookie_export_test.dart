@@ -36,6 +36,8 @@ void main() {
       storageServiceProvider.overrideWithValue(storage),
       appControllerProvider.overrideWith((_) => controller),
     ], child: const MaterialApp(home: Scaffold(body: SettingsPane()))));
+    await tester.tap(find.text('X 账号'));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('导出 Cookie'));
     await tester.tap(find.text('导出 Cookie'));
     await tester.pumpAndSettle();
@@ -61,6 +63,8 @@ void main() {
         isNull);
     expect(copied, isNull);
     await tester.tap(find.byTooltip('关闭'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
     await tester.pumpAndSettle();
     expect(find.text('登录 X 账号'), findsOneWidget);
     expect(tester.takeException(), isNull);

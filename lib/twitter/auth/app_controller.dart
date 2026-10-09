@@ -30,6 +30,7 @@ class AppController extends ChangeNotifier {
   int epoch = 0;
   final Map<String, SocialPost> _updated = {};
   final Set<String> _pending = {}, _uncertain = {};
+  final Set<String> _deletedPostIds = {};
   bool get loggedIn => client.session != null;
   Future<void> restore() async {
     startupError = null;
@@ -67,11 +68,14 @@ class AppController extends ChangeNotifier {
   }
 
   SocialPost effective(SocialPost post) => _updated[post.id] ?? post;
+  bool ownsPost(SocialPost post) => client.session?.userId == post.author.id;
+  bool isDeleted(String id) => _deletedPostIds.contains(id);
   bool actionBlocked(String id) =>
       _pending.contains(id) || _uncertain.contains(id) || expired;
   bool isUncertain(String id) => _uncertain.contains(id);
   void ingest(Iterable<SocialPost> posts) {
     void absorb(SocialPost post) {
+      if (_deletedPostIds.contains(post.id)) return;
       if (!_pending.contains(post.id)) {
         _updated[post.id] = post;
         _uncertain.remove(post.id);
@@ -165,6 +169,8 @@ class AppController extends ChangeNotifier {
       _updated.clear();
       _pending.clear();
       _uncertain.clear();
+      _deletedPostIds.clear();
+      adapter.clearSeen();
       epoch++;
       loginStage = '账号验证完成';
     } catch (_) {
@@ -191,6 +197,8 @@ class AppController extends ChangeNotifier {
     _updated.clear();
     _pending.clear();
     _uncertain.clear();
+    _deletedPostIds.clear();
+    adapter.clearSeen();
     epoch++;
     notifyListeners();
     if (previousAccount != null) {
@@ -274,6 +282,48 @@ class AppController extends ChangeNotifier {
       rethrow;
     } finally {
       if (capturedEpoch == epoch) {
+        _pending.remove(post.id);
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> deletePost(SocialPost rawPost) async {
+    final session = client.session;
+    if (session == null) throw const TwitterFailure('请登录 X');
+    final post = effective(rawPost);
+    if (post.author.id != session.userId) {
+      throw const TwitterFailure('只能删除自己发布的帖子');
+    }
+    if (actionBlocked(post.id)) {
+      throw const TwitterFailure('该帖子有操作正在处理或待核对，请先刷新');
+    }
+
+    final capturedEpoch = epoch;
+    _pending.add(post.id);
+    notifyListeners();
+    try {
+      await adapter.deletePost(post.id);
+      if (capturedEpoch == epoch && identical(client.session, session)) {
+        _deletedPostIds.add(post.id);
+        _updated.remove(post.id);
+        notifyListeners();
+        try {
+          await localCache?.removePostFromTimelines(session.userId, post.id);
+        } catch (_) {
+          // Cache cleanup must not turn a confirmed remote deletion into failure.
+        }
+      }
+    } catch (error) {
+      if (capturedEpoch == epoch && identical(client.session, session)) {
+        if (error is TwitterFailure && error.uncertain) {
+          _uncertain.add(post.id);
+        }
+        report(error);
+      }
+      rethrow;
+    } finally {
+      if (capturedEpoch == epoch && identical(client.session, session)) {
         _pending.remove(post.id);
         notifyListeners();
       }

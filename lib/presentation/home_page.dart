@@ -25,7 +25,7 @@ class HomePage extends ConsumerStatefulWidget {
 }
 
 class _HomePageState extends ConsumerState<HomePage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   int _tab = 0;
   int _homeTimelineIndex = 0;
   final Set<int> _visited = {0};
@@ -368,10 +368,13 @@ class _HomePageState extends ConsumerState<HomePage>
     final materialTheme = Theme.of(context);
     final colorScheme = materialTheme.colorScheme;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final standardNavBar = NavigationBar(
+    final standardNavBar = NavigationBarTheme(
+      data: AppTheme.scaleNavigationBarTheme(
+        materialTheme.navigationBarTheme,
+        MediaQuery.textScalerOf(context),
+      ),
+      child: NavigationBar(
         selectedIndex: _tab,
-        elevation: 0,
-        height: 68,
         onDestinationSelected: _onNavigationItemSelected,
         destinations: const [
           NavigationDestination(
@@ -386,7 +389,9 @@ class _HomePageState extends ConsumerState<HomePage>
               icon: Icon(Icons.settings_outlined),
               selectedIcon: Icon(Icons.settings_rounded),
               label: '设置'),
-        ]);
+        ],
+      ),
+    );
     final floatingCapsuleBar = Container(
       width: 264,
       height: 64,
@@ -560,16 +565,24 @@ class _HomePageState extends ConsumerState<HomePage>
                     cacheKey: 'for_you',
                     topPadding: controller.expired ? 0 : pageTopChromeHeight,
                     actions: _forYouActions,
-                    load: (cursor) =>
-                        controller.adapter.forYou(cursor: cursor)),
+                    load: (cursor, {refresh, seenIds}) =>
+                        controller.adapter.forYou(
+                          cursor: cursor,
+                          refresh: refresh,
+                          seenTweetIds: seenIds,
+                        )),
                 _visitedHomeTimelineTabs.contains(1)
                     ? TimelinePage(
                         cacheKey: 'following',
                         topPadding:
                             controller.expired ? 0 : pageTopChromeHeight,
                         actions: _followingActions,
-                        load: (cursor) =>
-                            controller.adapter.following(cursor: cursor))
+                        load: (cursor, {refresh, seenIds}) =>
+                            controller.adapter.following(
+                              cursor: cursor,
+                              refresh: refresh,
+                              seenTweetIds: seenIds,
+                            ))
                     : const SizedBox.shrink(),
               ],
             )

@@ -10,6 +10,7 @@ import '../core/utils/haptic_feedback_util.dart';
 import '../core/services/media_saver.dart';
 import '../core/storage/reading_settings.dart';
 import '../twitter/auth/app_controller.dart';
+import '../twitter/api/x_request_headers.dart';
 import '../twitter/models/social_models.dart';
 import 'compose_page.dart';
 import 'timeline_page.dart';
@@ -114,14 +115,51 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
     if (_qualityMap.isEmpty) {
       _qualityMap['原始'] = widget.media.video!;
     }
-    _currentQuality = _qualityMap.entries
-        .firstWhere((entry) => entry.value == widget.media.video,
-            orElse: () => _qualityMap.entries.first)
-        .key;
+    final prefQuality =
+        ref.read(readingProvider)['videoQuality'] as String? ?? 'balanced';
+    _currentQuality = _selectInitialQuality(_qualityMap, prefQuality);
     if (widget.active) {
       _initDeviceLevels();
       _initPlayer();
     }
+  }
+
+  static String _selectInitialQuality(
+      Map<String, String> qualities, String preference) {
+    if (qualities.isEmpty) return '原始';
+    if (preference == 'high') {
+      return qualities.keys.first;
+    }
+    if (preference == 'data_saver') {
+      return qualities.keys.last;
+    }
+    // 'balanced' (优先流畅 720p/智能推荐)
+    final parsed = qualities.keys.map((key) {
+      final resMatch = RegExp(r'^(\d+)p$').firstMatch(key);
+      if (resMatch != null) {
+        return (key: key, res: int.tryParse(resMatch[1]!) ?? 0);
+      }
+      final kbpsMatch = RegExp(r'^(\d+)\s*kbps$').firstMatch(key);
+      if (kbpsMatch != null) {
+        final kbps = int.tryParse(kbpsMatch[1]!) ?? 0;
+        final res = kbps >= 3000
+            ? 1080
+            : kbps >= 1500
+                ? 720
+                : kbps >= 700
+                    ? 480
+                    : 360;
+        return (key: key, res: res);
+      }
+      return (key: key, res: 0);
+    }).toList();
+
+    final balancedCandidates =
+        parsed.where((item) => item.res > 0 && item.res <= 720).toList();
+    if (balancedCandidates.isNotEmpty) {
+      return balancedCandidates.first.key;
+    }
+    return qualities.keys.first;
   }
 
   Future<void> _initDeviceLevels() async {
@@ -168,7 +206,10 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
       return;
     }
     // CDN playback deliberately has no account Cookie or authenticated headers.
-    final player = VideoPlayerController.networkUrl(Uri.parse(url));
+    final player = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      httpHeaders: XRequestHeaders.media,
+    );
     _controller = player;
     try {
       await player.initialize();
@@ -473,8 +514,25 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
   // Player gain only: preserve the pre-mute level, never change Android volume.
   void _setVolume(double value) {
     _currentVolume = value;
-    _muted = false;
+    _muted = value <= 0;
     unawaited(_controller?.setVolume(value).catchError((_) {}));
+  }
+
+  void _toggleMute() {
+    final player = _controller;
+    if (player == null ||
+        !_isInitialized ||
+        !widget.active ||
+        !_applicationActive) {
+      return;
+    }
+    HapticFeedbackUtil.light();
+    setState(() {
+      _muted = !_muted;
+      if (!_muted && _currentVolume <= 0) _currentVolume = 1;
+    });
+    unawaited(player.setVolume(_muted ? 0 : _currentVolume).catchError((_) {}));
+    _resetControlsTimer();
   }
 
   void _showHud({
@@ -741,6 +799,32 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
     }
   }
 
+  Future<void> _deleteOwnPost(SocialPost post) async {
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除帖子？'),
+        content: const Text('删除后无法恢复。'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('取消')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('删除', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    try {
+      await ref.read(appControllerProvider).deletePost(post);
+      if (mounted) Navigator.of(context).pop();
+    } catch (error) {
+      _toast('$error');
+    }
+  }
+
   Widget _postActions() {
     final raw = widget.post;
     if (raw == null) return const SizedBox.shrink();
@@ -798,6 +882,12 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
             disabled ? null : () => _act(post, 'bookmark'),
             color: post.bookmarked ? Colors.lightBlueAccent : null),
       ]),
+      if (app.ownsPost(post))
+        TextButton.icon(
+            onPressed: disabled ? null : () => _deleteOwnPost(post),
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('删除帖子'),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent)),
       if (app.isUncertain(post.id))
         const Text('操作结果待核对，请在帖子详情刷新',
             style: TextStyle(color: Colors.amberAccent, fontSize: 12)),
@@ -811,12 +901,18 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
       Wrap(
           alignment: WrapAlignment.spaceBetween,
           crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 4,
+          spacing: 0,
           children: [
             IconButton(
                 tooltip: canPlay ? (isPlaying ? '暂停' : '播放') : '视频加载中',
                 onPressed: canPlay ? _togglePlayPause : null,
                 icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow,
+                    color: Colors.white)),
+            IconButton(
+                tooltip: _muted ? '取消静音' : '静音',
+                onPressed: canPlay ? _toggleMute : null,
+                icon: Icon(
+                    _muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
                     color: Colors.white)),
             SizedBox(
                 width: MediaQuery.textScalerOf(context).scale(80),
@@ -826,7 +922,7 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
                         style: const TextStyle(
                             color: Colors.white70, fontSize: 12)))),
             SizedBox(
-                width: MediaQuery.textScalerOf(context).scale(60),
+                width: MediaQuery.textScalerOf(context).scale(56),
                 child: TextButton(
                     style: TextButton.styleFrom(
                         minimumSize: const Size(44, 48),
@@ -837,7 +933,7 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
                         child: Text('${_playbackSpeed}X',
                             style: const TextStyle(color: Colors.white))))),
             SizedBox(
-                width: MediaQuery.textScalerOf(context).scale(60),
+                width: MediaQuery.textScalerOf(context).scale(56),
                 child: TextButton(
                     style: TextButton.styleFrom(
                         minimumSize: const Size(44, 48),

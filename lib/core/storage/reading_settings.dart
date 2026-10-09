@@ -20,6 +20,7 @@ const readingDefaults = <String, dynamic>{
   'coloredLinks': true,
   'saveHistory': true,
   'storageFolder': 'default',
+  'videoQuality': 'balanced',
   'showSensitive': false,
 };
 
@@ -34,6 +35,10 @@ Map<String, dynamic> validatedReading(dynamic value) {
     }
     if (key == 'storageFolder' &&
         const ['default', 'me', 'author'].contains(incoming)) {
+      result[key] = incoming;
+    }
+    if (key == 'videoQuality' &&
+        const ['balanced', 'high', 'data_saver'].contains(incoming)) {
       result[key] = incoming;
     }
   }
@@ -55,6 +60,10 @@ class ReadingNotifier extends StateNotifier<Map<String, dynamic>> {
     } catch (_) {
       state = Map.from(readingDefaults);
     }
+  }
+
+  void preview(String key, dynamic value) {
+    state = validatedReading({...state, key: value});
   }
 
   Future<void> set(String key, dynamic value) async {

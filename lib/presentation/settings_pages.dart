@@ -177,6 +177,14 @@ class _ReadingSettingsPageState extends ConsumerState<ReadingSettingsPage> {
                   HapticFeedbackUtil.selection();
                   notifier.set(entry.key, value);
                 }),
+          ListTile(
+            title: const Text('默认视频清晰度'),
+            subtitle: Text(_videoQualityLabel(
+                state['videoQuality'] as String? ?? 'balanced')),
+            trailing: const Icon(Icons.arrow_drop_down),
+            onTap: () => _selectVideoQuality(context, notifier,
+                state['videoQuality'] as String? ?? 'balanced'),
+          ),
           for (final entry in const {
             'fontSize': '正文字号',
             'lineHeight': '正文行距',
@@ -184,6 +192,77 @@ class _ReadingSettingsPageState extends ConsumerState<ReadingSettingsPage> {
           }.entries)
             _sliderTile(entry, state),
         ]));
+  }
+
+  static String _videoQualityLabel(String quality) {
+    switch (quality) {
+      case 'high':
+        return '最高画质 (1080p/原画)';
+      case 'data_saver':
+        return '省流模式 (480p/360p)';
+      case 'balanced':
+      default:
+        return '优先流畅 (720p/智能推荐)';
+    }
+  }
+
+  Future<void> _selectVideoQuality(
+      BuildContext context, ReadingNotifier notifier, String current) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Text(
+                  '默认视频清晰度',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ListTile(
+                title: const Text('优先流畅 (720p/智能推荐)'),
+                subtitle: const Text('大幅降低缓冲与卡顿，秒开播放，画质适合移动屏幕'),
+                trailing: current == 'balanced'
+                    ? Icon(Icons.check_rounded,
+                        color: Theme.of(context).colorScheme.primary)
+                    : null,
+                onTap: () => Navigator.pop(ctx, 'balanced'),
+              ),
+              ListTile(
+                title: const Text('最高画质 (1080p/原画)'),
+                subtitle: const Text('保持最高码率，需要极佳的网络带宽与代理环境'),
+                trailing: current == 'high'
+                    ? Icon(Icons.check_rounded,
+                        color: Theme.of(context).colorScheme.primary)
+                    : null,
+                onTap: () => Navigator.pop(ctx, 'high'),
+              ),
+              ListTile(
+                title: const Text('省流模式 (480p/360p)'),
+                subtitle: const Text('消耗流量极低，弱网环境下播放更顺畅'),
+                trailing: current == 'data_saver'
+                    ? Icon(Icons.check_rounded,
+                        color: Theme.of(context).colorScheme.primary)
+                    : null,
+                onTap: () => Navigator.pop(ctx, 'data_saver'),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+    if (selected != null && selected != current) {
+      HapticFeedbackUtil.selection();
+      await notifier.set('videoQuality', selected);
+    }
   }
 }
 

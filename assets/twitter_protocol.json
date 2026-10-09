@@ -688,6 +688,12 @@
     },
     "fieldToggles": {}
   },
+  "DeleteTweet": {
+    "id": "VaenaVgh5q5ih7kvyVjgtg",
+    "method": "POST",
+    "features": {},
+    "fieldToggles": {}
+  },
   "UserHighlightsTweets": {
     "id": "kzlhnAZg6za8KVcUlitqBQ",
     "method": "GET",

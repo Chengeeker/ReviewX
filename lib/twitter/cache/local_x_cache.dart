@@ -124,6 +124,35 @@ class LocalXCache {
     }
   }
 
+  Future<void> removePostFromTimelines(String userId, String postId) async {
+    final prefix = _accountPrefix(userId);
+    if (prefix == null) return;
+    try {
+      for (final timeline in _timelineKeys) {
+        final key = '${prefix}timeline_$timeline';
+        final value = storage.preferences.getString(key);
+        if (value == null) continue;
+        final envelope = object(jsonDecode(value));
+        final posts = <Map<String, dynamic>>[];
+        for (final raw in array(envelope['posts'])) {
+          final post = Map<String, dynamic>.from(object(raw));
+          if (post['id'] == postId) continue;
+          final quote = Map<String, dynamic>.from(object(post['quote']));
+          if (quote['id'] == postId) post['quote'] = null;
+          posts.add(post);
+        }
+        if (posts.isEmpty) {
+          await storage.preferences.remove(key);
+        } else {
+          envelope['posts'] = posts;
+          await storage.preferences.setString(key, jsonEncode(envelope));
+        }
+      }
+    } catch (_) {
+      // Cache cleanup is best-effort after a confirmed remote deletion.
+    }
+  }
+
   Future<void> clearAccount(String userId) async {
     final prefix = _accountPrefix(userId);
     if (prefix == null) return;

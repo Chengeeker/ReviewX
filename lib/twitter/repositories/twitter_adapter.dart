@@ -13,9 +13,12 @@ enum ReplySort {
 }
 
 abstract interface class SocialPlatformAdapter {
-  Future<PostPage> home({String? cursor});
-  Future<PostPage> forYou({String? cursor});
-  Future<PostPage> following({String? cursor});
+  Future<PostPage> home(
+      {String? cursor, bool? refresh, List<String>? seenTweetIds});
+  Future<PostPage> forYou(
+      {String? cursor, bool? refresh, List<String>? seenTweetIds});
+  Future<PostPage> following(
+      {String? cursor, bool? refresh, List<String>? seenTweetIds});
   Future<List<TrendingTopic>> trends({bool personalized = false});
   Future<PostPage> detail(String id,
       {String? cursor, ReplySort sort = ReplySort.relevance});
@@ -23,43 +26,92 @@ abstract interface class SocialPlatformAdapter {
   Future<PostPage> userPosts(String id, {String? cursor});
   Future<void> like(String id, bool liked);
   Future<void> repost(String id, bool reposted);
+  Future<void> deletePost(String id);
 }
 
 class TwitterAdapter implements SocialPlatformAdapter {
   TwitterAdapter(this.client);
   final TwitterClient client;
-  @override
-  Future<PostPage> home({String? cursor}) => following(cursor: cursor);
+  final Set<String> _forYouSeenIds = {};
+  final Set<String> _followingSeenIds = {};
+
+  void seedSeen(String? cacheKey, Iterable<String> ids) {
+    if (cacheKey == 'for_you') {
+      _forYouSeenIds.addAll(ids);
+    } else if (cacheKey == 'following') {
+      _followingSeenIds.addAll(ids);
+    }
+  }
+
+  void clearSeen() {
+    _forYouSeenIds.clear();
+    _followingSeenIds.clear();
+  }
 
   @override
-  Future<PostPage> forYou({String? cursor}) async {
+  Future<PostPage> home(
+          {String? cursor, bool? refresh, List<String>? seenTweetIds}) =>
+      following(
+          cursor: cursor, refresh: refresh, seenTweetIds: seenTweetIds);
+
+  @override
+  Future<PostPage> forYou(
+      {String? cursor, bool? refresh, List<String>? seenTweetIds}) async {
+    final isRefresh = refresh ?? (cursor == null && _forYouSeenIds.isNotEmpty);
+    final context = cursor != null ? 'scroll' : (isRefresh ? 'ptr' : 'launch');
+    final effectiveSeen = (seenTweetIds != null && seenTweetIds.isNotEmpty)
+        ? seenTweetIds
+        : _forYouSeenIds.take(50).toList();
     final data = await client.call('HomeTimeline', {
       'count': 20,
       'includePromotedContent': true,
       'latestControlAvailable': true,
-      'requestContext': 'launch',
-      'seenTweetIds': <String>[],
+      'requestContext': context,
+      'seenTweetIds': effectiveSeen,
       'withCommunity': true,
       'withQuickPromoteEligibilityTweetFields': true,
       if (cursor != null) 'cursor': cursor
     });
-    return _page(object(data['home'])['home_timeline_urt']);
+    final page = _page(object(data['home'])['home_timeline_urt']);
+    for (final post in page.posts) {
+      _forYouSeenIds.add(post.id);
+    }
+    if (_forYouSeenIds.length > 200) {
+      final excess = _forYouSeenIds.length - 150;
+      _forYouSeenIds.removeAll(_forYouSeenIds.take(excess).toList());
+    }
+    return page;
   }
 
   @override
-  Future<PostPage> following({String? cursor}) async {
+  Future<PostPage> following(
+      {String? cursor, bool? refresh, List<String>? seenTweetIds}) async {
+    final isRefresh =
+        refresh ?? (cursor == null && _followingSeenIds.isNotEmpty);
+    final context = cursor != null ? 'scroll' : (isRefresh ? 'ptr' : 'launch');
+    final effectiveSeen = (seenTweetIds != null && seenTweetIds.isNotEmpty)
+        ? seenTweetIds
+        : _followingSeenIds.take(50).toList();
     final data = await client.call('HomeLatestTimeline', {
       'count': 20,
       'includePromotedContent': false,
       'enableRanking': false,
       'latestControlAvailable': true,
-      'requestContext': 'launch',
-      'seenTweetIds': <String>[],
+      'requestContext': context,
+      'seenTweetIds': effectiveSeen,
       'withCommunity': true,
       'withQuickPromoteEligibilityTweetFields': true,
       if (cursor != null) 'cursor': cursor
     });
-    return _page(object(data['home'])['home_timeline_urt']);
+    final page = _page(object(data['home'])['home_timeline_urt']);
+    for (final post in page.posts) {
+      _followingSeenIds.add(post.id);
+    }
+    if (_followingSeenIds.length > 200) {
+      final excess = _followingSeenIds.length - 150;
+      _followingSeenIds.removeAll(_followingSeenIds.take(excess).toList());
+    }
+    return page;
   }
 
   @override
@@ -353,6 +405,17 @@ class TwitterAdapter implements SocialPlatformAdapter {
         'retweet_results'])['result'];
     if (result is! Map || result['rest_id'] == null) {
       throw const TwitterFailure('转发结果未确认，请刷新核对', uncertain: true);
+    }
+  }
+
+  @override
+  Future<void> deletePost(String id) async {
+    final data = await client.call('DeleteTweet', {
+      'tweet_id': id,
+      'dark_request': false,
+    });
+    if (data['delete_tweet'] is! Map) {
+      throw const TwitterFailure('删除结果未确认，请刷新核对', uncertain: true);
     }
   }
 }

@@ -112,6 +112,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     final accountId = controller.client.session?.userId;
     if (cacheKey != null && accountId != null) {
       _posts = ref.read(localXCacheProvider).readTimeline(accountId, cacheKey);
+      if (_posts.isNotEmpty) {
+        controller.adapter.seedSeen(cacheKey, _posts.map((p) => p.id));
+      }
     }
     widget.actions?.attach(this,
         onSingleTap: _handleBottomSingleTap,
@@ -157,6 +160,16 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     }
   }
 
+  Future<PostPage> _callLoader(String? cursor,
+      {required bool refresh, required List<String> seenIds}) {
+    final loader = widget.load;
+    if (loader is Future<PostPage> Function(String?,
+        {bool? refresh, List<String>? seenIds})) {
+      return loader(cursor, refresh: refresh, seenIds: seenIds);
+    }
+    return loader(cursor);
+  }
+
   Future<void> _fetch({bool refresh = false}) async {
     if ((_loading && !refresh) || (refresh && _refreshing)) return;
     if (refresh) _refreshing = true;
@@ -170,29 +183,34 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
       _error = null;
     });
     try {
-      final page = await widget.load(refresh ? null : _cursor);
+      final seenIds = _posts.map((p) => p.id).take(40).toList();
+      final page = await _callLoader(refresh ? null : _cursor,
+          refresh: refresh, seenIds: seenIds);
       if (!mounted || generation != _request || controller.epoch != epoch) {
         return;
       }
+      final fetchedPosts =
+          page.posts.where((post) => !controller.isDeleted(post.id)).toList();
+      final incoming = <String, SocialPost>{
+        for (final post in refresh ? <SocialPost>[] : _posts)
+          if (!controller.isDeleted(post.id)) post.id: post
+      };
+      for (final post in fetchedPosts) {
+        incoming[post.id] = post;
+      }
+
       final cacheKey = widget.cacheKey;
       if (refresh &&
-          page.posts.isNotEmpty &&
+          incoming.isNotEmpty &&
           cacheKey != null &&
           accountId != null &&
           controller.client.session?.userId == accountId) {
         unawaited(ref
             .read(localXCacheProvider)
-            .writeTimeline(accountId, cacheKey, page.posts));
+            .writeTimeline(accountId, cacheKey, incoming.values.take(20).toList()));
       }
-      controller.ingest(page.posts);
-      final incoming = <String, SocialPost>{
-        for (final post in refresh ? <SocialPost>[] : _posts) post.id: post
-      };
-      for (final post in page.posts) {
-        incoming[post.id] = post;
-      }
+      controller.ingest(fetchedPosts);
       setState(() {
-        // Empty refresh preserves existing rows, but not a stale pagination cursor.
         if (incoming.isNotEmpty || _posts.isEmpty) {
           _posts = incoming.values.toList();
         }
@@ -219,75 +237,100 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = ref.watch(appControllerProvider);
+    final posts =
+        _posts.where((post) => !controller.isDeleted(post.id)).toList();
     final known = <String, SocialPost>{
-      if (widget.conversationRoot != null)
+      if (widget.conversationRoot != null &&
+          !controller.isDeleted(widget.conversationRoot!.id))
         widget.conversationRoot!.id: widget.conversationRoot!,
       if (widget.conversationRoot != null)
-        for (final post in _posts) post.id: post,
+        for (final post in posts) post.id: post,
     };
     return RefreshIndicator(
+        edgeOffset: widget.topPadding,
         onRefresh: () => _fetch(refresh: true),
-        child: ListView.builder(
-            controller: _scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.only(
-                top: widget.topPadding,
-                bottom: MediaQuery.paddingOf(context).bottom > 24
-                    ? MediaQuery.paddingOf(context).bottom
-                    : 24),
-            itemCount: _posts.length + 3,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return RequestStatus(
-                    loading: _loading,
-                    error: _error,
-                    onRetry: () => _fetch(refresh: true));
-              }
-              if (index == 1) {
-                return widget.header ?? const SizedBox.shrink();
-              }
-              if (index <= _posts.length + 1) {
-                final post = _posts[index - 2];
-                final connectedAbove = widget.conversationRoot == null &&
-                    index > 2 &&
-                    _continuesConversation(_posts[index - 3], post);
-                final connectedBelow = widget.conversationRoot == null &&
-                    index < _posts.length + 1 &&
-                    _continuesConversation(post, _posts[index - 1]);
-                final parent = widget.conversationRoot == null
-                    ? null
-                    : known[post.replyToId];
-                var depth = 0;
-                var ancestor = parent;
-                final seen = <String>{post.id};
-                while (ancestor != null &&
-                    ancestor.id != widget.conversationRoot?.id &&
-                    depth < 2 &&
-                    seen.add(ancestor.id)) {
-                  depth++;
-                  ancestor = known[ancestor.replyToId];
+        child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              final metrics = notification.metrics;
+              if (notification.depth == 0 &&
+                  metrics.axis == Axis.vertical &&
+                  metrics.maxScrollExtent > 0) {
+                final progress = metrics.pixels / metrics.maxScrollExtent;
+                final remaining = metrics.maxScrollExtent - metrics.pixels;
+                if ((progress >= 0.60 || remaining < 1500) &&
+                    _cursor != null &&
+                    !_loading &&
+                    !_refreshing) {
+                  unawaited(_fetch());
                 }
-                return Padding(
-                    key: ValueKey(post.id),
-                    padding: EdgeInsets.only(left: depth * 12.0),
-                    child: PostCard(
-                        post: post,
-                        connectedAbove: connectedAbove,
-                        connectedBelow: connectedBelow,
-                        replyParent: parent,
-                        showReplyParentPreview:
-                            parent?.id != widget.conversationRoot?.id));
               }
-              return Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(children: [
-                    if (!_loading && _error == null && _cursor != null)
-                      FilledButton.tonal(
-                          onPressed: _fetch, child: const Text('加载更多')),
-                    if (!_loading && _error == null && _cursor == null)
-                      Text(_posts.isEmpty ? '暂无帖子，下拉刷新' : '没有更多帖子')
-                  ]));
-            }));
+              return false;
+            },
+            child: ListView.builder(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.only(
+                    top: widget.topPadding,
+                    bottom: MediaQuery.paddingOf(context).bottom > 24
+                        ? MediaQuery.paddingOf(context).bottom
+                        : 24),
+                itemCount: posts.length + 3,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return RequestStatus(
+                        loading: _loading,
+                        error: _error,
+                        onRetry: () => _fetch(refresh: true));
+                  }
+                  if (index == 1) {
+                    return widget.header ?? const SizedBox.shrink();
+                  }
+                  if (index <= posts.length + 1) {
+                    final post = posts[index - 2];
+                    final connectedAbove = widget.conversationRoot == null &&
+                        index > 2 &&
+                        _continuesConversation(posts[index - 3], post);
+                    final connectedBelow = widget.conversationRoot == null &&
+                        index < posts.length + 1 &&
+                        _continuesConversation(post, posts[index - 1]);
+                    final parent = widget.conversationRoot == null
+                        ? null
+                        : known[post.replyToId];
+                    var depth = 0;
+                    var ancestor = parent;
+                    final seen = <String>{post.id};
+                    while (ancestor != null &&
+                        ancestor.id != widget.conversationRoot?.id &&
+                        depth < 2 &&
+                        seen.add(ancestor.id)) {
+                      depth++;
+                      ancestor = known[ancestor.replyToId];
+                    }
+                    return Padding(
+                        key: ValueKey(post.id),
+                        padding: EdgeInsets.only(left: depth * 12.0),
+                        child: PostCard(
+                            post: post,
+                            connectedAbove: connectedAbove,
+                            connectedBelow: connectedBelow,
+                            replyParent: parent,
+                            showReplyParentPreview:
+                                parent?.id != widget.conversationRoot?.id));
+                  }
+                  return Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(children: [
+                        if (!_loading && _cursor != null)
+                          FilledButton.tonal(
+                              onPressed: _fetch,
+                              child: Text(_error != null ? '重试加载' : '加载更多')),
+                        if (_loading && posts.isNotEmpty)
+                          const CircularProgressIndicator(strokeWidth: 2),
+                        if (!_loading && _error == null && _cursor == null)
+                          Text(posts.isEmpty ? '暂无帖子，下拉刷新' : '没有更多帖子')
+                      ]));
+                })));
   }
 }
 

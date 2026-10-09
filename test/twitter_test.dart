@@ -465,4 +465,44 @@ void main() {
         id: '1', author: SocialUser.parse(user())!, text: '', liked: true);
     expect(post.withActions(liked: false).likes, 0);
   });
+  test('home and forYou send dynamic requestContext and seenTweetIds to X',
+      () async {
+    final homeResponse = {
+      'data': {
+        'home': {'home_timeline_urt': timeline()}
+      }
+    };
+    final transport = StubTransport(homeResponse);
+    final adapter = TwitterAdapter(client(transport));
+
+    // 1. Cold start with empty seen IDs: requestContext is 'launch' and seenTweetIds is empty
+    await adapter.forYou();
+    final firstVariables = jsonDecode(
+        transport.requests[0].queryParameters['variables'] as String);
+    expect(firstVariables['requestContext'], 'launch');
+    expect(firstVariables['seenTweetIds'], isEmpty);
+
+    // 2. Pagination with cursor: requestContext is 'scroll'
+    await adapter.forYou(cursor: 'opaque:next');
+    final scrollVariables = jsonDecode(
+        transport.requests[1].queryParameters['variables'] as String);
+    expect(scrollVariables['requestContext'], 'scroll');
+    expect(scrollVariables['cursor'], 'opaque:next');
+
+    // 3. Pull-to-refresh: requestContext is 'ptr' and seenTweetIds contains previously seen tweet IDs
+    await adapter.forYou(refresh: true);
+    final ptrVariables = jsonDecode(
+        transport.requests[2].queryParameters['variables'] as String);
+    expect(ptrVariables['requestContext'], 'ptr');
+    expect(ptrVariables['seenTweetIds'], contains('2'));
+    expect(ptrVariables['seenTweetIds'], contains('3'));
+
+    // 4. clearSeen resets seen IDs
+    adapter.clearSeen();
+    await adapter.forYou();
+    final resetVariables = jsonDecode(
+        transport.requests[3].queryParameters['variables'] as String);
+    expect(resetVariables['requestContext'], 'launch');
+    expect(resetVariables['seenTweetIds'], isEmpty);
+  });
 }

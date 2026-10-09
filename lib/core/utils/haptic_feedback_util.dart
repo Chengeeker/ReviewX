@@ -41,7 +41,15 @@ class HapticFeedbackUtil {
     }
   }
 
-  static void selection() {
+  static void selection({bool bypassCooldown = false}) {
+    if (bypassCooldown) {
+      _automaticTapPending = false;
+      if (isEnabled) {
+        _lastTriggerTime = DateTime.now().millisecondsSinceEpoch;
+        HapticFeedback.selectionClick();
+      }
+      return;
+    }
     if (_consumeAutomaticTapFeedback()) return;
     if (_canTrigger()) {
       HapticFeedback.selectionClick();

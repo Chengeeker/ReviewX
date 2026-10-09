@@ -782,6 +782,44 @@ void main() {
     }
     expect(tester.takeException(), isNull);
   });
+  testWidgets('standard navigation follows system text scaling',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final theme = AppTheme.lightTheme();
+    const textScaler = TextScaler.linear(1.8);
+    await tester.pumpWidget(MaterialApp(
+      theme: theme,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+        child: child!,
+      ),
+      home: Scaffold(
+        bottomNavigationBar: NavigationBarTheme(
+          data: AppTheme.scaleNavigationBarTheme(
+              theme.navigationBarTheme, textScaler),
+          child: NavigationBar(
+            selectedIndex: 0,
+            onDestinationSelected: (_) {},
+            destinations: const [
+              NavigationDestination(icon: Icon(Icons.home), label: '首页'),
+              NavigationDestination(icon: Icon(Icons.explore), label: '探索'),
+              NavigationDestination(icon: Icon(Icons.settings), label: '设置'),
+            ],
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final label = tester.widget<Text>(find.text('设置'));
+    expect(label.style?.fontSize, closeTo(21.6, 0.1));
+    expect(
+        tester.getSize(find.byType(NavigationBar)).height, closeTo(77.6, 0.1));
+    expect(tester.takeException(), isNull);
+  });
   testWidgets(
       'article and poll card remain usable at large font on a narrow screen',
       (tester) async {
