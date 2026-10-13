@@ -354,6 +354,65 @@ void main() {
     }
   });
 
+  testWidgets('gallery double tap zooms without toggling chrome',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    const media = SocialMedia(preview: 'https://pbs.twimg.com/double-tap.jpg');
+    final recorder = ui.PictureRecorder();
+    Canvas(recorder).drawRect(
+        const Rect.fromLTWH(0, 0, 240, 900), Paint()..color = Colors.blue);
+    final picture = recorder.endRecording();
+    final decoded = await tester.runAsync(() => picture.toImage(240, 900));
+    picture.dispose();
+    final provider = ExtendedNetworkImageProvider(
+        media.viewerImage(
+            viewportWidth: 360, viewportHeight: 800, devicePixelRatio: 1),
+        cache: true,
+        headers: XRequestHeaders.media);
+    final key = await provider.obtainKey(ImageConfiguration.empty);
+    PaintingBinding.instance.imageCache.putIfAbsent(
+        key,
+        () => OneFrameImageStreamCompleter(
+            Future.value(ImageInfo(image: decoded!))));
+    await tester.pumpWidget(ProviderScope(
+        overrides: [storageServiceProvider.overrideWithValue(storage)],
+        child: const MaterialApp(
+            home: MediaPage(media: [media], index: 0, post: post))));
+    await tester.pumpAndSettle();
+
+    double chromeOpacity() => tester
+        .widget<AnimatedOpacity>(find
+            .ancestor(
+                of: find.byTooltip('返回'),
+                matching: find.byType(AnimatedOpacity))
+            .first)
+        .opacity;
+
+    final imageRect = tester.getRect(find.byType(ExtendedImage));
+    await tester.tapAt(imageRect.center);
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(chromeOpacity(), 1);
+    await tester.tapAt(imageRect.center);
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+
+    final state = tester
+        .state<ExtendedImageGestureState>(find.byType(ExtendedImageGesture));
+    expect(state.gestureDetails!.totalScale, greaterThan(1));
+    expect(chromeOpacity(), 1);
+    await tester.tapAt(imageRect.center);
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(chromeOpacity(), 0);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+  });
+
   testWidgets(
       'Review controls preserve position when switching quality and pause on background',
       (tester) async {

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:extended_image/extended_image.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderClipRRect, RenderImage;
 import 'package:flutter/services.dart';
@@ -342,6 +343,12 @@ class _MediaPageState extends ConsumerState<MediaPage>
   Animation<double>? _doubleTapAnimation;
   VoidCallback? _doubleTapListener;
   int _zoomGeneration = 0;
+  int? _galleryPointer;
+  int? _ignoreGalleryPointerUp;
+  Offset? _galleryPointerDown;
+  Offset? _pendingGalleryTap;
+  Timer? _galleryTapTimer;
+  bool _galleryPointerCancelled = false;
 
   Future<void> _save() async {
     if (_saving) return;
@@ -383,6 +390,8 @@ class _MediaPageState extends ConsumerState<MediaPage>
   }
 
   void _handleImageDoubleTap(ExtendedImageGestureState state, int pageIndex) {
+    _ignoreGalleryPointerUp = _galleryPointer;
+    _cancelPendingGalleryTap();
     HapticFeedbackUtil.light();
     _stopDoubleTapAnimation();
     final generation = _zoomGeneration;
@@ -411,6 +420,8 @@ class _MediaPageState extends ConsumerState<MediaPage>
   }
 
   void _onPageChanged(int index) {
+    _cancelPendingGalleryTap();
+    _ignoreGalleryPointerUp = null;
     _stopDoubleTapAnimation();
     if (index != _index && _thumbnailUserScrolling) {
       HapticFeedbackUtil.selection();
@@ -555,10 +566,74 @@ class _MediaPageState extends ConsumerState<MediaPage>
         showChrome ? SystemUiMode.edgeToEdge : SystemUiMode.immersiveSticky));
   }
 
-  void _handleGalleryTap(TapUpDetails details) {
+  void _handleGalleryPointerDown(PointerDownEvent event) {
+    if (event.buttons != kPrimaryButton) return;
+    if (_galleryPointer != null) {
+      _galleryPointerCancelled = true;
+      return;
+    }
+    _galleryPointer = event.pointer;
+    _galleryPointerDown = event.position;
+    _galleryPointerCancelled = false;
+  }
+
+  void _handleGalleryPointerMove(PointerMoveEvent event) {
+    final down = _galleryPointerDown;
+    if (event.pointer == _galleryPointer &&
+        down != null &&
+        (event.position - down).distance > kTouchSlop) {
+      _galleryPointerCancelled = true;
+    }
+  }
+
+  void _handleGalleryPointerCancel(PointerCancelEvent event) {
+    if (event.pointer != _galleryPointer) return;
+    _galleryPointer = null;
+    _galleryPointerDown = null;
+    _galleryPointerCancelled = false;
+  }
+
+  void _handleGalleryPointerUp(PointerUpEvent event) {
+    if (event.pointer != _galleryPointer) return;
+    final ignored = event.pointer == _ignoreGalleryPointerUp;
+    final isTap = !_galleryPointerCancelled;
+    _galleryPointer = null;
+    _galleryPointerDown = null;
+    _galleryPointerCancelled = false;
+    if (ignored) {
+      _ignoreGalleryPointerUp = null;
+    } else if (isTap) {
+      _queueGalleryTap(event.position);
+    }
+  }
+
+  void _queueGalleryTap(Offset position) {
+    final pending = _pendingGalleryTap;
+    if (pending != null) {
+      if ((position - pending).distance <= kDoubleTapSlop) return;
+      _galleryTapTimer?.cancel();
+      _pendingGalleryTap = null;
+      _handleGalleryTap(pending);
+    }
+    _pendingGalleryTap = position;
+    _galleryTapTimer = Timer(kDoubleTapTimeout, () {
+      final tap = _pendingGalleryTap;
+      _pendingGalleryTap = null;
+      _galleryTapTimer = null;
+      if (tap != null && mounted) _handleGalleryTap(tap);
+    });
+  }
+
+  void _cancelPendingGalleryTap() {
+    _galleryTapTimer?.cancel();
+    _galleryTapTimer = null;
+    _pendingGalleryTap = null;
+  }
+
+  void _handleGalleryTap(Offset position) {
     HapticFeedbackUtil.light();
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final x = details.globalPosition.dx;
+    final x = position.dx;
     final isMiddleThird = x >= screenWidth / 3 && x < screenWidth * 2 / 3;
     if (isMiddleThird) {
       _toggleChrome();
@@ -575,6 +650,8 @@ class _MediaPageState extends ConsumerState<MediaPage>
 
   @override
   void dispose() {
+    _cancelPendingGalleryTap();
+    _ignoreGalleryPointerUp = null;
     _stopDoubleTapAnimation();
     _doubleTapAnimationController.dispose();
     _pages.dispose();
@@ -703,8 +780,19 @@ class _MediaPageState extends ConsumerState<MediaPage>
           body: Stack(
             fit: StackFit.expand,
             children: [
-              GestureDetector(
-                onTapUp: currentMedia.video == null ? _handleGalleryTap : null,
+              Listener(
+                // Raw observation avoids competing with ExtendedImage's double-tap recognizer.
+                onPointerDown: currentMedia.video == null
+                    ? _handleGalleryPointerDown
+                    : null,
+                onPointerMove: currentMedia.video == null
+                    ? _handleGalleryPointerMove
+                    : null,
+                onPointerUp:
+                    currentMedia.video == null ? _handleGalleryPointerUp : null,
+                onPointerCancel: currentMedia.video == null
+                    ? _handleGalleryPointerCancel
+                    : null,
                 child: NotificationListener<ScrollStartNotification>(
                   onNotification: (notification) {
                     if (notification.depth == 0 &&
@@ -756,40 +844,44 @@ class _MediaPageState extends ConsumerState<MediaPage>
                           if (imageUrl != media.preview)
                             CachedNetworkImage(media.preview,
                                 fit: BoxFit.contain),
-                          ExtendedImage.network(
-                            imageUrl,
-                            key: ValueKey(imageUrl),
-                            width: viewport.maxWidth,
-                            height: viewport.maxHeight,
-                            headers: XRequestHeaders.media,
-                            alignment: Alignment.center,
-                            cache: true,
-                            fit: BoxFit.contain,
-                            mode: ExtendedImageMode.gesture,
-                            enableSlideOutPage: false,
-                            loadStateChanged: (state) {
-                              if (state.extendedImageLoadState ==
-                                      LoadState.loading ||
-                                  state.extendedImageLoadState ==
-                                      LoadState.failed) {
-                                // Keep the already cached feed image visible
-                                // while a genuinely larger original is fetched.
-                                return const SizedBox.expand();
-                              }
-                              return null;
-                            },
-                            onDoubleTap: (state) =>
-                                _handleImageDoubleTap(state, index),
-                            initGestureConfigHandler: (_) => GestureConfig(
-                              minScale: 1.0,
-                              animationMinScale: 1.0,
-                              maxScale: 8,
-                              animationMaxScale: 9,
-                              speed: 1,
-                              inertialSpeed: 120,
-                              initialScale: 1,
-                              cacheGesture: false,
-                              inPageView: true,
+                          Semantics(
+                            onTap: () => _handleGalleryTap(Offset(
+                                MediaQuery.sizeOf(context).width / 2, 0)),
+                            child: ExtendedImage.network(
+                              imageUrl,
+                              key: ValueKey(imageUrl),
+                              width: viewport.maxWidth,
+                              height: viewport.maxHeight,
+                              headers: XRequestHeaders.media,
+                              alignment: Alignment.center,
+                              cache: true,
+                              fit: BoxFit.contain,
+                              mode: ExtendedImageMode.gesture,
+                              enableSlideOutPage: false,
+                              loadStateChanged: (state) {
+                                if (state.extendedImageLoadState ==
+                                        LoadState.loading ||
+                                    state.extendedImageLoadState ==
+                                        LoadState.failed) {
+                                  // Keep the already cached feed image visible
+                                  // while a genuinely larger original is fetched.
+                                  return const SizedBox.expand();
+                                }
+                                return null;
+                              },
+                              onDoubleTap: (state) =>
+                                  _handleImageDoubleTap(state, index),
+                              initGestureConfigHandler: (_) => GestureConfig(
+                                minScale: 1.0,
+                                animationMinScale: 1.0,
+                                maxScale: 8,
+                                animationMaxScale: 9,
+                                speed: 1,
+                                inertialSpeed: 120,
+                                initialScale: 1,
+                                cacheGesture: false,
+                                inPageView: true,
+                              ),
                             ),
                           ),
                         ]);
