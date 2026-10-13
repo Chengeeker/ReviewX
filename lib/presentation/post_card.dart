@@ -127,15 +127,21 @@ class PostCard extends ConsumerWidget {
                       : BorderSide(color: scheme.outlineVariant)),
           borderRadius: quoted ? BorderRadius.circular(16) : null,
         ),
-        child: InkWell(
+        child: Theme(
+            data: Theme.of(context).copyWith(
+                splashFactory: InkSplash.splashFactory),
+            child: InkWell(
             borderRadius: quoted ? BorderRadius.circular(16) : null,
+            enableFeedback: HapticFeedbackUtil.isEnabled,
             onTap: detail
                 ? null
                 : () => Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (_) => PostDetailPage(post: current))),
-            child: Padding(
+            child: Theme(
+                data: Theme.of(context),
+                child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 child: Column(
@@ -550,7 +556,7 @@ class PostCard extends ConsumerWidget {
                         const Padding(
                             padding: EdgeInsets.only(top: 8),
                             child: Text('操作结果待核对，请刷新后再操作'))
-                    ]))));
+                    ]))))));
     if (!connected) return card;
     return CustomPaint(
       painter: _ConversationConnector(
