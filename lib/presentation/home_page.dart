@@ -44,6 +44,7 @@ class _HomePageState extends ConsumerState<HomePage>
   final ScrollPageActions _exploreActions = ScrollPageActions();
   final TextEditingController _exploreSearchController =
       TextEditingController();
+  final FocusNode _exploreSearchFocus = FocusNode();
   bool _explorePersonalized = true;
   DateTime? _lastNavigationTapTime;
   Timer? _navigationSingleTapTimer;
@@ -168,6 +169,10 @@ class _HomePageState extends ConsumerState<HomePage>
       _topBarSingleTapTimer?.cancel();
       _topBarSingleTapTimer = Timer(const Duration(milliseconds: 300), () {
         _lastTopBarTapTime = null;
+        _topBarSingleTapTimer = null;
+        if (mounted && _tab == 0) {
+          _actionsForNavigationIndex(0)?.handleTopBarSingleTap();
+        }
       });
     }
   }
@@ -178,6 +183,7 @@ class _HomePageState extends ConsumerState<HomePage>
       return;
     }
 
+    if (_tab == 1 && index != 1) _exploreSearchFocus.unfocus();
     _cancelPendingTapGestures();
     if (MediaQuery.disableAnimationsOf(context)) {
       _tabTransitionController.stop();
@@ -316,7 +322,7 @@ class _HomePageState extends ConsumerState<HomePage>
       case XLinkKind.notifications:
         _openNotifications();
       case XLinkKind.bookmarks:
-        openPage(const BookmarksPage());
+        openPage(const AccountHistoryPage());
       case XLinkKind.other:
         try {
           final opened =
@@ -354,6 +360,7 @@ class _HomePageState extends ConsumerState<HomePage>
     _tabTransitionCurve.dispose();
     _tabTransitionController.dispose();
     _exploreSearchController.dispose();
+    _exploreSearchFocus.dispose();
     super.dispose();
   }
 
@@ -453,6 +460,7 @@ class _HomePageState extends ConsumerState<HomePage>
           : _tab == 1
               ? TextField(
                   controller: _exploreSearchController,
+                  focusNode: _exploreSearchFocus,
                   textInputAction: TextInputAction.search,
                   onSubmitted: _exploreActions.submitSearch,
                   decoration: InputDecoration(
@@ -592,6 +600,7 @@ class _HomePageState extends ConsumerState<HomePage>
               ? SearchPage(
                   showExplore: true,
                   searchController: _exploreSearchController,
+                  searchFocusNode: _exploreSearchFocus,
                   topChromeHeight: controller.expired ? 0 : pageTopChromeHeight,
                   personalized: _explorePersonalized,
                   actions: _exploreActions,

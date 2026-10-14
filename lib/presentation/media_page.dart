@@ -347,6 +347,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
   int? _ignoreGalleryPointerUp;
   Offset? _galleryPointerDown;
   Offset? _pendingGalleryTap;
+  int? _pendingGalleryTapPointer;
   Timer? _galleryTapTimer;
   bool _galleryPointerCancelled = false;
 
@@ -397,8 +398,12 @@ class _MediaPageState extends ConsumerState<MediaPage>
     final generation = _zoomGeneration;
     final pointerDownPosition = state.pointerDownPosition;
     final begin = state.gestureDetails?.totalScale ?? 1.0;
+    final media = widget.media[pageIndex];
+    final isLongImage = media.width > 0 && media.height / media.width > 2.0;
     final end = begin <= 1.05
-        ? 2.5
+        ? isLongImage
+            ? 3.5
+            : 2.5
         : begin <= 3.6
             ? 6.0
             : 1.0;
@@ -460,8 +465,10 @@ class _MediaPageState extends ConsumerState<MediaPage>
         .round()
         .clamp(0, widget.media.length - 1);
     final epoch = ++_thumbnailSyncEpoch;
-    _thumbnailUserScrolling = false;
-    _thumbnailSettling = true;
+    setState(() {
+      _thumbnailUserScrolling = false;
+      _thumbnailSettling = true;
+    });
     const duration = Duration(milliseconds: 120);
     unawaited(Future.wait<void>([
       _thumbnailController.animateToPage(target,
@@ -481,13 +488,22 @@ class _MediaPageState extends ConsumerState<MediaPage>
     if (notification.depth != 0) return false;
     if (notification is ScrollStartNotification &&
         notification.dragDetails != null) {
-      _thumbnailScrollBottom = _thumbnailBottom;
-      _thumbnailSyncEpoch++;
-      _thumbnailSettling = false;
-      _thumbnailUserScrolling = true;
+      setState(() {
+        _thumbnailScrollBottom = _thumbnailBottom;
+        _thumbnailSyncEpoch++;
+        _thumbnailSettling = false;
+        _thumbnailUserScrolling = true;
+      });
     } else if (notification is ScrollEndNotification &&
         _thumbnailUserScrolling) {
-      _settleThumbnailScroll();
+      final epoch = _thumbnailSyncEpoch;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted &&
+            epoch == _thumbnailSyncEpoch &&
+            _thumbnailUserScrolling) {
+          _settleThumbnailScroll();
+        }
+      });
     }
     return false;
   }
@@ -568,6 +584,13 @@ class _MediaPageState extends ConsumerState<MediaPage>
 
   void _handleGalleryPointerDown(PointerDownEvent event) {
     if (event.buttons != kPrimaryButton) return;
+    final pendingTap = _pendingGalleryTap;
+    if (pendingTap != null &&
+        (event.position - pendingTap).distance <= kDoubleTapSlop) {
+      _pendingGalleryTapPointer = event.pointer;
+      _galleryTapTimer?.cancel();
+      _galleryTapTimer = null;
+    }
     if (_galleryPointer != null) {
       _galleryPointerCancelled = true;
       return;
@@ -583,10 +606,18 @@ class _MediaPageState extends ConsumerState<MediaPage>
         down != null &&
         (event.position - down).distance > kTouchSlop) {
       _galleryPointerCancelled = true;
+      if (event.pointer == _pendingGalleryTapPointer) {
+        _pendingGalleryTapPointer = null;
+        _scheduleGalleryTap();
+      }
     }
   }
 
   void _handleGalleryPointerCancel(PointerCancelEvent event) {
+    if (event.pointer == _pendingGalleryTapPointer) {
+      _pendingGalleryTapPointer = null;
+      _scheduleGalleryTap();
+    }
     if (event.pointer != _galleryPointer) return;
     _galleryPointer = null;
     _galleryPointerDown = null;
@@ -596,6 +627,9 @@ class _MediaPageState extends ConsumerState<MediaPage>
   void _handleGalleryPointerUp(PointerUpEvent event) {
     if (event.pointer != _galleryPointer) return;
     final ignored = event.pointer == _ignoreGalleryPointerUp;
+    if (event.pointer == _pendingGalleryTapPointer) {
+      _pendingGalleryTapPointer = null;
+    }
     final isTap = !_galleryPointerCancelled;
     _galleryPointer = null;
     _galleryPointerDown = null;
@@ -610,15 +644,25 @@ class _MediaPageState extends ConsumerState<MediaPage>
   void _queueGalleryTap(Offset position) {
     final pending = _pendingGalleryTap;
     if (pending != null) {
-      if ((position - pending).distance <= kDoubleTapSlop) return;
+      if ((position - pending).distance <= kDoubleTapSlop) {
+        _scheduleGalleryTap();
+        return;
+      }
       _galleryTapTimer?.cancel();
       _pendingGalleryTap = null;
       _handleGalleryTap(pending);
     }
     _pendingGalleryTap = position;
+    _scheduleGalleryTap();
+  }
+
+  void _scheduleGalleryTap() {
+    if (_pendingGalleryTap == null) return;
+    _galleryTapTimer?.cancel();
     _galleryTapTimer = Timer(kDoubleTapTimeout, () {
       final tap = _pendingGalleryTap;
       _pendingGalleryTap = null;
+      _pendingGalleryTapPointer = null;
       _galleryTapTimer = null;
       if (tap != null && mounted) _handleGalleryTap(tap);
     });
@@ -628,6 +672,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
     _galleryTapTimer?.cancel();
     _galleryTapTimer = null;
     _pendingGalleryTap = null;
+    _pendingGalleryTapPointer = null;
   }
 
   void _handleGalleryTap(Offset position) {
@@ -808,7 +853,11 @@ class _MediaPageState extends ConsumerState<MediaPage>
                   },
                   child: ExtendedImageGesturePageView.builder(
                     controller: _pages,
-                    physics: const ClampingScrollPhysics(),
+                    physics: const BouncingScrollPhysics(),
+                    canScrollPage: (details) =>
+                        (details?.totalScale ?? 1.0) <= 1.0,
+                    pageSnapping:
+                        !_thumbnailUserScrolling && !_thumbnailSettling,
                     itemCount: widget.media.length,
                     onPageChanged: _onPageChanged,
                     itemBuilder: (context, index) {
@@ -817,7 +866,9 @@ class _MediaPageState extends ConsumerState<MediaPage>
                         return ReviewVideoPlayer(
                           key: ValueKey('$index/${media.video}'),
                           media: media,
-                          active: _index == index,
+                          active: _index == index &&
+                              !_thumbnailUserScrolling &&
+                              !_thumbnailSettling,
                           post: widget.post,
                           author: widget.author,
                           pageLabel: '${index + 1}/${widget.media.length}',

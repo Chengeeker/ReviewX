@@ -393,9 +393,11 @@ void main() {
 
     final imageRect = tester.getRect(find.byType(ExtendedImage));
     await tester.tapAt(imageRect.center);
-    await tester.pump(const Duration(milliseconds: 80));
+    await tester.pump(const Duration(milliseconds: 180));
+    final secondTap = await tester.startGesture(imageRect.center);
+    await tester.pump(const Duration(milliseconds: 240));
     expect(chromeOpacity(), 1);
-    await tester.tapAt(imageRect.center);
+    await secondTap.up();
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
 

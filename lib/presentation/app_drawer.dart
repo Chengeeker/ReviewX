@@ -131,8 +131,8 @@ class AppDrawer extends ConsumerWidget {
                 children: [
                   drawerItem(
                     icon: Icons.bookmarks_outlined,
-                    title: '书签',
-                    onTap: () => openAccountPage(const BookmarksPage()),
+                    title: '历史',
+                    onTap: () => openAccountPage(const AccountHistoryPage()),
                   ),
                   drawerItem(
                     icon: Icons.notifications_outlined,
@@ -141,7 +141,7 @@ class AppDrawer extends ConsumerWidget {
                   ),
                   drawerItem(
                     icon: Icons.history_rounded,
-                    title: '浏览历史',
+                    title: '本机浏览历史',
                     onTap: () => open(const HistoryPage()),
                   ),
                 ],

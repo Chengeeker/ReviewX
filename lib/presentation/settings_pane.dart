@@ -12,7 +12,7 @@ import 'settings_pages.dart';
 import 'theme_settings_page.dart';
 import 'network_settings_page.dart';
 
-const _appVersion = '1.1.3';
+const _appVersion = '1.1.5';
 
 /// Review-style grouped settings, with X-specific account actions retained.
 class SettingsPane extends ConsumerWidget {
@@ -117,7 +117,7 @@ class SettingsPane extends ConsumerWidget {
                   const SizedBox(height: 8),
                   _buildAboutItem(
                     Icons.photo_library_outlined,
-                    '查看媒体、管理书签，并发布文字帖子、回复和引用',
+                    '查看媒体、管理书签和喜欢，并发布文字帖子、回复和引用',
                     colorScheme,
                   ),
                 ],

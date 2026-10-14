@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/storage/reading_settings.dart';
+import '../core/storage/storage_service.dart';
 import '../twitter/auth/app_controller.dart';
 import '../twitter/models/social_models.dart';
 import '../twitter/models/content_models.dart';
@@ -17,12 +19,14 @@ class SearchPage extends ConsumerStatefulWidget {
       this.initialQuery = '',
       this.showExplore = false,
       this.searchController,
+      this.searchFocusNode,
       this.topChromeHeight = 0,
       this.personalized = true,
       this.actions});
   final String initialQuery;
   final bool showExplore;
   final TextEditingController? searchController;
+  final FocusNode? searchFocusNode;
   final double topChromeHeight;
   final bool personalized;
   final ScrollPageActions? actions;
@@ -34,6 +38,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   late final bool _ownsTextController = widget.searchController == null;
   late final TextEditingController _text = widget.searchController ??
       TextEditingController(text: widget.initialQuery);
+  late final bool _ownsSearchFocus = widget.searchFocusNode == null;
+  late final FocusNode _searchFocus = widget.searchFocusNode ?? FocusNode();
   late String _query = widget.initialQuery;
   String _product = 'Top';
   int _revision = 0;
@@ -48,11 +54,18 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   bool _recommendationsLoading = false;
   final ScrollController _exploreScrollController = ScrollController();
   final ScrollPageActions _searchTimelineActions = ScrollPageActions();
+  final List<SocialUser> _suggestedUsers = [];
+  Timer? _suggestionDebounce;
+  String _suggestionQuery = '';
+  int _suggestionRequest = 0;
+  bool _showSearchSuggestions = false, _suggestionsLoading = false;
 
   @override
   void initState() {
     super.initState();
     _personalized = widget.personalized;
+    _text.addListener(_onSearchTextChanged);
+    _searchFocus.addListener(_onSearchFocusChanged);
     widget.actions?.attach(this,
         onSingleTap: _handleBottomBarSingleTap,
         onDoubleTap: _handleBottomBarDoubleTap,
@@ -183,14 +196,35 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   }
 
   void _submitQuery(String value) {
+    final query = value.trim();
+    if (query.isEmpty) return;
+    _searchFocus.unfocus();
+    _text.value = TextEditingValue(
+      text: query,
+      selection: TextSelection.collapsed(offset: query.length),
+    );
+    unawaited(_rememberSearch(query));
+    if (widget.showExplore && widget.actions != null) {
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: const Text('搜索结果')),
+          body: SearchPage(initialQuery: query),
+        ),
+      ));
+      return;
+    }
     setState(() {
-      _query = value.trim();
+      _query = query;
       _revision++;
     });
   }
 
   void _searchTrend(TrendingTopic trend) {
     _text.text = trend.name;
+    if (widget.showExplore && widget.actions != null) {
+      _submitQuery(trend.name);
+      return;
+    }
     setState(() {
       _query = trend.name;
       _product = 'Top';
@@ -198,21 +232,123 @@ class _SearchPageState extends ConsumerState<SearchPage> {
     });
   }
 
+  bool get _canSuggestSearch => widget.showExplore && widget.actions != null;
+
+  void _onSearchFocusChanged() {
+    if (!mounted || !_canSuggestSearch) return;
+    _suggestionDebounce?.cancel();
+    if (!_searchFocus.hasFocus) {
+      _suggestionRequest++;
+      setState(() {
+        _showSearchSuggestions = false;
+        _suggestionsLoading = false;
+        _suggestedUsers.clear();
+      });
+      return;
+    }
+    setState(() => _showSearchSuggestions = true);
+    _onSearchTextChanged();
+  }
+
+  void _onSearchTextChanged() {
+    if (!mounted || !_canSuggestSearch || !_searchFocus.hasFocus) return;
+    _suggestionDebounce?.cancel();
+    final query = _text.text.trim(), request = ++_suggestionRequest;
+    setState(() {
+      _showSearchSuggestions = true;
+      _suggestionQuery = query;
+      _suggestionsLoading = query.length >= 2;
+      _suggestedUsers.clear();
+    });
+    if (query.length < 2) return;
+    _suggestionDebounce = Timer(const Duration(milliseconds: 350),
+        () => unawaited(_loadUserSuggestions(query, request)));
+  }
+
+  Future<void> _loadUserSuggestions(String query, int request) async {
+    final controller = ref.read(appControllerProvider);
+    final epoch = controller.epoch;
+    try {
+      final page = await controller.adapter.searchUsers(query);
+      if (!mounted ||
+          request != _suggestionRequest ||
+          epoch != controller.epoch ||
+          !_searchFocus.hasFocus ||
+          _text.text.trim() != query) {
+        return;
+      }
+      setState(() => _suggestedUsers.addAll(page.users.take(8)));
+    } catch (_) {
+      // Search suggestions are optional; the exact-query action remains available.
+    } finally {
+      if (mounted && request == _suggestionRequest) {
+        setState(() => _suggestionsLoading = false);
+      }
+    }
+  }
+
+  Future<void> _rememberSearch(String query) async {
+    final accountId = ref.read(appControllerProvider).client.session?.userId;
+    if (accountId == null) return;
+    try {
+      await SearchHistory(ref.read(storageServiceProvider))
+          .add(accountId, query);
+      if (mounted) setState(() {});
+    } catch (_) {
+      // Search history is local convenience data and never blocks a search.
+    }
+  }
+
+  Future<void> _removeSearch(String accountId, String query) async {
+    try {
+      await SearchHistory(ref.read(storageServiceProvider))
+          .remove(accountId, query);
+      if (mounted) setState(() {});
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('无法更新搜索记录：$error')));
+      }
+    }
+  }
+
+  Future<void> _clearSearches(String accountId) async {
+    try {
+      await SearchHistory(ref.read(storageServiceProvider)).clear(accountId);
+      if (mounted) setState(() {});
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('无法清除搜索记录：$error')));
+      }
+    }
+  }
+
   @override
   void dispose() {
+    _suggestionDebounce?.cancel();
+    _text.removeListener(_onSearchTextChanged);
+    _searchFocus.removeListener(_onSearchFocusChanged);
     widget.actions?.detach(this);
     _exploreScrollController.dispose();
     if (_ownsTextController) _text.dispose();
+    if (_ownsSearchFocus) _searchFocus.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final adapter = ref.read(appControllerProvider).adapter;
+    final accountId = ref.watch(appControllerProvider
+        .select((controller) => controller.client.session?.userId));
+    final recentSearches = accountId == null
+        ? const <String>[]
+        : SearchHistory(ref.read(storageServiceProvider)).read(accountId);
     final searchField = Padding(
         padding: const EdgeInsets.all(12),
         child: TextField(
             controller: _text,
+            focusNode: _searchFocus,
             textInputAction: TextInputAction.search,
             onSubmitted: _submitQuery,
             decoration: InputDecoration(
@@ -245,7 +381,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                           _revision++;
                         })))
         ]));
-    return Column(children: [
+    final content = Column(children: [
       if (!widget.showExplore) searchField,
       if (widget.showExplore && widget.actions == null && _query.isEmpty)
         Row(children: [
@@ -291,6 +427,132 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                       load: (cursor) => adapter.search(_query,
                           product: _product, cursor: cursor)))
     ]);
+    if (!_canSuggestSearch ||
+        !_showSearchSuggestions ||
+        (_suggestionQuery.isEmpty && recentSearches.isEmpty)) {
+      return content;
+    }
+    return LayoutBuilder(builder: (context, constraints) {
+      final maxHeight = (constraints.maxHeight - widget.topChromeHeight - 88)
+          .clamp(0.0, constraints.maxHeight)
+          .toDouble();
+      return Stack(children: [
+        content,
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _searchFocus.unfocus,
+            child: const SizedBox.expand(),
+          ),
+        ),
+        Positioned(
+          top: widget.topChromeHeight + 4,
+          left: 12,
+          right: 12,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: _buildSearchSuggestions(recentSearches, accountId),
+          ),
+        ),
+      ]);
+    });
+  }
+
+  Widget _buildSearchSuggestions(
+      List<String> recentSearches, String? accountId) {
+    final query = _suggestionQuery;
+    final matchingRecent = query.isEmpty
+        ? const <String>[]
+        : recentSearches
+            .where((item) =>
+                item.toLowerCase().startsWith(query.toLowerCase()) &&
+                item.toLowerCase() != query.toLowerCase())
+            .take(4)
+            .toList(growable: false);
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      elevation: 8,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        shrinkWrap: true,
+        children: [
+          if (query.isEmpty && recentSearches.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+              child: Row(children: [
+                Text('最近',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                TextButton(
+                  onPressed: accountId == null
+                      ? null
+                      : () => _clearSearches(accountId),
+                  child: const Text('清除全部'),
+                ),
+              ]),
+            ),
+          if (query.isNotEmpty)
+            ListTile(
+              leading: const Icon(Icons.search_rounded),
+              title: Text(query, maxLines: 1, overflow: TextOverflow.ellipsis),
+              trailing: _suggestionsLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : null,
+              onTap: () => _submitQuery(query),
+            ),
+          if (query.isEmpty)
+            for (final recent in recentSearches)
+              ListTile(
+                leading: const Icon(Icons.history_rounded),
+                title:
+                    Text(recent, maxLines: 1, overflow: TextOverflow.ellipsis),
+                trailing: IconButton(
+                  tooltip: '移除搜索记录',
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: accountId == null
+                      ? null
+                      : () => _removeSearch(accountId, recent),
+                ),
+                onTap: () => _submitQuery(recent),
+              ),
+          for (final recent in matchingRecent)
+            ListTile(
+              leading: const Icon(Icons.history_rounded),
+              title: Text(recent, maxLines: 1, overflow: TextOverflow.ellipsis),
+              onTap: () => _submitQuery(recent),
+            ),
+          if (_suggestedUsers.isNotEmpty) const Divider(height: 1),
+          for (final user in _suggestedUsers)
+            ListTile(
+              leading: ClipOval(
+                child: user.avatar.isEmpty
+                    ? const SizedBox(
+                        width: 42, height: 42, child: Icon(Icons.person))
+                    : CachedNetworkImage(user.avatar,
+                        width: 42, height: 42, fit: BoxFit.cover),
+              ),
+              title:
+                  Text(user.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Text('@${user.handle}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              onTap: () {
+                _searchFocus.unfocus();
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => ProfilePage(user: user)));
+              },
+            ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTrends({double topPadding = 0}) => RefreshIndicator(
@@ -506,6 +768,7 @@ class _UserListState extends ConsumerState<UserList> {
   Widget build(BuildContext context) => RefreshIndicator(
       onRefresh: () => _fetch(true),
       child: ListView.builder(
+          padding: EdgeInsets.zero,
           physics: const AlwaysScrollableScrollPhysics(),
           itemCount: _users.length + 1,
           itemBuilder: (context, index) {

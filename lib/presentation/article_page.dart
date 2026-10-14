@@ -245,6 +245,20 @@ class RichContentText extends ConsumerStatefulWidget {
 
 class _RichContentTextState extends ConsumerState<RichContentText> {
   final List<TapGestureRecognizer> _recognizers = [];
+  // X ends tags at punctuation and does not link numeric-only tags.
+  static const _hashtagChars =
+      r'\p{L}\p{M}\p{N}_\u200c\u200d\ua67e\u05be\u05f3\u05f4\uff5e\u301c\u309b\u309c\u30a0\u30fb\u3003\u0f0b\u0f0c\u00b7';
+  static final _hashtagPattern = RegExp(
+    r'(^|[^&' +
+        _hashtagChars +
+        r'])([#＃])(?![\uFE0F\u20E3])([' +
+        _hashtagChars +
+        r']*[\p{L}\p{M}][' +
+        _hashtagChars +
+        r']*)',
+    unicode: true,
+  );
+
   void _clear() {
     for (final recognizer in _recognizers) {
       recognizer.dispose();
@@ -275,7 +289,9 @@ class _RichContentTextState extends ConsumerState<RichContentText> {
               .showSnackBar(SnackBar(content: Text('$error')));
         }
       }
-    } else if (target.startsWith('#') || target.startsWith(r'$')) {
+    } else if (target.startsWith('#') ||
+        target.startsWith('＃') ||
+        target.startsWith(r'$')) {
       if (mounted) {
         Navigator.push(
             context,
@@ -294,13 +310,32 @@ class _RichContentTextState extends ConsumerState<RichContentText> {
     _clear();
     final links = [...widget.links];
     if (links.isEmpty) {
-      for (final match in RegExp(
-              r'https?://[^\s<>]+|@[A-Za-z0-9_]{1,15}|#[^\s#]+|\$[A-Za-z]{1,12}')
-          .allMatches(widget.text)) {
+      for (final match
+          in RegExp(r'https?://[^\s<>]+|@[A-Za-z0-9_]{1,15}|\$[A-Za-z]{1,12}')
+              .allMatches(widget.text)) {
         links.add({
           'offset': match.start,
           'length': match.end - match.start,
           'url': match[0]
+        });
+      }
+      for (final match in _hashtagPattern.allMatches(widget.text)) {
+        final start = match.start + match[1]!.length;
+        if (links.any((link) {
+          final offset = count(link['offset']);
+          final length = count(link['length']);
+          return offset >= 0 &&
+              length > 0 &&
+              start >= offset &&
+              start < offset + length;
+        })) {
+          continue;
+        }
+        final hashtag = '${match[2]}${match[3]}';
+        links.add({
+          'offset': start,
+          'length': hashtag.length,
+          'url': hashtag,
         });
       }
     }

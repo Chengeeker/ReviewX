@@ -120,3 +120,52 @@ class BrowsingHistory {
   Future<void> clear(String accountId) =>
       storage.preferences.remove('history_$accountId');
 }
+
+/// Search queries are kept locally and scoped to the active X account.
+class SearchHistory {
+  SearchHistory(this.storage);
+  final StorageService storage;
+
+  static const _maxItems = 10;
+  String _key(String accountId) => 'search_history_$accountId';
+
+  List<String> read(String accountId) {
+    try {
+      final value =
+          jsonDecode(storage.preferences.getString(_key(accountId)) ?? '[]');
+      if (value is! List) return const [];
+      return value
+          .whereType<String>()
+          .map((query) => query.trim())
+          .where((query) => query.isNotEmpty)
+          .take(_maxItems)
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> add(String accountId, String query) async {
+    final value = query.trim();
+    if (value.isEmpty) return;
+    final searches = read(accountId)
+      ..removeWhere((item) => item.toLowerCase() == value.toLowerCase());
+    searches.insert(0, value);
+    await storage.preferences.setString(
+        _key(accountId), jsonEncode(searches.take(_maxItems).toList()));
+  }
+
+  Future<void> remove(String accountId, String query) async {
+    final searches = read(accountId)
+      ..removeWhere((item) => item.toLowerCase() == query.toLowerCase());
+    if (searches.isEmpty) {
+      await storage.preferences.remove(_key(accountId));
+    } else {
+      await storage.preferences
+          .setString(_key(accountId), jsonEncode(searches));
+    }
+  }
+
+  Future<void> clear(String accountId) =>
+      storage.preferences.remove(_key(accountId));
+}

@@ -550,6 +550,31 @@ void main() {
     expect(find.text('推荐关注'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+  testWidgets('user results do not reapply system top inset below filters',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = await StorageService.init();
+    final controller = AppController(client: TwitterClient());
+    await tester.pumpWidget(ProviderScope(
+        overrides: [
+          storageServiceProvider.overrideWithValue(storage),
+          appControllerProvider.overrideWith((ref) => controller)
+        ],
+        child: MaterialApp(
+            home: Scaffold(
+                body: Column(children: [
+          const SizedBox(height: 100),
+          Expanded(
+              child: MediaQuery(
+                  data: const MediaQueryData(
+                      padding: EdgeInsets.only(top: 96)),
+                  child: UserList(
+                      load: (_) async => const UserPage([sampleUser], null))))
+        ])))));
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.byType(ListTile)).dy, 100);
+    expect(tester.takeException(), isNull);
+  });
   test(
       'cross-page optimistic unlike blocks duplicate taps and rolls back uncertain writes',
       () async {

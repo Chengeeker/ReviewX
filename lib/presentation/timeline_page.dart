@@ -35,19 +35,21 @@ bool _continuesConversation(SocialPost parent, SocialPost reply) =>
 /// the visible feed without coupling the app shell to a private State class.
 class ScrollPageActions {
   Object? _owner;
-  VoidCallback? _singleTap, _doubleTap, _topBarDoubleTap;
+  VoidCallback? _singleTap, _doubleTap, _topBarSingleTap, _topBarDoubleTap;
   ValueChanged<String>? _searchSubmitted;
   ValueChanged<bool>? _exploreSelected;
 
   void attach(Object owner,
       {required VoidCallback onSingleTap,
       required VoidCallback onDoubleTap,
+      VoidCallback? onTopBarSingleTap,
       required VoidCallback onTopBarDoubleTap,
       ValueChanged<String>? onSearchSubmitted,
       ValueChanged<bool>? onExploreSelected}) {
     _owner = owner;
     _singleTap = onSingleTap;
     _doubleTap = onDoubleTap;
+    _topBarSingleTap = onTopBarSingleTap;
     _topBarDoubleTap = onTopBarDoubleTap;
     _searchSubmitted = onSearchSubmitted;
     _exploreSelected = onExploreSelected;
@@ -58,6 +60,7 @@ class ScrollPageActions {
     _owner = null;
     _singleTap = null;
     _doubleTap = null;
+    _topBarSingleTap = null;
     _topBarDoubleTap = null;
     _searchSubmitted = null;
     _exploreSelected = null;
@@ -65,6 +68,7 @@ class ScrollPageActions {
 
   void handleSingleTap() => _singleTap?.call();
   void handleDoubleTap() => _doubleTap?.call();
+  void handleTopBarSingleTap() => _topBarSingleTap?.call();
   void handleTopBarDoubleTap() => _topBarDoubleTap?.call();
   void submitSearch(String query) => _searchSubmitted?.call(query);
   void selectExplore(bool personalized) => _exploreSelected?.call(personalized);
@@ -119,6 +123,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     widget.actions?.attach(this,
         onSingleTap: _handleBottomSingleTap,
         onDoubleTap: _handleBottomDoubleTap,
+        onTopBarSingleTap: _handleTopBarSingleTap,
         onTopBarDoubleTap: _handleTopBarDoubleTap);
     if (widget.loadOnInit) _fetch(refresh: true);
   }
@@ -151,13 +156,11 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     unawaited(_fetch(refresh: true));
   }
 
+  void _handleTopBarSingleTap() => _animateToTop();
+
   void _handleTopBarDoubleTap() {
-    if (_scrollController.hasClients && _scrollController.offset > 50) {
-      _savedOffset = _scrollController.offset;
-      _animateToTop();
-    } else {
-      unawaited(_fetch(refresh: true));
-    }
+    _animateToTop();
+    unawaited(_fetch(refresh: true));
   }
 
   Future<PostPage> _callLoader(String? cursor,
@@ -205,9 +208,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
           cacheKey != null &&
           accountId != null &&
           controller.client.session?.userId == accountId) {
-        unawaited(ref
-            .read(localXCacheProvider)
-            .writeTimeline(accountId, cacheKey, incoming.values.take(20).toList()));
+        unawaited(ref.read(localXCacheProvider).writeTimeline(
+            accountId, cacheKey, incoming.values.take(20).toList()));
       }
       controller.ingest(fetchedPosts);
       setState(() {
@@ -334,21 +336,48 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   }
 }
 
-class BookmarksPage extends ConsumerWidget {
-  const BookmarksPage({super.key});
+class AccountHistoryPage extends ConsumerWidget {
+  const AccountHistoryPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.watch(appControllerProvider);
-    final appBar = buildFrostedAppBar(context, title: const Text('书签'));
+    final userId = controller.client.session?.userId;
+    final appBar = buildFrostedAppBar(
+      context,
+      title: const Text('历史'),
+      bottom: const TabBar(
+        tabs: [
+          Tab(icon: Icon(Icons.bookmark_border), text: '书签'),
+          Tab(icon: Icon(Icons.favorite_border), text: '喜欢'),
+        ],
+      ),
+    );
     final topChromeHeight =
         MediaQuery.paddingOf(context).top + appBar.preferredSize.height;
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: appBar,
-      body: TimelinePage(
-        topPadding: topChromeHeight,
-        load: (cursor) => controller.adapter.bookmarks(cursor: cursor),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: appBar,
+        body: TabBarView(
+          children: [
+            TimelinePage(
+              key: ValueKey('bookmarks-${controller.epoch}'),
+              topPadding: topChromeHeight,
+              load: (cursor) => controller.adapter.bookmarks(cursor: cursor),
+            ),
+            TimelinePage(
+              key: ValueKey('likes-${controller.epoch}'),
+              topPadding: topChromeHeight,
+              load: (cursor) {
+                if (userId == null) throw const TwitterFailure('请登录 X');
+                return controller.adapter
+                    .userTimeline(userId, operation: 'Likes', cursor: cursor);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
