@@ -13,6 +13,7 @@ const readingDefaults = <String, dynamic>{
   'showBanner': true,
   'cardBackground': true,
   'fontSize': 16.0,
+  'appTextScale': 1.0,
   'lineHeight': 1.5,
   'largeImages': true,
   'defaultMutedVideo': false,
@@ -43,6 +44,7 @@ Map<String, dynamic> validatedReading(dynamic value) {
     }
   }
   result['fontSize'] = (result['fontSize'] as double).clamp(12.0, 24.0);
+  result['appTextScale'] = (result['appTextScale'] as double).clamp(0.8, 1.4);
   result['lineHeight'] = (result['lineHeight'] as double).clamp(1.1, 2.0);
   result['imageRadius'] = (result['imageRadius'] as double).clamp(0.0, 28.0);
   return result;

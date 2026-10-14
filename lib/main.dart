@@ -8,8 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/services/image_cache_maintenance.dart';
 import 'core/services/notification_poll.dart';
 import 'core/services/network_routing.dart';
+import 'core/storage/reading_settings.dart';
 import 'core/storage/storage_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/app_text_scaler.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/utils/haptic_feedback_util.dart';
 import 'presentation/home_page.dart';
@@ -64,7 +66,8 @@ class _ReviewXAppState extends ConsumerState<ReviewXApp> {
   @override
   Widget build(BuildContext context) {
     final theme = ref.watch(themeProvider),
-        controller = ref.watch(appControllerProvider);
+        controller = ref.watch(appControllerProvider),
+        appTextScale = ref.watch(readingProvider)['appTextScale'] as double;
     HapticFeedbackUtil.isEnabled = theme.enableHaptics;
     return DynamicColorBuilder(
         builder: (light, dark) => MaterialApp(
@@ -80,6 +83,13 @@ class _ReviewXAppState extends ConsumerState<ReviewXApp> {
                 isPureBlack: theme.isPureBlackDark,
                 fontWeightAdjustment: theme.effectiveFontWeightAdjustment),
             themeMode: theme.themeMode,
+            builder: (context, child) => MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: AppTextScaler(
+                        MediaQuery.textScalerOf(context), appTextScale),
+                  ),
+                  child: child!,
+                ),
             locale: const Locale('zh', 'CN'),
             supportedLocales: const [Locale('zh', 'CN')],
             localizationsDelegates: const [

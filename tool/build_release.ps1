@@ -24,7 +24,6 @@ if (!(Get-Command $FlutterCommand -ErrorAction SilentlyContinue)) {
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $tempRoot = Join-Path $projectRoot ".build-temp-$PID"
 $signingTempRoot = Join-Path $projectRoot '.signing-temp'
-New-Item -ItemType Directory -Force $tempRoot, $signingTempRoot | Out-Null
 $temporaryStore = Join-Path $signingTempRoot 'release.p12'
 $taskPassword = [Console]::ReadLine()
 if ([string]::IsNullOrEmpty($taskPassword)) { throw 'Supply signing password through standard input.' }
@@ -43,6 +42,7 @@ $oldGradle = $env:GRADLE_OPTS
 $oldJavaOptions = $env:JAVA_TOOL_OPTIONS
 $pipeTemporaryFiles = @('ReviewXPipeProbe.java', 'ReviewXPipeProbe.class', 'ReviewXPipeAgent.java', 'ReviewXPipeAgent.class', 'pipe-agent.mf', 'pipe-agent.jar')
 try {
+  New-Item -ItemType Directory -Force $tempRoot, $signingTempRoot | Out-Null
   $env:JAVA_HOME = $JavaHome
   $env:TEMP = $tempRoot
   $env:TMP = $tempRoot
@@ -108,6 +108,9 @@ public class ReviewXPipeAgent {
   $env:JAVA_TOOL_OPTIONS = $oldJavaOptions
   foreach ($name in $pipeTemporaryFiles) {
     Remove-Item -LiteralPath (Join-Path $tempRoot $name) -Force -ErrorAction SilentlyContinue
+  }
+  if (Test-Path -LiteralPath $tempRoot) {
+    Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
   }
   $taskPassword = $null
 }

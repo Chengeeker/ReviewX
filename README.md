@@ -78,6 +78,22 @@ tool/                         # X 协议/交易数据刷新、Release 构建与 
 
 ReviewX 源码采用 MIT 许可。第三方来源和许可说明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，其中包括 Review 组件和交易头编码/数据的独立 MIT 声明。
 
+## 🧹 本地构建缓存与生成文件
+
+以下目录由 Flutter、Dart 或 Gradle 生成，不属于源码，且已加入 `.gitignore`：
+
+| 路径 | 用途 | 清理影响 |
+| --- | --- | --- |
+| `.dart_tool/`、`.flutter-plugins-dependencies` | Dart 依赖解析、插件清单和生成状态 | 可重新生成；下次运行 Flutter 工具时会重建 |
+| `build/` 中除明确保留项外 | APK 中间文件、插件构建结果和测试缓存 | 可重新生成；清理后下次构建会更慢 |
+| `android/.gradle/` | Android 项目的本地 Gradle 状态 | 可重新生成；必要时 Gradle 会重新解析依赖 |
+| `.build-temp-<PID>/` | Release 脚本专用的 Windows `TEMP/TMP` 和 Java 探测文件 | 构建结束时自动删除；异常中断后，确认没有构建进程再清理残留目录 |
+| `build/.gradle-user-home-release/` | 独立 Gradle 依赖缓存；当前项目脚本没有引用该路径 | 删除后若某个环境指定了它，Gradle 需要重新下载依赖 |
+| `build/previous-releases/`、项目根目录最新 Release APK | 历史与当前回退安装包 | 属于交付产物，清理构建缓存时保留 |
+| 项目根目录 `.signing-temp/` | BKS 转换后的临时 Release 签名文件 | 不提交；不要在构建过程中手动清理 |
+
+Flutter 的 `flutter clean` 会清除整个 `build/` 和 `.dart_tool/`，运行前先确认 `build/previous-releases/` 中的回退 APK 已另行保留。
+
 ---
 
 ## 🚀 开发与构建

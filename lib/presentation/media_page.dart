@@ -315,7 +315,9 @@ class _MediaPageState extends ConsumerState<MediaPage>
   late int _index = widget.index;
   bool _saving = false, _showChrome = true;
   bool _thumbnailUserScrolling = false, _thumbnailSettling = false;
+  bool _mainUserScrolling = false;
   int _thumbnailSyncEpoch = 0;
+  final Expando<ExtendedImageGesture> _pagingImages = Expando();
   double _videoBottomControlsHeight = 0;
   double? _thumbnailScrollBottom;
 
@@ -437,6 +439,40 @@ class _MediaPageState extends ConsumerState<MediaPage>
         _thumbnailController.hasClients) {
       _thumbnailController.jumpToPage(index);
     }
+  }
+
+  bool _handleMainPageScroll(ScrollNotification notification) {
+    if (notification.depth != 0) return false;
+    if (notification is ScrollStartNotification &&
+        notification.dragDetails != null) {
+      _thumbnailSyncEpoch++;
+      if (_thumbnailController.hasClients &&
+          _thumbnailController.position.isScrollingNotifier.value) {
+        final position = _thumbnailController.position;
+        position.jumpTo(position.pixels);
+      }
+      if (!_mainUserScrolling || _thumbnailScrollBottom != null) {
+        setState(() {
+          _thumbnailUserScrolling = false;
+          _thumbnailSettling = false;
+          _mainUserScrolling = true;
+          _thumbnailScrollBottom = null;
+        });
+      }
+    } else if (notification is ScrollEndNotification && _mainUserScrolling) {
+      final epoch = _thumbnailSyncEpoch;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted ||
+            epoch != _thumbnailSyncEpoch ||
+            !_mainUserScrolling ||
+            !_pages.hasClients ||
+            _pages.position.isScrollingNotifier.value) {
+          return;
+        }
+        setState(() => _mainUserScrolling = false);
+      });
+    }
+    return false;
   }
 
   void _syncMainPageToThumbnail() {
@@ -838,24 +874,15 @@ class _MediaPageState extends ConsumerState<MediaPage>
                 onPointerCancel: currentMedia.video == null
                     ? _handleGalleryPointerCancel
                     : null,
-                child: NotificationListener<ScrollStartNotification>(
-                  onNotification: (notification) {
-                    if (notification.depth == 0 &&
-                        notification.dragDetails != null) {
-                      if (_thumbnailScrollBottom != null) {
-                        setState(() => _thumbnailScrollBottom = null);
-                      }
-                      _thumbnailSyncEpoch++;
-                      _thumbnailUserScrolling = false;
-                      _thumbnailSettling = false;
-                    }
-                    return false;
-                  },
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: _handleMainPageScroll,
                   child: ExtendedImageGesturePageView.builder(
                     controller: _pages,
                     physics: const BouncingScrollPhysics(),
                     canScrollPage: (details) =>
                         (details?.totalScale ?? 1.0) <= 1.0,
+                    shouldAccpetHorizontalOrVerticalDrag: (trackers) =>
+                        trackers.length == 1,
                     pageSnapping:
                         !_thumbnailUserScrolling && !_thumbnailSettling,
                     itemCount: widget.media.length,
@@ -867,6 +894,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
                           key: ValueKey('$index/${media.video}'),
                           media: media,
                           active: _index == index &&
+                              !_mainUserScrolling &&
                               !_thumbnailUserScrolling &&
                               !_thumbnailSettling,
                           post: widget.post,
@@ -918,7 +946,61 @@ class _MediaPageState extends ConsumerState<MediaPage>
                                   // while a genuinely larger original is fetched.
                                   return const SizedBox.expand();
                                 }
-                                return null;
+                                return _pagingImages[
+                                        state.extendedImageInfo!] ??=
+                                    ExtendedImageGesture(
+                                  state,
+                                  imageBuilder: (image, {imageGestureState}) {
+                                    final gestureState = imageGestureState!;
+                                    final pager = gestureState.context
+                                        .findAncestorStateOfType<
+                                            ExtendedImageGesturePageViewState>();
+                                    if (pager == null) return image;
+                                    return Listener(
+                                      onPointerDown: (_) {
+                                        pager.extendedImageGestureStates
+                                            .remove(gestureState);
+                                        pager.extendedImageGestureState =
+                                            gestureState;
+                                      },
+                                      child: RawGestureDetector(
+                                        gestures: {
+                                          ExtendedHorizontalDragGestureRecognizer:
+                                              GestureRecognizerFactoryWithHandlers<
+                                                  ExtendedHorizontalDragGestureRecognizer>(
+                                            () =>
+                                                ExtendedHorizontalDragGestureRecognizer(
+                                              canHorizontalOrVerticalDrag: () =>
+                                                  (gestureState.gestureDetails
+                                                          ?.totalScale ??
+                                                      1) <=
+                                                  1,
+                                              shouldAccpetHorizontalOrVerticalDrag:
+                                                  (trackers) =>
+                                                      trackers.length == 1,
+                                            ),
+                                            (recognizer) => recognizer
+                                              ..onDown = pager.onDragDown
+                                              ..onStart = pager.onDragStart
+                                              ..onUpdate = pager.onDragUpdate
+                                              ..onEnd = pager.onDragEnd
+                                              ..onCancel = pager.onDragCancel
+                                              ..minFlingDistance = pager.widget
+                                                  .physics.minFlingDistance
+                                              ..minFlingVelocity = pager.widget
+                                                  .physics.minFlingVelocity
+                                              ..maxFlingVelocity = pager.widget
+                                                  .physics.maxFlingVelocity
+                                              ..gestureSettings =
+                                                  MediaQuery.gestureSettingsOf(
+                                                      context),
+                                          ),
+                                        },
+                                        child: image,
+                                      ),
+                                    );
+                                  },
+                                );
                               },
                               onDoubleTap: (state) =>
                                   _handleImageDoubleTap(state, index),
@@ -937,22 +1019,24 @@ class _MediaPageState extends ConsumerState<MediaPage>
                           ),
                         ]);
                         final heroScope = widget.heroScope;
-                        final imageWithHero =
-                            heroScope != null && index == _index
-                                ? Hero(
-                                    tag: mediaGalleryHeroTag(
-                                      heroScope,
-                                      index,
-                                      imageAspectRatio:
-                                          mediaGalleryImageAspectRatio(media),
-                                      thumbnailUsesCover:
-                                          widget.heroThumbnailUsesCover,
-                                    ),
-                                    flightShuttleBuilder:
-                                        mediaGalleryHeroFlightShuttleBuilder,
-                                    child: image,
-                                  )
-                                : image;
+                        final imageWithHero = heroScope == null
+                            ? image
+                            : HeroMode(
+                                enabled: index == _index,
+                                child: Hero(
+                                  tag: mediaGalleryHeroTag(
+                                    heroScope,
+                                    index,
+                                    imageAspectRatio:
+                                        mediaGalleryImageAspectRatio(media),
+                                    thumbnailUsesCover:
+                                        widget.heroThumbnailUsesCover,
+                                  ),
+                                  flightShuttleBuilder:
+                                      mediaGalleryHeroFlightShuttleBuilder,
+                                  child: image,
+                                ),
+                              );
                         return SizedBox.expand(child: imageWithHero);
                       });
                     },

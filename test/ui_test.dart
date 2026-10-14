@@ -243,18 +243,21 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 320));
     expect(find.text('2 / 3'), findsOneWidget);
-    final heroTagsAfterPageChange = tester
-        .widgetList<Hero>(find.byType(Hero))
-        .map((hero) => hero.tag)
+    final galleryHeroModes = tester
+        .widgetList<HeroMode>(find.byType(HeroMode))
+        .where((mode) => mode.child is Hero)
         .toList();
     expect(
-      heroTagsAfterPageChange.where((tag) => tag == sourceTags.first),
-      hasLength(1),
-      reason: 'the previously viewed gallery page must not remain a Hero',
+      galleryHeroModes.where((mode) =>
+          (mode.child as Hero).tag == sourceTags.first && mode.enabled),
+      isEmpty,
+      reason:
+          'the previously viewed gallery page must not launch a Hero flight',
     );
     expect(
-      heroTagsAfterPageChange.where((tag) => tag == sourceTags[1]),
-      hasLength(2),
+      galleryHeroModes.where(
+          (mode) => (mode.child as Hero).tag == sourceTags[1] && mode.enabled),
+      hasLength(1),
       reason: 'only the current gallery page pairs with its feed thumbnail',
     );
 
@@ -262,14 +265,20 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 320));
     expect(find.text('3 / 3'), findsOneWidget);
-    final heroTagsAfterSecondSwipe = tester
-        .widgetList<Hero>(find.byType(Hero))
-        .map((hero) => hero.tag)
+    final galleryHeroModesAfterSecondSwipe = tester
+        .widgetList<HeroMode>(find.byType(HeroMode))
+        .where((mode) => mode.child is Hero)
         .toList();
-    expect(heroTagsAfterSecondSwipe.where((tag) => tag == sourceTags[1]),
-        hasLength(1));
-    expect(heroTagsAfterSecondSwipe.where((tag) => tag == sourceTags[2]),
-        hasLength(2));
+    expect(
+      galleryHeroModesAfterSecondSwipe.where(
+          (mode) => (mode.child as Hero).tag == sourceTags[1] && mode.enabled),
+      isEmpty,
+    );
+    expect(
+      galleryHeroModesAfterSecondSwipe.where(
+          (mode) => (mode.child as Hero).tag == sourceTags[2] && mode.enabled),
+      hasLength(1),
+    );
 
     await tester.drag(find.byKey(const ValueKey('gallery-thumbnail-strip')),
         const Offset(140, 0));
@@ -566,8 +575,7 @@ void main() {
           const SizedBox(height: 100),
           Expanded(
               child: MediaQuery(
-                  data: const MediaQueryData(
-                      padding: EdgeInsets.only(top: 96)),
+                  data: const MediaQueryData(padding: EdgeInsets.only(top: 96)),
                   child: UserList(
                       load: (_) async => const UserPage([sampleUser], null))))
         ])))));

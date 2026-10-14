@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/theme_provider.dart';
+import '../core/storage/reading_settings.dart';
 import '../core/utils/app_dialog.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/widgets/app_section_card.dart';
@@ -10,6 +11,19 @@ import 'settings_pages.dart';
 /// 个性化设置页面 (明暗模式、色彩方案、字体粗细、导航布局、屏幕显示与触感)
 class ThemeSettingsPage extends ConsumerWidget {
   const ThemeSettingsPage({super.key});
+
+  Future<void> _saveAppTextScale(
+      BuildContext context, WidgetRef ref, double value) async {
+    try {
+      await ref.read(readingProvider.notifier).set('appTextScale', value);
+    } catch (_) {
+      if (context.mounted) {
+        ref.read(readingProvider.notifier).reload();
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('设置保存失败')));
+      }
+    }
+  }
 
   void _showFontWeightDialog(
       BuildContext context, WidgetRef ref, ThemeState themeState) {
@@ -75,6 +89,7 @@ class ThemeSettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeState = ref.watch(themeProvider);
+    final appTextScale = ref.watch(readingProvider)['appTextScale'] as double;
     final colorScheme = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
 
@@ -215,6 +230,32 @@ class ThemeSettingsPage extends ConsumerWidget {
                         _showFontWeightDialog(context, ref, themeState),
                   ),
                 ],
+              )),
+          const SizedBox(height: 32),
+          section(
+              '字体大小',
+              ListTile(
+                leading: const Icon(Icons.format_size_rounded, size: 24),
+                title: const Text('应用字体大小'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${(appTextScale * 100).round()}%'),
+                    Slider(
+                      key: const ValueKey('app-text-scale-slider'),
+                      value: appTextScale,
+                      min: 0.8,
+                      max: 1.4,
+                      divisions: 12,
+                      label: '${(appTextScale * 100).round()}%',
+                      onChanged: (value) => ref
+                          .read(readingProvider.notifier)
+                          .preview('appTextScale', value),
+                      onChangeEnd: (value) =>
+                          _saveAppTextScale(context, ref, value),
+                    ),
+                  ],
+                ),
               )),
           const SizedBox(height: 32),
           section(

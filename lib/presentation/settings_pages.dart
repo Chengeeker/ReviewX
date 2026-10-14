@@ -186,7 +186,7 @@ class _ReadingSettingsPageState extends ConsumerState<ReadingSettingsPage> {
                 state['videoQuality'] as String? ?? 'balanced'),
           ),
           for (final entry in const {
-            'fontSize': '正文字号',
+            'fontSize': '帖子与文章正文字号',
             'lineHeight': '正文行距',
             'imageRadius': '图片圆角'
           }.entries)
