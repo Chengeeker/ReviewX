@@ -9,6 +9,7 @@ import '../core/widgets/frosted_app_bar.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../core/storage/storage_service.dart';
+import '../core/theme/theme_provider.dart';
 import '../twitter/api/twitter_client.dart';
 import '../twitter/repositories/twitter_adapter.dart';
 import '../twitter/models/content_models.dart';
@@ -240,6 +241,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(appControllerProvider);
+    final glassBottomInset = ref.watch(themeProvider.select(
+        (state) => state.useFloatingNavBar && state.useLiquidGlass));
     final posts =
         _posts.where((post) => !controller.isDeleted(post.id)).toList();
     final known = <String, SocialPost>{
@@ -274,9 +277,11 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: EdgeInsets.only(
                     top: widget.topPadding,
-                    bottom: MediaQuery.paddingOf(context).bottom > 24
-                        ? MediaQuery.paddingOf(context).bottom
-                        : 24),
+                    bottom: glassBottomInset
+                        ? MediaQuery.viewPaddingOf(context).bottom + 76
+                        : MediaQuery.paddingOf(context).bottom > 24
+                            ? MediaQuery.paddingOf(context).bottom
+                            : 24),
                 itemCount: posts.length + 3,
                 itemBuilder: (context, index) {
                   if (index == 0) {

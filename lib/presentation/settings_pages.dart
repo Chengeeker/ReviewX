@@ -9,7 +9,6 @@ import '../core/widgets/app_section_card.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../core/theme/theme_provider.dart';
-import '../core/services/image_cache_maintenance.dart';
 import '../core/services/settings_backup.dart';
 import '../twitter/auth/app_controller.dart';
 import '../core/services/notification_poll.dart';
@@ -332,37 +331,11 @@ class _DisplaySettingsPageState extends ConsumerState<DisplaySettingsPage> {
   }
 }
 
-class StorageSettingsPage extends ConsumerStatefulWidget {
+class StorageSettingsPage extends ConsumerWidget {
   const StorageSettingsPage({super.key});
   @override
-  ConsumerState<StorageSettingsPage> createState() =>
-      _StorageSettingsPageState();
-}
-
-class _StorageSettingsPageState extends ConsumerState<StorageSettingsPage> {
-  String _size = '读取中…';
-  bool _busy = false;
-  @override
-  void initState() {
-    super.initState();
-    _readSize();
-  }
-
-  Future<void> _readSize() async {
-    try {
-      final bytes = await ImageCacheMaintenance.bytes();
-      if (mounted) {
-        setState(
-            () => _size = '${(bytes / 1024 / 1024).toStringAsFixed(1)} MiB');
-      }
-    } catch (_) {
-      if (mounted) setState(() => _size = '暂不可读取');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(title: const Text('存储与缓存')),
+  Widget build(BuildContext context, WidgetRef ref) => Scaffold(
+      appBar: AppBar(title: const Text('存储设置')),
       body: ListView(children: [
         ListTile(
             title: const Text('媒体保存目录'),
@@ -378,28 +351,6 @@ class _StorageSettingsPageState extends ConsumerState<StorageSettingsPage> {
                     ref.read(readingProvider.notifier).set('storageFolder', v);
                   }
                 })),
-        ListTile(
-            title: const Text('图片磁盘缓存'),
-            subtitle: Text(_size),
-            trailing: TextButton(
-                onPressed: _busy
-                    ? null
-                    : () async {
-                        setState(() => _busy = true);
-                        try {
-                          await ImageCacheMaintenance.clear();
-                          PaintingBinding.instance.imageCache.clear();
-                          await _readSize();
-                        } catch (_) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('缓存清理失败，请稍后重试')));
-                          }
-                        } finally {
-                          if (mounted) setState(() => _busy = false);
-                        }
-                      },
-                child: Text(_busy ? '清理中…' : '清理图片'))),
       ]));
 }
 

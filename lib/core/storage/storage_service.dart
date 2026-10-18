@@ -7,6 +7,7 @@ class StorageService {
   final SharedPreferences preferences;
   static const keyThemeMode = 'theme_mode';
   static const keyUseDynamicColor = 'use_dynamic_color';
+  static const keyUseLiquidGlass = 'use_liquid_glass_effect';
   static Future<StorageService> init() async =>
       StorageService(await SharedPreferences.getInstance());
   int getInt(String key, {int defaultValue = 0}) =>
@@ -21,6 +22,9 @@ class StorageService {
   bool getUseFloatingNavBar() => getBool('floating_nav', defaultValue: true);
   Future<bool> setUseFloatingNavBar(bool value) =>
       setBool('floating_nav', value);
+  bool getUseLiquidGlass() => getBool(keyUseLiquidGlass);
+  Future<bool> setUseLiquidGlass(bool value) =>
+      setBool(keyUseLiquidGlass, value);
   bool getUseCustomFontWeight() => getBool('custom_font_weight');
   Future<bool> setUseCustomFontWeight(bool value) =>
       setBool('custom_font_weight', value);

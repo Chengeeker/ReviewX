@@ -8,11 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderClipRRect, RenderImage;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
 import '../core/services/media_saver.dart';
 import '../core/widgets/cached_network_image.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
+import '../core/theme/theme_provider.dart';
 import '../twitter/api/x_request_headers.dart';
 import '../twitter/auth/app_controller.dart';
 import '../twitter/models/social_models.dart';
@@ -760,91 +762,107 @@ class _MediaPageState extends ConsumerState<MediaPage>
         },
       );
 
-  Widget _buildChrome(SocialMedia media) => AnimatedSlide(
-        offset: _showChrome ? Offset.zero : const Offset(0, -1),
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        child: AnimatedOpacity(
-          opacity: _showChrome ? 1 : 0,
-          duration: const Duration(milliseconds: 160),
-          child: IgnorePointer(
-            ignoring: !_showChrome,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _GalleryGlassIconButton(
-                      tooltip: '返回',
-                      icon: const Icon(Icons.arrow_back_rounded,
-                          color: Colors.white),
-                      onPressed: () => Navigator.of(context).maybePop(),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black45,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        '${_index + 1} / ${widget.media.length}',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    Row(mainAxisSize: MainAxisSize.min, children: [
-                      if (media.alt.isNotEmpty)
-                        IconButton(
-                          style: IconButton.styleFrom(
-                              backgroundColor: Colors.black45),
-                          icon: const Icon(Icons.info_outline,
-                              color: Colors.white),
-                          tooltip: '图片说明',
-                          onPressed: () => showDialog<void>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                    title: const Text('图片说明'),
-                                    content: SelectableText(media.alt),
-                                    actions: [
-                                      TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context),
-                                          child: const Text('关闭'))
-                                    ],
-                                  )),
-                        ),
-                      _GalleryGlassIconButton(
-                        tooltip: '保存到相册',
-                        onPressed: _saving ? null : _save,
-                        icon: _saving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
-                            : const Icon(Icons.download_rounded,
-                                color: Colors.white),
-                      ),
-                    ]),
-                  ],
-                ),
+  Widget _buildChrome(SocialMedia media,
+      {required bool useLiquidGlass,
+      required double visibility,
+      required bool routeSettled}) {
+    final controls = SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _GalleryGlassIconButton(
+              tooltip: '返回',
+              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+              onPressed: () => Navigator.of(context).maybePop(),
+              useLiquidGlass: useLiquidGlass,
+              visibility: visibility,
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black45,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                '${_index + 1} / ${widget.media.length}',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold),
               ),
             ),
-          ),
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              if (media.alt.isNotEmpty)
+                IconButton(
+                  style: IconButton.styleFrom(
+                      backgroundColor: Colors.black45),
+                  icon: const Icon(Icons.info_outline, color: Colors.white),
+                  tooltip: '图片说明',
+                  onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                            title: const Text('图片说明'),
+                            content: SelectableText(media.alt),
+                            actions: [
+                              TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('关闭'))
+                            ],
+                          )),
+                ),
+              _GalleryGlassIconButton(
+                tooltip: '保存到相册',
+                onPressed: _saving ? null : _save,
+                icon: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.download_rounded, color: Colors.white),
+                useLiquidGlass: useLiquidGlass,
+                visibility: visibility,
+              ),
+            ]),
+          ],
         ),
-      );
+      ),
+    );
+    return AnimatedSlide(
+      offset: _showChrome ? Offset.zero : const Offset(0, -1),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      child: useLiquidGlass
+          ? GlassAdaptiveScope(
+              minQuality: GlassQuality.standard,
+              child: IgnorePointer(
+                ignoring: !_showChrome || !routeSettled,
+                child: controls,
+              ),
+            )
+          : AnimatedOpacity(
+              opacity: _showChrome ? 1 : 0,
+              duration: const Duration(milliseconds: 160),
+              child: IgnorePointer(
+                ignoring: !_showChrome || !routeSettled,
+                child: controls,
+              ),
+            ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final useLiquidGlass = ref.watch(
+        themeProvider.select((state) => state.useLiquidGlass));
     final currentMedia = widget.media[_index];
     final routeAnimation = ModalRoute.of(context)?.animation;
-    return AnnotatedRegion<SystemUiOverlayStyle>(
+    return GlassPage(
+      enableBackgroundSampling: useLiquidGlass,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ExtendedImageSlidePage(
         key: _slidePageKey,
@@ -861,7 +879,9 @@ class _MediaPageState extends ConsumerState<MediaPage>
           body: Stack(
             fit: StackFit.expand,
             children: [
-              Listener(
+              GlassBackgroundSource(
+                enabled: useLiquidGlass,
+                child: Listener(
                 // Raw observation avoids competing with ExtendedImage's double-tap recognizer.
                 onPointerDown: currentMedia.video == null
                     ? _handleGalleryPointerDown
@@ -1042,6 +1062,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
                     },
                   ),
                 ),
+                ),
               ),
               if (_hasThumbnailStrip)
                 Positioned(
@@ -1065,14 +1086,35 @@ class _MediaPageState extends ConsumerState<MediaPage>
                   top: 0,
                   left: 0,
                   right: 0,
-                  child: _afterRouteTransition(
-                    routeAnimation,
-                    _buildChrome(currentMedia),
-                  ),
+                  child: useLiquidGlass
+                      ? AnimatedBuilder(
+                          animation: routeAnimation ??
+                              const AlwaysStoppedAnimation<double>(1),
+                          builder: (context, _) => _buildChrome(
+                            currentMedia,
+                            useLiquidGlass: true,
+                            visibility: _showChrome
+                                ? routeAnimation?.value ?? 1
+                                : 0,
+                            routeSettled: routeAnimation == null ||
+                                routeAnimation.status ==
+                                    AnimationStatus.completed,
+                          ),
+                        )
+                      : _afterRouteTransition(
+                          routeAnimation,
+                          _buildChrome(
+                            currentMedia,
+                            useLiquidGlass: false,
+                            visibility: 1,
+                            routeSettled: true,
+                          ),
+                        ),
                 ),
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -1083,11 +1125,15 @@ class _GalleryGlassIconButton extends StatefulWidget {
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    required this.useLiquidGlass,
+    required this.visibility,
   });
 
   final Widget icon;
   final String tooltip;
   final VoidCallback? onPressed;
+  final bool useLiquidGlass;
+  final double visibility;
 
   @override
   State<_GalleryGlassIconButton> createState() =>
@@ -1101,7 +1147,21 @@ class _GalleryGlassIconButtonState extends State<_GalleryGlassIconButton> {
   @override
   void initState() {
     super.initState();
-    if (ui.ImageFilter.isShaderFilterSupported) _loadShader();
+    if (!widget.useLiquidGlass && ui.ImageFilter.isShaderFilterSupported) {
+      _loadShader();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _GalleryGlassIconButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.useLiquidGlass == widget.useLiquidGlass) return;
+    if (widget.useLiquidGlass) {
+      _shader?.dispose();
+      _shader = null;
+    } else if (ui.ImageFilter.isShaderFilterSupported) {
+      _loadShader();
+    }
   }
 
   Future<void> _loadShader() async {
@@ -1123,6 +1183,46 @@ class _GalleryGlassIconButtonState extends State<_GalleryGlassIconButton> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.useLiquidGlass) {
+      return GestureDetector(
+        excludeFromSemantics: true,
+        // Long holds let the glass button handle its liquid interaction.
+        onLongPress: () {},
+        child: GlassButton(
+          label: widget.tooltip,
+          width: 48,
+          height: 48,
+          icon: widget.icon,
+          iconSize: 22,
+          iconColor: Colors.white,
+          onTap: () => widget.onPressed?.call(),
+          enabled: widget.onPressed != null,
+          useOwnLayer: true,
+          stretch: 0.8,
+          anchorStretchSettings: const AnchorStretchSettings(
+            intensity: 0.8,
+            squashFactor: 0.3,
+            translationDamping: 0.15,
+            bounciness: 0.2,
+          ),
+          glowColor: const Color(0x20FFFFFF),
+          glowOpacity: 1,
+          quality: GlassQuality.premium,
+          settings: LiquidGlassSettings(
+            visibility: widget.visibility,
+            glassColor: const Color(0x66000000),
+            bodyMode: GlassBodyMode.clear,
+            thickness: 32,
+            blur: 2,
+            lightIntensity: 0.25,
+            ambientStrength: 0,
+            refractiveIndex: 1.24,
+            chromaticAberration: 0.025,
+            shadowElevation: 0,
+          ),
+        ),
+      );
+    }
     final blur = ui.ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5);
     final shader = _shader;
     final filter = shader == null

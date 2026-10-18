@@ -29,6 +29,7 @@ class MainActivity : FlutterActivity() {
     private val mediaExecutor = Executors.newSingleThreadExecutor()
     private var pendingSave: Pair<Map<String, String>, MethodChannel.Result>? = null
     private var notificationChannel: MethodChannel? = null
+    private var cacheChannel: MethodChannel? = null
     private var deepLinkChannel: MethodChannel? = null
     private var xAuthChannel: MethodChannel? = null
     private var pendingXAuthResult: MethodChannel.Result? = null
@@ -123,6 +124,28 @@ class MainActivity : FlutterActivity() {
                             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()).build())
                     else { worker.cancelUniqueWork("ReviewXNotifications"); (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).cancelAll() }
                     result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
+        cacheChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.review.x/cache")
+        cacheChannel!!.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getCacheStats" -> mediaExecutor.execute {
+                    try {
+                        val stats = getCacheStatistics()
+                        runOnUiThread { result.success(stats) }
+                    } catch (error: Exception) {
+                        runOnUiThread { result.error("CACHE_STATS_FAILED", error.message, null) }
+                    }
+                }
+                "clearCache" -> mediaExecutor.execute {
+                    try {
+                        val cleared = clearAppCache()
+                        runOnUiThread { result.success(mapOf("cleared" to cleared)) }
+                    } catch (error: Exception) {
+                        runOnUiThread { result.error("CACHE_CLEAR_FAILED", error.message, null) }
+                    }
                 }
                 else -> result.notImplemented()
             }
@@ -287,12 +310,74 @@ class MainActivity : FlutterActivity() {
             } catch (_: Exception) { runOnUiThread { result.error("SAVE_FAILED", "保存到相册失败", null) } }
         }
     }
+    private fun cacheRoots(): List<File> = buildList {
+        add(cacheDir)
+        add(codeCacheDir)
+        addAll(externalCacheDirs.filterNotNull())
+    }
+    private fun getCacheStatistics(): Map<String, Long> {
+        var total = 0L
+        var images = 0L
+        var network = 0L
+        var system = 0L
+        val stack = java.util.ArrayDeque<File>()
+        cacheRoots().filter { it.exists() }.forEach(stack::push)
+        while (stack.isNotEmpty()) {
+            val current = stack.pop()
+            for (file in current.listFiles() ?: continue) {
+                if (file.isDirectory) {
+                    stack.push(file)
+                } else if (file.isFile) {
+                    val size = file.length()
+                    val path = file.absolutePath.lowercase()
+                    total += size
+                    if (path.contains("image") || path.endsWith(".png") || path.endsWith(".jpg") ||
+                        path.endsWith(".jpeg") || path.endsWith(".webp") || path.endsWith(".gif") ||
+                        path.endsWith(".mp4") || path.endsWith(".m4v") || path.endsWith(".mov") ||
+                        path.endsWith(".webm") || path.endsWith(".mkv")) {
+                        images += size
+                    } else if (path.contains("http") || path.contains("webview") || path.contains("dio") ||
+                        path.endsWith(".tmp")) {
+                        network += size
+                    } else {
+                        system += size
+                    }
+                }
+            }
+        }
+        return mapOf("total" to total, "images" to images, "network" to network, "system" to system)
+    }
+    private fun getFolderSize(file: File): Long {
+        if (!file.exists()) return 0L
+        if (file.isFile) return file.length()
+        var size = 0L
+        val stack = java.util.ArrayDeque<File>()
+        stack.push(file)
+        while (stack.isNotEmpty()) {
+            for (child in stack.pop().listFiles() ?: continue) {
+                if (child.isDirectory) stack.push(child) else if (child.isFile) size += child.length()
+            }
+        }
+        return size
+    }
+    private fun clearAppCache(): Long {
+        var cleared = 0L
+        for (root in cacheRoots()) {
+            for (child in root.listFiles() ?: continue) {
+                cleared += getFolderSize(child)
+                check(child.deleteRecursively() || !child.exists()) { "无法删除应用缓存文件" }
+            }
+        }
+        return cleared
+    }
     private fun fontWeightAdjustment(config: Configuration): Int =
         if (Build.VERSION.SDK_INT >= 31 && config.fontWeightAdjustment != Configuration.FONT_WEIGHT_ADJUSTMENT_UNDEFINED)
             config.fontWeightAdjustment else 0
     override fun onDestroy() {
         if (pendingXAuthResult != null) XLoginDiagnostics.record(this, "main.activity_destroy")
         XLoginActivity.candidateValidator = null
+        cacheChannel?.setMethodCallHandler(null)
+        cacheChannel = null
         mediaExecutor.shutdown()
         super.onDestroy()
     }

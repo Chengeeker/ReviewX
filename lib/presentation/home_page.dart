@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'package:flutter/gestures.dart' show kTouchSlop, VelocityTracker;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../core/navigation/x_deep_link.dart';
 import '../core/theme/app_theme.dart';
@@ -374,6 +377,10 @@ class _HomePageState extends ConsumerState<HomePage>
     final isDark = brightness == Brightness.dark;
     final materialTheme = Theme.of(context);
     final colorScheme = materialTheme.colorScheme;
+    final useLiquidGlassNavigation =
+        theme.useFloatingNavBar && theme.useLiquidGlass;
+    final floatingNavWidth =
+        math.min(440.0, MediaQuery.sizeOf(context).width - 40.0) * 2 / 3;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     final standardNavBar = NavigationBarTheme(
       data: AppTheme.scaleNavigationBarTheme(
@@ -400,8 +407,8 @@ class _HomePageState extends ConsumerState<HomePage>
       ),
     );
     final floatingCapsuleBar = Container(
-      width: 264,
-      height: 64,
+      width: floatingNavWidth,
+      height: 56,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHigh,
@@ -414,28 +421,49 @@ class _HomePageState extends ConsumerState<HomePage>
           ),
         ],
       ),
-      child: Row(
+      child: Stack(
         children: [
-          _buildCapsuleItem(
-            index: 0,
-            icon: Icons.home_outlined,
-            selectedIcon: Icons.home_rounded,
-            label: '首页',
-            colorScheme: colorScheme,
+          Positioned.fill(
+            child: AnimatedAlign(
+              alignment: Alignment(_tab - 1.0, 0),
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOutCubic,
+              child: FractionallySizedBox(
+                widthFactor: 1 / 3,
+                heightFactor: 1,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
+              ),
+            ),
           ),
-          _buildCapsuleItem(
-            index: 1,
-            icon: Icons.explore_outlined,
-            selectedIcon: Icons.explore,
-            label: '探索',
-            colorScheme: colorScheme,
-          ),
-          _buildCapsuleItem(
-            index: 2,
-            icon: Icons.settings_outlined,
-            selectedIcon: Icons.settings_rounded,
-            label: '设置',
-            colorScheme: colorScheme,
+          Row(
+            children: [
+              _buildCapsuleItem(
+                index: 0,
+                icon: Icons.home_outlined,
+                selectedIcon: Icons.home_rounded,
+                label: '首页',
+                colorScheme: colorScheme,
+              ),
+              _buildCapsuleItem(
+                index: 1,
+                icon: Icons.explore_outlined,
+                selectedIcon: Icons.explore,
+                label: '探索',
+                colorScheme: colorScheme,
+              ),
+              _buildCapsuleItem(
+                index: 2,
+                icon: Icons.settings_outlined,
+                selectedIcon: Icons.settings_rounded,
+                label: '设置',
+                colorScheme: colorScheme,
+              ),
+            ],
           ),
         ],
       ),
@@ -609,7 +637,9 @@ class _HomePageState extends ConsumerState<HomePage>
           : loginPrompt,
       SettingsPane(topChromeHeight: controller.expired ? 0 : statusBarHeight),
     ];
-    return Scaffold(
+    return GlassPage(
+      enableBackgroundSampling: useLiquidGlassNavigation,
+      child: Scaffold(
         key: _scaffoldKey,
         drawer: const AppDrawer(),
         extendBody: theme.useFloatingNavBar,
@@ -624,28 +654,41 @@ class _HomePageState extends ConsumerState<HomePage>
                         onTap: _onTopBarTap,
                         child: appBar)
                     : appBar),
-        body: Column(children: [
-          if (controller.expired)
-            Padding(
-              padding: EdgeInsets.only(top: topChromeHeight),
-              child: MaterialBanner(
-                  content: const Text('X 会话已过期，请重新登录'),
-                  actions: [
-                    TextButton(onPressed: _login, child: const Text('重新登录'))
-                  ]),
-            ),
-          Expanded(child: _buildTabContent(pages)),
-        ]),
+        body: GlassBackgroundSource(
+          enabled: useLiquidGlassNavigation,
+          child: Column(children: [
+            if (controller.expired)
+              Padding(
+                padding: EdgeInsets.only(top: topChromeHeight),
+                child: MaterialBanner(
+                    content: const Text('X 会话已过期，请重新登录'),
+                    actions: [
+                      TextButton(onPressed: _login, child: const Text('重新登录'))
+                    ]),
+              ),
+            Expanded(child: _buildTabContent(pages)),
+          ]),
+        ),
         bottomNavigationBar: theme.useFloatingNavBar
-            ? SafeArea(
-                child: Align(
-                    alignment: Alignment.bottomCenter,
-                    heightFactor: 1,
-                    child: Padding(
-                        padding:
-                            EdgeInsets.only(bottom: bottomPadding > 0 ? 6 : 14),
-                        child: floatingCapsuleBar)))
-            : standardNavBar);
+            ? useLiquidGlassNavigation
+                ? GlassAdaptiveScope(
+                    child: _LiquidGlassNavigationBar(
+                      selectedIndex: _tab,
+                      onSelected: _onNavigationItemSelected,
+                      width: floatingNavWidth,
+                    ),
+                  )
+                : SafeArea(
+                    child: Align(
+                        alignment: Alignment.bottomCenter,
+                        heightFactor: 1,
+                        child: Padding(
+                            padding: EdgeInsets.only(
+                                bottom: bottomPadding > 0 ? 6 : 14),
+                            child: floatingCapsuleBar)))
+            : standardNavBar,
+      ),
+    );
   }
 
   Widget _buildCapsuleItem({
@@ -656,7 +699,6 @@ class _HomePageState extends ConsumerState<HomePage>
     required ColorScheme colorScheme,
   }) {
     final isSelected = _tab == index;
-    final activeBackground = colorScheme.secondaryContainer;
     final activeForeground = colorScheme.onSecondaryContainer;
     final inactiveForeground = colorScheme.onSurfaceVariant;
 
@@ -669,45 +711,23 @@ class _HomePageState extends ConsumerState<HomePage>
           highlightColor: Colors.transparent,
           hoverColor: Colors.transparent,
           onTap: () => _onNavigationItemSelected(index),
-          child: Stack(
-            fit: StackFit.expand,
-            alignment: Alignment.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (isSelected)
-                TweenAnimationBuilder<double>(
-                  key: ValueKey(index),
-                  tween: Tween<double>(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 160),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, child) => Opacity(
-                    opacity: value,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: activeBackground,
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                    ),
-                  ),
+              Icon(
+                isSelected ? selectedIcon : icon,
+                size: 22,
+                color: isSelected ? activeForeground : inactiveForeground,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: context.adjustWeight(
+                      isSelected ? FontWeight.w600 : FontWeight.w400),
+                  color: isSelected ? activeForeground : inactiveForeground,
                 ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isSelected ? selectedIcon : icon,
-                    size: 22,
-                    color: isSelected ? activeForeground : inactiveForeground,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: context.adjustWeight(
-                          isSelected ? FontWeight.w600 : FontWeight.w400),
-                      color: isSelected ? activeForeground : inactiveForeground,
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -715,4 +735,194 @@ class _HomePageState extends ConsumerState<HomePage>
       ),
     );
   }
+}
+
+class _LiquidGlassNavigationBar extends StatefulWidget {
+  const _LiquidGlassNavigationBar({
+    required this.selectedIndex,
+    required this.onSelected,
+    required this.width,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+  final double width;
+
+  @override
+  State<_LiquidGlassNavigationBar> createState() =>
+      _LiquidGlassNavigationBarState();
+}
+
+class _LiquidGlassNavigationBarState extends State<_LiquidGlassNavigationBar> {
+  static const _longPressThreshold = Duration(milliseconds: 500);
+  static const _flickVelocityThreshold = 1000.0;
+
+  int? _activePointer;
+  VelocityTracker? _velocityTracker;
+  Duration? _pointerDownAt;
+  Offset? _pointerDownPosition;
+  int _selectedIndexAtPointerDown = 0;
+  int? _pendingIndex;
+  bool _movedBeyondSlop = false;
+  bool _draggedHorizontally = false;
+  bool _cancelled = false;
+  int _gestureId = 0;
+
+  void _onPointerDown(PointerDownEvent event) {
+    if (_activePointer != null) return;
+    _activePointer = event.pointer;
+    _velocityTracker = VelocityTracker.withKind(event.kind)
+      ..addPosition(event.timeStamp, event.position);
+    _pointerDownAt = event.timeStamp;
+    _pointerDownPosition = event.position;
+    _selectedIndexAtPointerDown = widget.selectedIndex;
+    _pendingIndex = null;
+    _movedBeyondSlop = false;
+    _draggedHorizontally = false;
+    _cancelled = false;
+    _gestureId++;
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (event.pointer != _activePointer) return;
+    _velocityTracker?.addPosition(event.timeStamp, event.position);
+    final delta = event.position - _pointerDownPosition!;
+    if (delta.distance > kTouchSlop) {
+      _movedBeyondSlop = true;
+      if (delta.dx.abs() > delta.dy.abs()) _draggedHorizontally = true;
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event) => _finishPointer(
+        event.pointer,
+        event.timeStamp,
+        horizontalVelocity:
+            _velocityTracker?.getVelocity().pixelsPerSecond.dx ?? 0,
+      );
+
+  void _onPointerCancel(PointerCancelEvent event) =>
+      _finishPointer(event.pointer, event.timeStamp, cancelled: true);
+
+  void _finishPointer(
+    int pointer,
+    Duration releasedAt, {
+    bool cancelled = false,
+    double horizontalVelocity = 0,
+  }) {
+    if (pointer != _activePointer) return;
+    _cancelled |= cancelled;
+    final gestureId = _gestureId;
+    scheduleMicrotask(() {
+      if (!mounted || gestureId != _gestureId) return;
+
+      final target = _pendingIndex;
+      final wasLongPress = releasedAt - _pointerDownAt! >= _longPressThreshold;
+      final wasDrag = _draggedHorizontally;
+      final movedVertically = _movedBeyondSlop && !wasDrag;
+      final wasCancelled = _cancelled;
+      final startingIndex = _selectedIndexAtPointerDown;
+
+      _activePointer = null;
+      _velocityTracker = null;
+      _pointerDownAt = null;
+      _pointerDownPosition = null;
+      _pendingIndex = null;
+      _movedBeyondSlop = false;
+      _draggedHorizontally = false;
+      _cancelled = false;
+
+      if (wasCancelled || movedVertically || target == null) return;
+
+      final isFastFlick =
+          wasDrag && horizontalVelocity.abs() >= _flickVelocityThreshold;
+      final selectedTarget = isFastFlick
+          ? target.clamp(startingIndex - 1, startingIndex + 1).toInt()
+          : target;
+      if ((wasDrag || wasLongPress) && selectedTarget == startingIndex) return;
+      _select(selectedTarget);
+    });
+  }
+
+  void _onTabSelected(int index) {
+    if (_activePointer != null) {
+      _pendingIndex = index;
+    } else {
+      _select(index);
+    }
+  }
+
+  void _select(int index) {
+    HapticFeedbackUtil.light();
+    widget.onSelected(index);
+  }
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+        minimum: const EdgeInsets.only(bottom: 21),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: SizedBox(
+            width: widget.width,
+            height: 56,
+            child: Listener(
+              onPointerDown: _onPointerDown,
+              onPointerMove: _onPointerMove,
+              onPointerUp: _onPointerUp,
+              onPointerCancel: _onPointerCancel,
+              child: GlassTabBar.bottom(
+                tabs: const [
+                  GlassTab(
+                    icon: Icon(Icons.home_outlined),
+                    activeIcon: Icon(Icons.home_rounded),
+                    label: '首页',
+                  ),
+                  GlassTab(
+                    icon: Icon(Icons.explore_outlined),
+                    activeIcon: Icon(Icons.explore),
+                    label: '探索',
+                  ),
+                  GlassTab(
+                    icon: Icon(Icons.settings_outlined),
+                    activeIcon: Icon(Icons.settings_rounded),
+                    label: '设置',
+                  ),
+                ],
+                selectedIndex: widget.selectedIndex,
+                onTabSelected: _onTabSelected,
+                barHeight: 56,
+                horizontalPadding: 0,
+                verticalPadding: 0,
+                barBorderRadius: 9999,
+                indicatorBorderRadius: 9999,
+                settings: const LiquidGlassSettings(
+                  glassColor: Color(0x66000000),
+                  bodyMode: GlassBodyMode.clear,
+                  thickness: 10,
+                  blur: 2,
+                  lightIntensity: 0.25,
+                  ambientStrength: 0,
+                  refractiveIndex: 1.19,
+                  chromaticAberration: 0.008,
+                  shadowElevation: 0,
+                ),
+                indicatorSettings: const LiquidGlassSettings(
+                  refractiveIndex: 1.18,
+                  chromaticAberration: 0.025,
+                ),
+                quality: GlassQuality.premium,
+                backgroundQuality: GlassQuality.premium,
+                indicatorColor: const Color(0x66000000),
+                interactionGlowColor: const Color(0x20FFFFFF),
+                indicatorPinchStrength: 0.7,
+                innerBlur: 6,
+                pressScale: 1.06,
+                selectedIconColor: Colors.white,
+                selectedLabelColor: Colors.white,
+                unselectedIconColor: Colors.white,
+                unselectedLabelColor: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      );
 }

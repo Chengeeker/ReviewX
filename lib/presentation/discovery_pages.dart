@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/storage/reading_settings.dart';
 import '../core/storage/storage_service.dart';
+import '../core/theme/theme_provider.dart';
 import '../twitter/auth/app_controller.dart';
 import '../twitter/models/social_models.dart';
 import '../twitter/models/content_models.dart';
@@ -563,7 +564,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       child: ListView(
         controller: _exploreScrollController,
         padding: EdgeInsets.only(
-            top: topPadding, bottom: MediaQuery.paddingOf(context).bottom + 16),
+            top: topPadding,
+            bottom: ref.watch(themeProvider.select(
+                    (state) => state.useFloatingNavBar && state.useLiquidGlass))
+                ? MediaQuery.viewPaddingOf(context).bottom + 76
+                : MediaQuery.paddingOf(context).bottom + 16),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
           RequestStatus(

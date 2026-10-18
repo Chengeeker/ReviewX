@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'cache_service.dart';
 import '../storage/storage_service.dart';
 import '../storage/reading_settings.dart';
 
@@ -10,6 +11,7 @@ const _appearanceKeys = {
   'key_is_pure_black_dark',
   'haptics',
   'floating_nav',
+  'use_liquid_glass_effect',
   'custom_font_weight',
   'font_weight_delta',
 };
@@ -25,6 +27,12 @@ class SettingsBackup {
           for (final key in _appearanceKeys)
             if (storage.preferences.get(key) != null)
               key: storage.preferences.get(key)
+        },
+        'cache': {
+          CacheService.thresholdKey: storage.getInt(
+            CacheService.thresholdKey,
+            defaultValue: CacheService.defaultThresholdMb,
+          ),
         },
         'reading': validatedReading(jsonDecode(
             storage.preferences.getString('reading_settings') ?? '{}')),
@@ -51,6 +59,11 @@ class SettingsBackup {
           await storage.setInt(key, v);
         }
       }
+    }
+    final cache = value['cache'];
+    final threshold = cache is Map ? cache[CacheService.thresholdKey] : null;
+    if (threshold is int && CacheService.thresholdsMb.contains(threshold)) {
+      await storage.setInt(CacheService.thresholdKey, threshold);
     }
     await storage.preferences.setString(
         'reading_settings', jsonEncode(validatedReading(value['reading'])));

@@ -10,6 +10,8 @@ ReviewX includes portions adapted from Review: the application theme and theme p
 
 The video player's gesture controls, playback speed/quality menus and HUD, plus the Android window-brightness and media-volume controls, are adapted from Review's MIT-licensed `weibo_video_player_page.dart` and `MainActivity.kt`. ReviewX connects these controls to its own Twitter post actions and media services; Review's Weibo credentials and endpoints are not included.
 
+`liquid_glass_widgets` 1.13.0 (MIT, copyright 2024–2026 Sebastian Degenaar) provides the optional liquid-glass bottom navigation and gallery action buttons. Its dependency license is available in the application's Flutter license screen. Project: https://github.com/sdegenaar/liquid_glass_widgets.
+
 ## X transaction-ID encoder and data
 
 `lib/twitter/api/transaction_id.dart` is a Dart adaptation of the compact transaction-ID encoder in [`fa0311/x-client-transaction-id-generater`](https://github.com/fa0311/x-client-transaction-id-generater), version 0.0.7. Copyright (c) 2025 yuki. The upstream MIT notice is reproduced in `licenses/fa0311-transaction-mit.txt`.

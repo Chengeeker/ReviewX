@@ -7,12 +7,13 @@ import '../core/utils/haptic_feedback_util.dart';
 import '../core/widgets/app_section_card.dart';
 import '../core/theme/theme_provider.dart';
 import '../twitter/auth/app_controller.dart';
+import 'cache_management_page.dart';
 import 'login_page.dart';
 import 'settings_pages.dart';
 import 'theme_settings_page.dart';
 import 'network_settings_page.dart';
 
-const _appVersion = '1.2.1';
+const _appVersion = '1.4.1';
 
 /// Review-style grouped settings, with X-specific account actions retained.
 class SettingsPane extends ConsumerWidget {
@@ -218,14 +219,18 @@ class SettingsPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.watch(appControllerProvider);
     final colorScheme = Theme.of(context).colorScheme;
-    final useFloatingNavBar = ref.watch(themeProvider).useFloatingNavBar;
-    final mediaPadding = MediaQuery.of(context).padding;
-    final bottomClearance = useFloatingNavBar
-        ? 64.0 +
-            (mediaPadding.bottom > 0 ? 6.0 : 14.0) +
-            mediaPadding.bottom +
-            12.0
-        : 24.0;
+    final themeState = ref.watch(themeProvider);
+    final mediaQuery = MediaQuery.of(context);
+    final useLiquidGlassNavigation =
+        themeState.useFloatingNavBar && themeState.useLiquidGlass;
+    final bottomClearance = useLiquidGlassNavigation
+        ? mediaQuery.viewPadding.bottom + 76.0
+        : themeState.useFloatingNavBar
+            ? 64.0 +
+                (mediaQuery.padding.bottom > 0 ? 6.0 : 14.0) +
+                mediaQuery.padding.bottom +
+                12.0
+            : 24.0;
 
     void open(Widget page) {
       HapticFeedbackUtil.light();
@@ -269,6 +274,7 @@ class SettingsPane extends ConsumerWidget {
                       Divider(
                         height: 1,
                         thickness: 1,
+                        indent: 56,
                         color:
                             colorScheme.outlineVariant.withValues(alpha: 0.5),
                       ),
@@ -311,8 +317,14 @@ class SettingsPane extends ConsumerWidget {
         section('存储与备份', [
           row(
             icon: Icons.folder_open_outlined,
-            title: '存储与缓存',
+            title: '存储设置',
             onTap: () => open(const StorageSettingsPage()),
+          ),
+          row(
+            icon: Icons.cleaning_services_outlined,
+            title: '缓存管理',
+            subtitle: '查看与清理应用缓存',
+            onTap: () => open(const CacheManagementPage()),
           ),
           row(
             icon: Icons.cloud_sync_outlined,

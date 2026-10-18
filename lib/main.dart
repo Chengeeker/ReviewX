@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
+import 'core/services/cache_service.dart';
 import 'core/services/image_cache_maintenance.dart';
 import 'core/services/notification_poll.dart';
 import 'core/services/network_routing.dart';
@@ -19,6 +21,7 @@ import 'twitter/auth/app_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await LiquidGlassWidgets.initialize(enablePerformanceMonitor: false);
   LicenseRegistry.addLicense(() async* {
     yield LicenseEntryWithLineBreaks(
         ['ReviewX (MIT)'], await rootBundle.loadString('LICENSE'));
@@ -31,10 +34,22 @@ void main() async {
   });
   final storage = await StorageService.init();
   await NetworkRouting.initialize(storage, configurePlayer: true);
-  runApp(ProviderScope(
-      overrides: [storageServiceProvider.overrideWithValue(storage)],
-      child: const ReviewXApp()));
-  unawaited(ImageCacheMaintenance.trimOnStartup());
+  runApp(LiquidGlassWidgets.wrap(
+      child: ProviderScope(
+          overrides: [storageServiceProvider.overrideWithValue(storage)],
+          child: const ReviewXApp()),
+      brightnessResolver: Theme.maybeBrightnessOf));
+  unawaited(() async {
+    try {
+      final threshold = storage.getInt(CacheService.thresholdKey,
+          defaultValue: CacheService.defaultThresholdMb);
+      if (!await CacheService.checkAndAutoClearCache(threshold)) {
+        await ImageCacheMaintenance.trimOnStartup();
+      }
+    } catch (_) {
+      await ImageCacheMaintenance.trimOnStartup();
+    }
+  }());
   unawaited(NotificationPoll.sync().catchError((Object _) {}));
 }
 

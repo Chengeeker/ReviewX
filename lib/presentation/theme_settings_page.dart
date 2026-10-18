@@ -271,6 +271,19 @@ class ThemeSettingsPage extends ConsumerWidget {
               )),
           const SizedBox(height: 32),
           section(
+              '界面效果',
+              SwitchListTile(
+                secondary: const Icon(Icons.blur_on_rounded, size: 24),
+                title: const Text('使用液态玻璃效果'),
+                subtitle: const Text('应用于悬浮底栏和图片画廊按钮'),
+                value: themeState.useLiquidGlass,
+                onChanged: (val) {
+                  HapticFeedbackUtil.light();
+                  ref.read(themeProvider.notifier).setUseLiquidGlass(val);
+                },
+              )),
+          const SizedBox(height: 32),
+          section(
               '屏幕显示',
               ListTile(
                 leading: const Icon(Icons.speed_rounded, size: 24),
