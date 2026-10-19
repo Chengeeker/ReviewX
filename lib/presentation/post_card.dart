@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../core/services/link_opener.dart';
 import '../core/widgets/cached_network_image.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
@@ -129,16 +129,20 @@ class PostCard extends ConsumerWidget {
         ),
         child: Theme(
             data: Theme.of(context).copyWith(
-                splashFactory: InkSplash.splashFactory),
+                splashFactory: NoSplash.splashFactory),
             child: InkWell(
             borderRadius: quoted ? BorderRadius.circular(16) : null,
-            enableFeedback: HapticFeedbackUtil.isEnabled,
+            highlightColor: Colors.transparent,
+            enableFeedback: false,
             onTap: detail
                 ? null
-                : () => Navigator.push(
+                : () {
+                    HapticFeedbackUtil.selection(bypassCooldown: true);
+                    Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => PostDetailPage(post: current))),
+                        builder: (_) => PostDetailPage(post: current)));
+                  },
             child: Theme(
                 data: Theme.of(context),
                 child: Padding(
@@ -266,11 +270,8 @@ class PostCard extends ConsumerWidget {
                                                     ClipboardData(
                                                         text: current.url));
                                               }
-                                              if (action == 'open') {
-                                                await launchUrl(
-                                                    Uri.parse(current.url),
-                                                    mode: LaunchMode
-                                                        .externalApplication);
+                                              if (action == 'open' && context.mounted) {
+                                                await openAppLink(context, Uri.parse(current.url));
                                               }
                                               if (action == 'reply' ||
                                                   action == 'quote') {
@@ -389,7 +390,7 @@ class PostCard extends ConsumerWidget {
                                                       child: Text('复制链接')),
                                                   const PopupMenuItem(
                                                       value: 'open',
-                                                      child: Text('在浏览器打开')),
+                                                      child: Text('在应用内浏览')),
                                                   const PopupMenuItem(
                                                       value: 'reply',
                                                       child: Text('回复')),
@@ -459,11 +460,18 @@ class PostCard extends ConsumerWidget {
                         Card(
                             clipBehavior: Clip.antiAlias,
                             child: InkWell(
-                                onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (_) =>
-                                            ArticlePage(post: current))),
+                                splashFactory: NoSplash.splashFactory,
+                                highlightColor: Colors.transparent,
+                                enableFeedback: false,
+                                onTap: () {
+                                  HapticFeedbackUtil.selection(
+                                      bypassCooldown: true);
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) =>
+                                              ArticlePage(post: current)));
+                                },
                                 child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -497,9 +505,7 @@ class PostCard extends ConsumerWidget {
                         Card(
                             clipBehavior: Clip.antiAlias,
                             child: InkWell(
-                                onTap: () => launchUrl(
-                                    Uri.parse(current.linkCard!.url),
-                                    mode: LaunchMode.externalApplication),
+                                onTap: () => openAppLink(context, Uri.parse(current.linkCard!.url)),
                                 child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -533,7 +539,8 @@ class PostCard extends ConsumerWidget {
                                     ]))),
                       if (current.poll != null)
                         PollView(poll: current.poll!, url: current.url),
-                      if (current.media.isNotEmpty) MediaGrid(post: current),
+                      if (current.media.isNotEmpty)
+                        MediaGrid(post: current),
                       if (current.quote != null && !quoted) ...[
                         Padding(
                           padding: const EdgeInsets.only(top: 8, bottom: 6),
@@ -1028,8 +1035,7 @@ class PollView extends StatelessWidget {
             '${poll.total} 票${poll.endsAt == null ? '' : DateTime.now().isAfter(poll.endsAt!) ? ' · 已结束' : ' · 截止 ${poll.endsAt!.toLocal()}'}'),
         if (poll.endsAt == null || DateTime.now().isBefore(poll.endsAt!))
           TextButton(
-              onPressed: () => launchUrl(Uri.parse(url),
-                  mode: LaunchMode.externalApplication),
+              onPressed: () => openAppLink(context, Uri.parse(url)),
               child: const Text('在 X 投票')),
       ]));
 }

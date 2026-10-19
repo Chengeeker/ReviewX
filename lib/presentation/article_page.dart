@@ -1,7 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../core/services/link_opener.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../core/widgets/cached_network_image.dart';
@@ -60,8 +60,7 @@ class _ArticlePageState extends ConsumerState<ArticlePage> {
           IconButton(
               tooltip: '在 X 打开原文',
               icon: const Icon(Icons.open_in_new),
-              onPressed: () => launchUrl(Uri.parse(widget.post.url),
-                  mode: LaunchMode.externalApplication))
+              onPressed: () => openAppLink(context, Uri.parse(widget.post.url)))
         ]),
         body: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -89,9 +88,7 @@ class _ArticlePageState extends ConsumerState<ArticlePage> {
                           const SizedBox(height: 12),
                           SelectableText(article.preview),
                           TextButton(
-                              onPressed: () => launchUrl(
-                                  Uri.parse(widget.post.url),
-                                  mode: LaunchMode.externalApplication),
+                              onPressed: () => openAppLink(context, Uri.parse(widget.post.url)),
                               child: const Text('在 X 阅读完整文章')),
                         ] else
                           for (final block in article.blocks)
@@ -104,10 +101,7 @@ class _ArticlePageState extends ConsumerState<ArticlePage> {
                               if (block.type == 'atomic') {
                                 return block.media.isEmpty
                                     ? TextButton(
-                                        onPressed: () => launchUrl(
-                                            Uri.parse(widget.post.url),
-                                            mode:
-                                                LaunchMode.externalApplication),
+                                        onPressed: () => openAppLink(context, Uri.parse(widget.post.url)),
                                         child: const Text('此嵌入内容请在 X 查看'))
                                     : Column(children: [
                                         ArticleMedia(
@@ -301,7 +295,7 @@ class _RichContentTextState extends ConsumerState<RichContentText> {
                     body: SearchPage(initialQuery: target))));
       }
     } else if (safeLink(target)) {
-      await launchUrl(Uri.parse(target), mode: LaunchMode.externalApplication);
+      await openAppLink(context, Uri.parse(target));
     }
   }
 

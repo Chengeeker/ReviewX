@@ -13,6 +13,7 @@ import '../core/services/settings_backup.dart';
 import '../twitter/auth/app_controller.dart';
 import '../core/services/notification_poll.dart';
 import 'timeline_page.dart';
+import 'reading_style_preview.dart';
 
 class NotificationSettingsPage extends ConsumerStatefulWidget {
   const NotificationSettingsPage({super.key});
@@ -151,46 +152,58 @@ class _ReadingSettingsPageState extends ConsumerState<ReadingSettingsPage> {
     final state = ref.watch(readingProvider),
         notifier = ref.read(readingProvider.notifier);
     return Scaffold(
-        appBar: AppBar(title: const Text('帖子与阅读样式')),
-        body: ListView(children: [
-          for (final entry in const {
-            'relativeTime': '相对时间',
-            'showYear': '显示年份',
-            'showWeekday': '显示星期',
-            'showSeconds': '显示秒数',
-            'utcTime': '使用 UTC 时间',
-            'showSource': '显示发布来源',
-            'grokAutoTranslate': '自动翻译外文推文',
-            'showBanner': '显示主页背景图',
-            'cardBackground': '帖子背景',
-            'largeImages': '单图保留图片比例',
-            'defaultMutedVideo': '默认静音播放视频',
-            'coloredLinks': '链接使用主题色',
-            'showSensitive': '直接显示标记为敏感的媒体',
-            'saveHistory': '记录本机浏览历史',
-          }.entries)
-            SwitchListTile(
-                title: Text(entry.value),
-                value: state[entry.key],
-                onChanged: (value) {
-                  HapticFeedbackUtil.selection();
-                  notifier.set(entry.key, value);
-                }),
-          ListTile(
-            title: const Text('默认视频清晰度'),
-            subtitle: Text(_videoQualityLabel(
-                state['videoQuality'] as String? ?? 'balanced')),
-            trailing: const Icon(Icons.arrow_drop_down),
-            onTap: () => _selectVideoQuality(context, notifier,
-                state['videoQuality'] as String? ?? 'balanced'),
-          ),
-          for (final entry in const {
-            'fontSize': '帖子与文章正文字号',
-            'lineHeight': '正文行距',
-            'imageRadius': '图片圆角'
-          }.entries)
-            _sliderTile(entry, state),
-        ]));
+        appBar: buildFrostedAppBar(context, title: const Text('帖子与阅读样式')),
+        body: LayoutBuilder(
+            builder: (context, constraints) => Column(children: [
+                  SizedBox(
+                      height: (constraints.maxHeight / 2).clamp(0.0, 360.0),
+                      child: const ReadingStylePreview()),
+                  Expanded(
+                      child: ListView(
+                          key: const ValueKey('reading-style-settings-scroll'),
+                          padding: EdgeInsets.only(
+                              bottom:
+                                  MediaQuery.paddingOf(context).bottom + 12),
+                          children: [
+                        for (final entry in const {
+                          'relativeTime': '相对时间',
+                          'showYear': '显示年份',
+                          'showWeekday': '显示星期',
+                          'showSeconds': '显示秒数',
+                          'utcTime': '使用 UTC 时间',
+                          'showSource': '显示发布来源',
+                          'grokAutoTranslate': '自动翻译外文推文',
+                          'showBanner': '显示主页背景图',
+                          'cardBackground': '帖子背景',
+                          'largeImages': '单图保留图片比例',
+                          'defaultMutedVideo': '默认静音播放视频',
+                          'coloredLinks': '链接使用主题色',
+                          'showSensitive': '直接显示标记为敏感的媒体',
+                          'saveHistory': '记录本机浏览历史',
+                        }.entries)
+                          SwitchListTile(
+                              title: Text(entry.value),
+                              value: state[entry.key],
+                              onChanged: (value) {
+                                HapticFeedbackUtil.selection();
+                                notifier.set(entry.key, value);
+                              }),
+                        ListTile(
+                          title: const Text('默认视频清晰度'),
+                          subtitle: Text(_videoQualityLabel(
+                              state['videoQuality'] as String? ?? 'balanced')),
+                          trailing: const Icon(Icons.arrow_drop_down),
+                          onTap: () => _selectVideoQuality(context, notifier,
+                              state['videoQuality'] as String? ?? 'balanced'),
+                        ),
+                        for (final entry in const {
+                          'fontSize': '帖子与文章正文字号',
+                          'lineHeight': '正文行距',
+                          'imageRadius': '图片圆角'
+                        }.entries)
+                          _sliderTile(entry, state),
+                      ])),
+                ])));
   }
 
   static String _videoQualityLabel(String quality) {
@@ -333,25 +346,132 @@ class _DisplaySettingsPageState extends ConsumerState<DisplaySettingsPage> {
 
 class StorageSettingsPage extends ConsumerWidget {
   const StorageSettingsPage({super.key});
+
+  String _path(String mode, String account, {required bool video}) {
+    final base = '${video ? 'Movies' : 'Pictures'}/ReviewX/';
+    return switch (mode) {
+      'me' => '$base${account.replaceAll(RegExp(r'[^A-Za-z0-9_\-]'), '_')}/',
+      'author' => '$base帖子作者账号/',
+      _ => base,
+    };
+  }
+
+  Future<void> _selectPath(BuildContext context, WidgetRef ref, String account,
+      {required bool video}) async {
+    final key = video ? 'videoStorageFolder' : 'imageStorageFolder';
+    final current = ref.read(readingProvider)[key] as String;
+    final selected = await showModalBottomSheet<String>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (sheetContext) => SafeArea(
+            child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Expanded(
+                            child: Text(video ? '视频存储路径' : '图片存储路径',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16))),
+                        IconButton(
+                            icon: const Icon(Icons.close_rounded),
+                            tooltip: '关闭',
+                            onPressed: () => Navigator.pop(sheetContext)),
+                      ]),
+                      const SizedBox(height: 6),
+                      Text('保存${video ? '视频' : '图片'}时，文件将自动归类到系统相册对应文件夹。',
+                          style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(sheetContext)
+                                  .colorScheme
+                                  .onSurfaceVariant)),
+                      const SizedBox(height: 12),
+                      RadioGroup<String>(
+                          groupValue: current,
+                          onChanged: (value) =>
+                              Navigator.pop(sheetContext, value),
+                          child: Column(children: [
+                            for (final option in const {
+                              'default': '默认路径',
+                              'me': '按我的账号归类',
+                              'author': '按作者账号归类',
+                            }.entries)
+                              RadioListTile<String>(
+                                  value: option.key,
+                                  title: Text(option.value,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16)),
+                                  subtitle: Text(
+                                      _path(option.key, account, video: video),
+                                      style: const TextStyle(fontSize: 14))),
+                          ])),
+                    ]))));
+    if (selected == null || selected == current || !context.mounted) return;
+    try {
+      await ref.read(readingProvider.notifier).set(key, selected);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('存储设置保存失败')));
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Scaffold(
-      appBar: AppBar(title: const Text('存储设置')),
-      body: ListView(children: [
-        ListTile(
-            title: const Text('媒体保存目录'),
-            trailing: DropdownButton<String>(
-                value: ref.watch(readingProvider)['storageFolder'],
-                items: const [
-                  DropdownMenuItem(value: 'default', child: Text('默认')),
-                  DropdownMenuItem(value: 'me', child: Text('按我的账号')),
-                  DropdownMenuItem(value: 'author', child: Text('按作者'))
-                ],
-                onChanged: (v) {
-                  if (v != null) {
-                    ref.read(readingProvider.notifier).set('storageFolder', v);
-                  }
-                })),
-      ]));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(readingProvider);
+    final controller = ref.watch(appControllerProvider);
+    final account = controller.me?.handle ??
+        controller.client.session?.userId ??
+        'MyProfile';
+    final colors = Theme.of(context).colorScheme;
+    final appBar = buildFrostedAppBar(context, title: const Text('存储设置'));
+    return Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: appBar,
+        body: ListView(
+            padding: EdgeInsets.fromLTRB(
+                16,
+                MediaQuery.paddingOf(context).top +
+                    appBar.preferredSize.height +
+                    12,
+                16,
+                MediaQuery.paddingOf(context).bottom + 12),
+            children: [
+              AppSectionCard(
+                  margin: EdgeInsets.zero,
+                  child: Column(children: [
+                    for (final video in [false, true]) ...[
+                      if (video) const Divider(height: 1, indent: 72),
+                      ListTile(
+                          leading: Icon(
+                              video
+                                  ? Icons.video_library_outlined
+                                  : Icons.image_outlined,
+                              color: colors.primary),
+                          title: Text(video ? '视频存储路径' : '图片存储路径',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 16)),
+                          subtitle: Text(
+                              _path(
+                                  settings[video
+                                      ? 'videoStorageFolder'
+                                      : 'imageStorageFolder'],
+                                  account,
+                                  video: video),
+                              style: const TextStyle(fontSize: 14)),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () =>
+                              _selectPath(context, ref, account, video: video)),
+                    ],
+                  ])),
+            ]));
+  }
 }
 
 class HistoryPage extends ConsumerWidget {

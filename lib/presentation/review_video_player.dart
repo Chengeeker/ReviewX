@@ -710,10 +710,10 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
     if (_isDownloading) return;
     final settings = ref.read(readingProvider);
     final account = ref.read(appControllerProvider);
-    final folder = settings['storageFolder'] == 'author'
+    final folder = settings['videoStorageFolder'] == 'author'
         ? widget.author
-        : settings['storageFolder'] == 'me'
-            ? account.me?.handle ?? ''
+        : settings['videoStorageFolder'] == 'me'
+            ? account.me?.handle ?? account.client.session?.userId ?? ''
             : '';
     final media =
         SocialMedia(preview: widget.media.preview, video: _selectedUrl);

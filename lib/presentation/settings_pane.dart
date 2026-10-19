@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../core/services/link_opener.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/widgets/app_section_card.dart';
 import '../core/theme/theme_provider.dart';
@@ -13,7 +13,7 @@ import 'settings_pages.dart';
 import 'theme_settings_page.dart';
 import 'network_settings_page.dart';
 
-const _appVersion = '1.4.1';
+const _appVersion = '1.7.1';
 
 /// Review-style grouped settings, with X-specific account actions retained.
 class SettingsPane extends ConsumerWidget {
@@ -131,9 +131,7 @@ class SettingsPane extends ConsumerWidget {
                 onTap: () async {
                   final uri =
                       Uri.parse('https://github.com/Chengeeker/ReviewX');
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  }
+                  await openAppLink(context, uri);
                 },
                 child: Container(
                   padding:

@@ -21,6 +21,8 @@ const readingDefaults = <String, dynamic>{
   'coloredLinks': true,
   'saveHistory': true,
   'storageFolder': 'default',
+  'imageStorageFolder': 'default',
+  'videoStorageFolder': 'default',
   'videoQuality': 'balanced',
   'showSensitive': false,
 };
@@ -34,13 +36,20 @@ Map<String, dynamic> validatedReading(dynamic value) {
     if (original is double && incoming is num && incoming.isFinite) {
       result[key] = incoming.toDouble();
     }
-    if (key == 'storageFolder' &&
+    if (const ['storageFolder', 'imageStorageFolder', 'videoStorageFolder']
+            .contains(key) &&
         const ['default', 'me', 'author'].contains(incoming)) {
       result[key] = incoming;
     }
     if (key == 'videoQuality' &&
         const ['balanced', 'high', 'data_saver'].contains(incoming)) {
       result[key] = incoming;
+    }
+  }
+  // Old backups and installed settings used one directory choice for all media.
+  for (final key in const ['imageStorageFolder', 'videoStorageFolder']) {
+    if (!const ['default', 'me', 'author'].contains(value[key])) {
+      result[key] = result['storageFolder'];
     }
   }
   result['fontSize'] = (result['fontSize'] as double).clamp(12.0, 24.0);

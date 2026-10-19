@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../core/services/link_opener.dart';
 import '../twitter/auth/app_controller.dart';
 import '../twitter/api/twitter_client.dart';
 import '../twitter/models/social_models.dart';
@@ -93,8 +93,7 @@ class _ComposePageState extends ConsumerState<ComposePage> {
             if (_uncertain) ...[
               const Text('这次发布结果尚未确认。请先在 X 主页核对，避免重复发布。'),
               TextButton(
-                  onPressed: () => launchUrl(Uri.parse('https://x.com/home'),
-                      mode: LaunchMode.externalApplication),
+                  onPressed: () => openAppLink(context, Uri.parse('https://x.com/home')),
                   child: const Text('在 X 核对')),
               TextButton(
                   onPressed: () =>
@@ -105,9 +104,7 @@ class _ComposePageState extends ConsumerState<ComposePage> {
               const Text('X 已返回发布成功的帖子编号'),
               SelectableText(_published!),
               TextButton(
-                  onPressed: () => launchUrl(
-                      Uri.parse('https://x.com/i/status/$_published'),
-                      mode: LaunchMode.externalApplication),
+                  onPressed: () => openAppLink(context, Uri.parse('https://x.com/i/status/$_published')),
                   child: const Text('查看已发布帖子')),
               FilledButton(
                   onPressed: () => Navigator.pop(context, _published),

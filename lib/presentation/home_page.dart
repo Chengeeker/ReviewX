@@ -4,7 +4,7 @@ import 'package:flutter/gestures.dart' show kTouchSlop, VelocityTracker;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../core/services/link_opener.dart';
 import '../core/navigation/x_deep_link.dart';
 import '../core/theme/app_theme.dart';
 import '../core/utils/haptic_feedback_util.dart';
@@ -327,19 +327,7 @@ class _HomePageState extends ConsumerState<HomePage>
       case XLinkKind.bookmarks:
         openPage(const AccountHistoryPage());
       case XLinkKind.other:
-        try {
-          final opened =
-              await launchUrl(target.uri, mode: LaunchMode.inAppBrowserView);
-          if (!opened && mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(const SnackBar(content: Text('无法在应用内打开此 X 链接')));
-          }
-        } catch (_) {
-          if (mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(const SnackBar(content: Text('无法在应用内打开此 X 链接')));
-          }
-        }
+        await openAppLink(context, target.uri);
     }
   }
 
@@ -676,6 +664,7 @@ class _HomePageState extends ConsumerState<HomePage>
                       selectedIndex: _tab,
                       onSelected: _onNavigationItemSelected,
                       width: floatingNavWidth,
+                      hasBottomInset: bottomPadding > 0,
                     ),
                   )
                 : SafeArea(
@@ -742,11 +731,13 @@ class _LiquidGlassNavigationBar extends StatefulWidget {
     required this.selectedIndex,
     required this.onSelected,
     required this.width,
+    required this.hasBottomInset,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final double width;
+  final bool hasBottomInset;
 
   @override
   State<_LiquidGlassNavigationBar> createState() =>
@@ -754,13 +745,16 @@ class _LiquidGlassNavigationBar extends StatefulWidget {
 }
 
 class _LiquidGlassNavigationBarState extends State<_LiquidGlassNavigationBar> {
-  static const _longPressThreshold = Duration(milliseconds: 500);
+  static const _longPressThreshold = Duration(milliseconds: 220);
   static const _flickVelocityThreshold = 1000.0;
 
   int? _activePointer;
   VelocityTracker? _velocityTracker;
   Duration? _pointerDownAt;
   Offset? _pointerDownPosition;
+  Timer? _longPressTimer;
+  Timer? _jellyResetTimer;
+  bool _isJellyDragging = false;
   int _selectedIndexAtPointerDown = 0;
   int? _pendingIndex;
   bool _movedBeyondSlop = false;
@@ -768,8 +762,16 @@ class _LiquidGlassNavigationBarState extends State<_LiquidGlassNavigationBar> {
   bool _cancelled = false;
   int _gestureId = 0;
 
+  @override
+  void dispose() {
+    _longPressTimer?.cancel();
+    _jellyResetTimer?.cancel();
+    super.dispose();
+  }
+
   void _onPointerDown(PointerDownEvent event) {
     if (_activePointer != null) return;
+    _jellyResetTimer?.cancel();
     _activePointer = event.pointer;
     _velocityTracker = VelocityTracker.withKind(event.kind)
       ..addPosition(event.timeStamp, event.position);
@@ -781,6 +783,14 @@ class _LiquidGlassNavigationBarState extends State<_LiquidGlassNavigationBar> {
     _draggedHorizontally = false;
     _cancelled = false;
     _gestureId++;
+    _longPressTimer?.cancel();
+    _longPressTimer = Timer(_longPressThreshold, () {
+      if (!mounted || _activePointer != event.pointer || _isJellyDragging) {
+        return;
+      }
+      setState(() => _isJellyDragging = true);
+      HapticFeedbackUtil.light();
+    });
   }
 
   void _onPointerMove(PointerMoveEvent event) {
@@ -789,7 +799,13 @@ class _LiquidGlassNavigationBarState extends State<_LiquidGlassNavigationBar> {
     final delta = event.position - _pointerDownPosition!;
     if (delta.distance > kTouchSlop) {
       _movedBeyondSlop = true;
-      if (delta.dx.abs() > delta.dy.abs()) _draggedHorizontally = true;
+      if (delta.dx.abs() > delta.dy.abs()) {
+        _draggedHorizontally = true;
+        if (!_isJellyDragging) {
+          _longPressTimer?.cancel();
+          setState(() => _isJellyDragging = true);
+        }
+      }
     }
   }
 
@@ -810,8 +826,10 @@ class _LiquidGlassNavigationBarState extends State<_LiquidGlassNavigationBar> {
     double horizontalVelocity = 0,
   }) {
     if (pointer != _activePointer) return;
+    _longPressTimer?.cancel();
     _cancelled |= cancelled;
     final gestureId = _gestureId;
+    final wasJelly = _isJellyDragging;
     scheduleMicrotask(() {
       if (!mounted || gestureId != _gestureId) return;
 
@@ -830,6 +848,13 @@ class _LiquidGlassNavigationBarState extends State<_LiquidGlassNavigationBar> {
       _movedBeyondSlop = false;
       _draggedHorizontally = false;
       _cancelled = false;
+
+      if (wasJelly) {
+        _jellyResetTimer?.cancel();
+        _jellyResetTimer = Timer(const Duration(milliseconds: 250), () {
+          if (mounted) setState(() => _isJellyDragging = false);
+        });
+      }
 
       if (wasCancelled || movedVertically || target == null) return;
 
@@ -858,68 +883,79 @@ class _LiquidGlassNavigationBarState extends State<_LiquidGlassNavigationBar> {
 
   @override
   Widget build(BuildContext context) => SafeArea(
-        minimum: const EdgeInsets.only(bottom: 21),
+        bottom: false,
         child: Align(
           alignment: Alignment.bottomCenter,
-          child: SizedBox(
-            width: widget.width,
-            height: 56,
-            child: Listener(
-              onPointerDown: _onPointerDown,
-              onPointerMove: _onPointerMove,
-              onPointerUp: _onPointerUp,
-              onPointerCancel: _onPointerCancel,
-              child: GlassTabBar.bottom(
-                tabs: const [
-                  GlassTab(
-                    icon: Icon(Icons.home_outlined),
-                    activeIcon: Icon(Icons.home_rounded),
-                    label: '首页',
+          child: Padding(
+            padding: EdgeInsets.only(bottom: widget.hasBottomInset ? 6 : 14),
+            child: RepaintBoundary(
+              child: SizedBox(
+                width: widget.width,
+                height: 56,
+                child: Listener(
+                  onPointerDown: _onPointerDown,
+                  onPointerMove: _onPointerMove,
+                  onPointerUp: _onPointerUp,
+                  onPointerCancel: _onPointerCancel,
+                  child: GlassTabBar.bottom(
+                    tabs: const [
+                      GlassTab(
+                        icon: Icon(Icons.home_outlined),
+                        activeIcon: Icon(Icons.home_rounded),
+                        label: '首页',
+                      ),
+                      GlassTab(
+                        icon: Icon(Icons.explore_outlined),
+                        activeIcon: Icon(Icons.explore),
+                        label: '探索',
+                      ),
+                      GlassTab(
+                        icon: Icon(Icons.settings_outlined),
+                        activeIcon: Icon(Icons.settings_rounded),
+                        label: '设置',
+                      ),
+                    ],
+                    selectedIndex: widget.selectedIndex,
+                    onTabSelected: _onTabSelected,
+                    barHeight: 56,
+                    horizontalPadding: 0,
+                    verticalPadding: 0,
+                    barBorderRadius: 9999,
+                    indicatorBorderRadius: 9999,
+                    settings: const LiquidGlassSettings(
+                      glassColor: Color(0x66000000),
+                      bodyMode: GlassBodyMode.clear,
+                      thickness: 10,
+                      blur: 2,
+                      lightIntensity: 0.25,
+                      ambientStrength: 0,
+                      refractiveIndex: 1.19,
+                      chromaticAberration: 0.008,
+                      shadowElevation: 0,
+                    ),
+                    indicatorSettings: const LiquidGlassSettings(
+                      refractiveIndex: 1.18,
+                      chromaticAberration: 0.025,
+                    ),
+                    quality: GlassQuality.premium,
+                    backgroundQuality: GlassQuality.premium,
+                    maskingQuality: MaskingQuality.high,
+                    enableBlend: true,
+                    indicatorColor: const Color(0x66000000),
+                    interactionGlowColor: const Color(0x20FFFFFF),
+                    indicatorPinchStrength: _isJellyDragging ? 0.7 : 0.0,
+                    indicatorExpansion: _isJellyDragging
+                        ? const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8)
+                        : EdgeInsets.zero,
+                    innerBlur: 6,
+                    pressScale: 1.06,
+                    selectedIconColor: Colors.white,
+                    selectedLabelColor: Colors.white,
+                    unselectedIconColor: Colors.white,
+                    unselectedLabelColor: Colors.white,
                   ),
-                  GlassTab(
-                    icon: Icon(Icons.explore_outlined),
-                    activeIcon: Icon(Icons.explore),
-                    label: '探索',
-                  ),
-                  GlassTab(
-                    icon: Icon(Icons.settings_outlined),
-                    activeIcon: Icon(Icons.settings_rounded),
-                    label: '设置',
-                  ),
-                ],
-                selectedIndex: widget.selectedIndex,
-                onTabSelected: _onTabSelected,
-                barHeight: 56,
-                horizontalPadding: 0,
-                verticalPadding: 0,
-                barBorderRadius: 9999,
-                indicatorBorderRadius: 9999,
-                settings: const LiquidGlassSettings(
-                  glassColor: Color(0x66000000),
-                  bodyMode: GlassBodyMode.clear,
-                  thickness: 10,
-                  blur: 2,
-                  lightIntensity: 0.25,
-                  ambientStrength: 0,
-                  refractiveIndex: 1.19,
-                  chromaticAberration: 0.008,
-                  shadowElevation: 0,
                 ),
-                indicatorSettings: const LiquidGlassSettings(
-                  refractiveIndex: 1.18,
-                  chromaticAberration: 0.025,
-                ),
-                quality: GlassQuality.premium,
-                backgroundQuality: GlassQuality.premium,
-                indicatorColor: const Color(0x66000000),
-                interactionGlowColor: const Color(0x20FFFFFF),
-                indicatorPinchStrength: 0.7,
-                innerBlur: 6,
-                pressScale: 1.06,
-                selectedIconColor: Colors.white,
-                selectedLabelColor: Colors.white,
-                unselectedIconColor: Colors.white,
-                unselectedLabelColor: Colors.white,
               ),
             ),
           ),

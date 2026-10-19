@@ -15,7 +15,7 @@ import '../twitter/repositories/twitter_adapter.dart';
 import '../twitter/models/content_models.dart';
 import 'discovery_pages.dart';
 import 'media_page.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../core/services/link_opener.dart';
 import '../twitter/auth/app_controller.dart';
 import '../twitter/cache/local_x_cache.dart';
 import '../twitter/models/social_models.dart';
@@ -949,8 +949,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               style: TextStyle(color: colors.onSurfaceVariant)),
                         if (safeLink(_user.website))
                           InkWell(
-                              onTap: () => launchUrl(Uri.parse(_user.website),
-                                  mode: LaunchMode.externalApplication),
+                              onTap: () => openAppLink(context, Uri.parse(_user.website)),
                               child: Text(_user.website,
                                   style: TextStyle(color: colors.primary))),
                         if (_joined != null)
@@ -989,9 +988,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             IconButton(
                 tooltip: '在 X 打开主页',
                 icon: const Icon(Icons.open_in_new),
-                onPressed: () => launchUrl(
-                    Uri.parse('https://x.com/${_user.handle}'),
-                    mode: LaunchMode.externalApplication))
+                onPressed: () => openAppLink(context, Uri.parse('https://x.com/${_user.handle}')))
           ]),
       body: _operation == 'Likes' && !_isMe
           ? ListView(children: [

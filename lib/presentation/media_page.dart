@@ -358,7 +358,8 @@ class _MediaPageState extends ConsumerState<MediaPage>
   Future<void> _save() async {
     if (_saving) return;
     final media = widget.media[_index];
-    final mode = ref.read(readingProvider)['storageFolder'];
+    final mode = ref.read(readingProvider)[
+        media.video != null ? 'videoStorageFolder' : 'imageStorageFolder'];
     final folder = mode == 'author'
         ? widget.author
         : mode == 'me'
