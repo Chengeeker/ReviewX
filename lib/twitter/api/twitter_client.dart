@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+
+import '../../core/services/diagnostic_log.dart';
 import 'package:flutter/services.dart';
 import '../auth/session.dart';
 import '../models/social_models.dart';
@@ -151,9 +153,16 @@ class TwitterClient {
     final captured = session;
     if (captured == null) throw const TwitterFailure('请登录 X');
     final graphql = config != null;
+    final segments = path.split('/').where((part) => part.isNotEmpty).toList();
+    final lastSegment = segments.isEmpty ? '' : segments.last;
+    final operation = RegExp(r'^[A-Za-z0-9_.-]{1,64}$').hasMatch(lastSegment)
+        ? lastSegment
+        : 'request';
     final token = CancelToken();
     _active.add(token);
     var dispatched = false;
+    var responseStatus = 0;
+    final stopwatch = Stopwatch()..start();
     try {
       final transaction = await _transactions.create(method, path);
       if (!identical(session, captured) || token.isCancelled) {
@@ -166,6 +175,10 @@ class TwitterClient {
         'queryId': queryId
       };
       dispatched = true;
+      DiagnosticLog.record('api.request', fields: {
+        'method': method,
+        'operation': operation,
+      });
       final response = await _dio.request<dynamic>('https://api.x.com$path',
           data: method == 'POST' ? (graphql ? payload : variables) : null,
           queryParameters: method == 'GET'
@@ -196,6 +209,13 @@ class TwitterClient {
                 ? 'application/json'
                 : Headers.formUrlEncodedContentType,
           }));
+      responseStatus = response.statusCode ?? 0;
+      DiagnosticLog.record('api.response', fields: {
+        'method': method,
+        'operation': operation,
+        'status': responseStatus,
+        'ms': stopwatch.elapsedMilliseconds,
+      });
       if (!identical(session, captured)) {
         throw const TwitterFailure('账号已切换，请重新加载');
       }
@@ -222,9 +242,23 @@ class TwitterClient {
         throw TwitterFailure('X 返回了无法识别的数据', uncertain: method == 'POST');
       }
       return object(body['data']);
-    } on TwitterFailure {
+    } on TwitterFailure catch (error) {
+      DiagnosticLog.record('api.failure', fields: {
+        'operation': operation,
+        'status': responseStatus,
+        'phase': dispatched ? 'request' : 'prepare',
+        'type': error.runtimeType,
+        'ms': stopwatch.elapsedMilliseconds,
+      });
       rethrow;
     } on DioException catch (error) {
+      DiagnosticLog.record('api.failure', fields: {
+        'operation': operation,
+        'status': error.response?.statusCode ?? responseStatus,
+        'phase': dispatched ? 'request' : 'prepare',
+        'type': error.type.name,
+        'ms': stopwatch.elapsedMilliseconds,
+      });
       final message = switch (error.type) {
         DioExceptionType.connectionTimeout ||
         DioExceptionType.receiveTimeout ||
@@ -238,7 +272,14 @@ class TwitterClient {
       throw TwitterFailure(
           dispatched && method == 'POST' ? '结果尚未确认，请刷新帖子核对后再操作' : message,
           uncertain: dispatched && method == 'POST');
-    } catch (_) {
+    } catch (error) {
+      DiagnosticLog.record('api.failure', fields: {
+        'operation': operation,
+        'status': responseStatus,
+        'phase': dispatched ? 'request' : 'prepare',
+        'type': error.runtimeType,
+        'ms': stopwatch.elapsedMilliseconds,
+      });
       throw TwitterFailure('连接 X 的接口准备失败，请稍后重试',
           uncertain: dispatched && method == 'POST');
     } finally {

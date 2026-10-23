@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../core/services/diagnostic_log.dart';
+import '../core/services/diagnostic_scroll_controller.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -106,8 +108,12 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   String? _error;
   bool _loading = false;
   bool _refreshing = false;
+  bool _restoredSnapshot = false;
   int _request = 0;
-  late final ScrollController _scrollController = ScrollController();
+  late final ScrollController _scrollController = DiagnosticScrollController();
+  final _scrollTraceClock = Stopwatch()..start();
+  int _lastScrollTrace = -150;
+  int _scrollTraceSamples = 0;
   double _savedOffset = 0;
   @override
   void initState() {
@@ -118,6 +124,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     if (cacheKey != null && accountId != null) {
       _posts = ref.read(localXCacheProvider).readTimeline(accountId, cacheKey);
       if (_posts.isNotEmpty) {
+        _restoredSnapshot = true;
         controller.adapter.seedSeen(cacheKey, _posts.map((p) => p.id));
       }
     }
@@ -126,7 +133,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         onDoubleTap: _handleBottomDoubleTap,
         onTopBarSingleTap: _handleTopBarSingleTap,
         onTopBarDoubleTap: _handleTopBarDoubleTap);
-    if (widget.loadOnInit) _fetch(refresh: true);
+    if (widget.loadOnInit && !_restoredSnapshot) _fetch(refresh: true);
   }
 
   void _animateToTop() {
@@ -217,6 +224,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         if (incoming.isNotEmpty || _posts.isEmpty) {
           _posts = incoming.values.toList();
         }
+        _restoredSnapshot = false;
         _cursor = !refresh && page.cursor == oldCursor ? null : page.cursor;
       });
     } catch (error) {
@@ -241,8 +249,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(appControllerProvider);
-    final glassBottomInset = ref.watch(themeProvider.select(
-        (state) => state.useFloatingNavBar && state.useLiquidGlass));
+    final glassBottomInset = ref.watch(themeProvider
+        .select((state) => state.useFloatingNavBar && state.useLiquidGlass));
     final posts =
         _posts.where((post) => !controller.isDeleted(post.id)).toList();
     final known = <String, SocialPost>{
@@ -258,6 +266,35 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
         child: NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               final metrics = notification.metrics;
+              if (notification.depth == 0 && metrics.axis == Axis.vertical) {
+                if (notification is ScrollStartNotification) {
+                  _scrollTraceSamples = 0;
+                  DiagnosticLog.record('timeline.scroll_start', fields: {
+                    'pixels': metrics.pixels.toStringAsFixed(1),
+                    'max': metrics.maxScrollExtent.toStringAsFixed(1),
+                  });
+                }
+                final now = _scrollTraceClock.elapsedMilliseconds;
+                if (notification is ScrollUpdateNotification &&
+                    _scrollTraceSamples < 60 &&
+                    now - _lastScrollTrace >= 150) {
+                  _lastScrollTrace = now;
+                  _scrollTraceSamples++;
+                  DiagnosticLog.record('timeline.scroll_sample', fields: {
+                    'pixels': metrics.pixels.toStringAsFixed(1),
+                    'max': metrics.maxScrollExtent.toStringAsFixed(1),
+                    'delta': notification.scrollDelta?.toStringAsFixed(1),
+                    'fingerDy':
+                        notification.dragDetails?.delta.dy.toStringAsFixed(1),
+                  });
+                }
+                if (notification is ScrollEndNotification) {
+                  DiagnosticLog.record('timeline.scroll_end', fields: {
+                    'pixels': metrics.pixels.toStringAsFixed(1),
+                    'max': metrics.maxScrollExtent.toStringAsFixed(1),
+                  });
+                }
+              }
               if (notification.depth == 0 &&
                   metrics.axis == Axis.vertical &&
                   metrics.maxScrollExtent > 0) {
@@ -328,13 +365,16 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                   return Padding(
                       padding: const EdgeInsets.all(24),
                       child: Column(children: [
-                        if (!_loading && _cursor != null)
+                        if (!_loading && (_cursor != null || _restoredSnapshot))
                           FilledButton.tonal(
                               onPressed: _fetch,
                               child: Text(_error != null ? '重试加载' : '加载更多')),
                         if (_loading && posts.isNotEmpty)
                           const CircularProgressIndicator(strokeWidth: 2),
-                        if (!_loading && _error == null && _cursor == null)
+                        if (!_loading &&
+                            _error == null &&
+                            _cursor == null &&
+                            !_restoredSnapshot)
                           Text(posts.isEmpty ? '暂无帖子，下拉刷新' : '没有更多帖子')
                       ]));
                 })));
@@ -949,7 +989,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                               style: TextStyle(color: colors.onSurfaceVariant)),
                         if (safeLink(_user.website))
                           InkWell(
-                              onTap: () => openAppLink(context, Uri.parse(_user.website)),
+                              onTap: () => openAppLink(
+                                  context, Uri.parse(_user.website)),
                               child: Text(_user.website,
                                   style: TextStyle(color: colors.primary))),
                         if (_joined != null)
@@ -988,7 +1029,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             IconButton(
                 tooltip: '在 X 打开主页',
                 icon: const Icon(Icons.open_in_new),
-                onPressed: () => openAppLink(context, Uri.parse('https://x.com/${_user.handle}')))
+                onPressed: () => openAppLink(
+                    context, Uri.parse('https://x.com/${_user.handle}')))
           ]),
       body: _operation == 'Likes' && !_isMe
           ? ListView(children: [

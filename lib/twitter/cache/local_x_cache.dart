@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/storage/storage_service.dart';
 import '../models/social_models.dart';
 
-/// Small, account-scoped snapshots used to paint the last home page while X
-/// refreshes. Cookies, cursors, and full article bodies are never persisted.
+/// Account-scoped snapshots preserve the home feed until an explicit refresh.
+/// Cookies, cursors, and full article bodies are never persisted.
 class LocalXCache {
   LocalXCache(this.storage);
 

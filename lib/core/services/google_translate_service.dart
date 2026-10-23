@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
 /// Lightweight Google Translate client using the public translation API.
@@ -11,6 +12,13 @@ class GoogleTranslateService {
   ));
 
   static final Map<String, String> _cache = {};
+
+  static String? cachedTranslation(String text,
+          {String targetLang = 'zh-CN'}) =>
+      _cache['$targetLang:${text.trim()}'];
+
+  @visibleForTesting
+  static Dio get clientForTesting => _dio;
 
   /// Translates [text] to [targetLang] (defaults to 'zh-CN').
   /// Returns the translated string, or null on network/parsing failure.

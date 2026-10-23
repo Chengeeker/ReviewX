@@ -8,12 +8,13 @@ import '../core/widgets/app_section_card.dart';
 import '../core/theme/theme_provider.dart';
 import '../twitter/auth/app_controller.dart';
 import 'cache_management_page.dart';
+import 'diagnostic_logs_page.dart';
 import 'login_page.dart';
 import 'settings_pages.dart';
 import 'theme_settings_page.dart';
 import 'network_settings_page.dart';
 
-const _appVersion = '1.7.1';
+const _appVersion = '1.8.4';
 
 /// Review-style grouped settings, with X-specific account actions retained.
 class SettingsPane extends ConsumerWidget {
@@ -345,6 +346,12 @@ class SettingsPane extends ConsumerWidget {
                 : () => controller.loggedIn
                     ? open(const AccountSettingsPage())
                     : open(const LoginPage()),
+          ),
+          row(
+            icon: Icons.bug_report_outlined,
+            title: '导出诊断日志',
+            subtitle: '遇到问题时分享给开发者',
+            onTap: () => open(const DiagnosticLogsPage()),
           ),
           row(
             icon: Icons.info_outline_rounded,

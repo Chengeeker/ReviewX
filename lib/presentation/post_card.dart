@@ -128,442 +128,508 @@ class PostCard extends ConsumerWidget {
           borderRadius: quoted ? BorderRadius.circular(16) : null,
         ),
         child: Theme(
-            data: Theme.of(context).copyWith(
-                splashFactory: NoSplash.splashFactory),
+            data: Theme.of(context)
+                .copyWith(splashFactory: NoSplash.splashFactory),
             child: InkWell(
-            borderRadius: quoted ? BorderRadius.circular(16) : null,
-            highlightColor: Colors.transparent,
-            enableFeedback: false,
-            onTap: detail
-                ? null
-                : () {
-                    HapticFeedbackUtil.selection(bypassCooldown: true);
-                    Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => PostDetailPage(post: current)));
-                  },
-            child: Theme(
-                data: Theme.of(context),
-                child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (current.repostedBy != null)
-                        Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text('↻ ${current.repostedBy} 转发了',
-                                style:
-                                    Theme.of(context).textTheme.labelMedium)),
-                      Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            InkWell(
-                              onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                          ProfilePage(user: current.author))),
-                              child: ClipOval(
-                                  child: current.author.avatar.isEmpty
-                                      ? const SizedBox(
-                                          width: 40,
-                                          height: 40,
-                                          child: Icon(Icons.person))
-                                      : CachedNetworkImage(
-                                          current.author.avatar,
-                                          width: 40,
-                                          height: 40,
-                                          fit: BoxFit.cover)),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                                child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Expanded(
+                borderRadius: quoted ? BorderRadius.circular(16) : null,
+                highlightColor: Colors.transparent,
+                enableFeedback: false,
+                onTap: detail
+                    ? null
+                    : () {
+                        HapticFeedbackUtil.selection(bypassCooldown: true);
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => PostDetailPage(post: current)));
+                      },
+                child: Theme(
+                    data: Theme.of(context),
+                    child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (current.repostedBy != null)
+                                Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Text('↻ ${current.repostedBy} 转发了',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelMedium)),
+                              Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    InkWell(
+                                      onTap: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) => ProfilePage(
+                                                  user: current.author))),
+                                      child: ClipOval(
+                                          child: current.author.avatar.isEmpty
+                                              ? const SizedBox(
+                                                  width: 40,
+                                                  height: 40,
+                                                  child: Icon(Icons.person))
+                                              : CachedNetworkImage(
+                                                  current.author.avatar,
+                                                  width: 40,
+                                                  height: 40,
+                                                  fit: BoxFit.cover)),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
                                         child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            InkWell(
-                                              onTap: () => Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                      builder: (_) =>
-                                                          ProfilePage(
-                                                              user: current
-                                                                  .author))),
-                                              child: Text(
-                                                '${current.author.name}${current.author.verified ? ' ✓' : ''}',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleSmall,
-                                              ),
-                                            ),
-                                            Row(children: [
-                                              Flexible(
-                                                child: InkWell(
-                                                  onTap: () => Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                          builder: (_) =>
-                                                              ProfilePage(
-                                                                  user: current
-                                                                      .author))),
-                                                  child: Text(
-                                                    '@${current.author.handle}',
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodySmall,
-                                                  ),
-                                                ),
-                                              ),
-                                              if (current.createdAt != null)
-                                                Flexible(
-                                                  child: Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            left: 6),
-                                                    child: Text(
-                                                      '· ${postTime(current.createdAt!, settings)}',
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .labelSmall,
-                                                    ),
-                                                  ),
-                                                ),
-                                            ]),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 40,
-                                        height: 40,
-                                        child: PopupMenuButton<String>(
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(
-                                                minWidth: 40, minHeight: 40),
-                                            onSelected: (action) async {
-                                              if (action == 'copy') {
-                                                await Clipboard.setData(
-                                                    ClipboardData(
-                                                        text: current.text));
-                                              }
-                                              if (action == 'link') {
-                                                await Clipboard.setData(
-                                                    ClipboardData(
-                                                        text: current.url));
-                                              }
-                                              if (action == 'open' && context.mounted) {
-                                                await openAppLink(context, Uri.parse(current.url));
-                                              }
-                                              if (action == 'reply' ||
-                                                  action == 'quote') {
-                                                if (context.mounted) {
-                                                  Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                          builder: (_) => ComposePage(
-                                                              reply: action ==
-                                                                      'reply'
-                                                                  ? current
-                                                                  : null,
-                                                              quote: action ==
-                                                                      'quote'
-                                                                  ? current
-                                                                  : null)));
-                                                }
-                                              }
-                                              if (action == 'bookmark') {
-                                                try {
-                                                  await controller
-                                                      .bookmark(current);
-                                                } catch (error) {
-                                                  if (context.mounted) {
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(SnackBar(
-                                                            content: Text(
-                                                                '$error')));
-                                                  }
-                                                }
-                                              }
-                                              if (action == 'undo_repost') {
-                                                try {
-                                                  await controller.act(current,
-                                                      like: false);
-                                                } catch (error) {
-                                                  if (context.mounted) {
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(SnackBar(
-                                                            content: Text(
-                                                                '$error')));
-                                                  }
-                                                }
-                                              }
-                                              if (action == 'delete') {
-                                                if (!context.mounted) {
-                                                  return;
-                                                }
-                                                final confirmed =
-                                                    await showDialog<bool>(
-                                                  context: context,
-                                                  builder: (context) =>
-                                                      AlertDialog(
-                                                    title: const Text('删除帖子？'),
-                                                    content:
-                                                        const Text('删除后无法恢复。'),
-                                                    actions: [
-                                                      TextButton(
-                                                          onPressed: () =>
-                                                              Navigator.pop(
-                                                                  context,
-                                                                  false),
-                                                          child:
-                                                              const Text('取消')),
-                                                      TextButton(
-                                                          onPressed: () =>
-                                                              Navigator.pop(
-                                                                  context,
-                                                                  true),
-                                                          child: Text('删除',
-                                                              style: TextStyle(
-                                                                  color: scheme
-                                                                      .error))),
-                                                    ],
-                                                  ),
-                                                );
-                                                if (confirmed != true) {
-                                                  return;
-                                                }
-                                                if (!context.mounted) {
-                                                  return;
-                                                }
-                                                try {
-                                                  await controller
-                                                      .deletePost(current);
-                                                  if (!context.mounted) return;
-                                                  if (detail) {
-                                                    Navigator.of(context).pop();
-                                                  } else {
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(
-                                                            const SnackBar(
-                                                                content: Text(
-                                                                    '已删除帖子')));
-                                                  }
-                                                } catch (error) {
-                                                  if (context.mounted) {
-                                                    ScaffoldMessenger.of(
-                                                            context)
-                                                        .showSnackBar(SnackBar(
-                                                            content: Text(
-                                                                '$error')));
-                                                  }
-                                                }
-                                              }
-                                            },
-                                            itemBuilder: (_) => [
-                                                  const PopupMenuItem(
-                                                      value: 'copy',
-                                                      child: Text('复制正文')),
-                                                  const PopupMenuItem(
-                                                      value: 'link',
-                                                      child: Text('复制链接')),
-                                                  const PopupMenuItem(
-                                                      value: 'open',
-                                                      child: Text('在应用内浏览')),
-                                                  const PopupMenuItem(
-                                                      value: 'reply',
-                                                      child: Text('回复')),
-                                                  const PopupMenuItem(
-                                                      value: 'quote',
-                                                      child: Text('引用')),
-                                                  PopupMenuItem(
-                                                      value: 'bookmark',
-                                                      enabled: !controller
-                                                          .actionBlocked(
-                                                              current.id),
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                          Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    InkWell(
+                                                      onTap: () => Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                              builder: (_) =>
+                                                                  ProfilePage(
+                                                                      user: current
+                                                                          .author))),
                                                       child: Text(
-                                                          current.bookmarked
-                                                              ? '移除书签'
-                                                              : '保存到书签')),
-                                                  if (current.reposted)
-                                                    PopupMenuItem(
-                                                        value: 'undo_repost',
-                                                        enabled: !controller
-                                                            .actionBlocked(
-                                                                current.id),
-                                                        child:
-                                                            const Text('撤销转推')),
-                                                  if (controller
-                                                      .ownsPost(current))
-                                                    PopupMenuItem(
-                                                        value: 'delete',
-                                                        enabled: !controller
-                                                            .actionBlocked(
-                                                                current.id),
-                                                        child: Text('删除帖子',
-                                                            style: TextStyle(
-                                                                color: scheme
-                                                                    .error))),
-                                                ]),
-                                      ),
-                                    ],
-                                  ),
-                                ])),
-                          ]),
-                      const SizedBox(height: 12),
-                      if (current.replyToHandle != null ||
-                          current.replyToId != null)
-                        _ReplyContext(
-                            post: current,
-                            parent: replyParent,
-                            showPreview: showReplyParentPreview),
-                      if (current.text.isNotEmpty)
-                        Padding(
-                            padding: const EdgeInsets.only(top: 8, bottom: 8),
-                            child: _GrokTranslationText(
-                                key: ValueKey(current.id),
-                                original: current.text,
-                                translated: current.translatedText,
-                                autoTranslate:
-                                    settings['grokAutoTranslate'] == true,
-                                maxLines: detail ? null : 12,
-                                selectable: detail,
-                                style: TextStyle(
-                                    fontSize: settings['fontSize'],
-                                    height: settings['lineHeight']))),
-                      if (settings['showSource'] == true &&
-                          current.source.isNotEmpty)
-                        Text(current.source,
-                            style: Theme.of(context).textTheme.labelSmall),
-                      if (current.article != null)
-                        Card(
-                            clipBehavior: Clip.antiAlias,
-                            child: InkWell(
-                                splashFactory: NoSplash.splashFactory,
-                                highlightColor: Colors.transparent,
-                                enableFeedback: false,
-                                onTap: () {
-                                  HapticFeedbackUtil.selection(
-                                      bypassCooldown: true);
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) =>
-                                              ArticlePage(post: current)));
-                                },
-                                child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      if (current.article!.cover != null)
-                                        CachedNetworkImage(
-                                            current.article!.cover!.preview,
-                                            width: double.infinity,
-                                            height: 180,
-                                            fit: BoxFit.cover),
-                                      Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(current.article!.title,
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .titleMedium),
-                                                if (current.article!.preview
-                                                    .isNotEmpty)
-                                                  Text(current.article!.preview,
-                                                      maxLines: 3,
-                                                      overflow: TextOverflow
-                                                          .ellipsis),
-                                                const Text('阅读 X 文章 →'),
-                                              ]))
-                                    ]))),
-                      if (current.linkCard != null && current.article == null)
-                        Card(
-                            clipBehavior: Clip.antiAlias,
-                            child: InkWell(
-                                onTap: () => openAppLink(context, Uri.parse(current.linkCard!.url)),
-                                child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      if (current.linkCard!.image.isNotEmpty)
-                                        CachedNetworkImage(
-                                            current.linkCard!.image,
-                                            width: double.infinity,
-                                            height: 150,
-                                            fit: BoxFit.cover),
-                                      Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(current.linkCard!.title,
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .titleSmall),
-                                                Text(
-                                                    current
-                                                        .linkCard!.description,
-                                                    maxLines: 2,
-                                                    overflow:
-                                                        TextOverflow.ellipsis),
-                                                Text(Uri.parse(
-                                                        current.linkCard!.url)
-                                                    .host),
-                                              ]))
-                                    ]))),
-                      if (current.poll != null)
-                        PollView(poll: current.poll!, url: current.url),
-                      if (current.media.isNotEmpty)
-                        MediaGrid(post: current),
-                      if (current.quote != null && !quoted) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 6),
-                          child: Row(children: [
-                            const Icon(Icons.format_quote, size: 16),
-                            const SizedBox(width: 6),
-                            Expanded(
-                                child: Text(
-                                    '引用 @${current.quote!.author.handle} 的帖子',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium)),
-                          ]),
-                        ),
-                        PostCard(post: current.quote!, quoted: true),
-                      ],
-                      if (!quoted)
-                        _PostActionRow(post: current, detail: detail),
-                      if (controller.isUncertain(current.id))
-                        const Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Text('操作结果待核对，请刷新后再操作'))
-                    ]))))));
+                                                        '${current.author.name}${current.author.verified ? ' ✓' : ''}',
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .titleSmall,
+                                                      ),
+                                                    ),
+                                                    Row(children: [
+                                                      Flexible(
+                                                        child: InkWell(
+                                                          onTap: () => Navigator.push(
+                                                              context,
+                                                              MaterialPageRoute(
+                                                                  builder: (_) =>
+                                                                      ProfilePage(
+                                                                          user:
+                                                                              current.author))),
+                                                          child: Text(
+                                                            '@${current.author.handle}',
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style: Theme.of(
+                                                                    context)
+                                                                .textTheme
+                                                                .bodySmall,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      if (current.createdAt !=
+                                                          null)
+                                                        Flexible(
+                                                          child: Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                                    left: 6),
+                                                            child: Text(
+                                                              '· ${postTime(current.createdAt!, settings)}',
+                                                              maxLines: 1,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                              style: Theme.of(
+                                                                      context)
+                                                                  .textTheme
+                                                                  .labelSmall,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                    ]),
+                                                  ],
+                                                ),
+                                              ),
+                                              SizedBox(
+                                                width: 40,
+                                                height: 40,
+                                                child: PopupMenuButton<String>(
+                                                    padding: EdgeInsets.zero,
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                            minWidth: 40,
+                                                            minHeight: 40),
+                                                    onSelected: (action) async {
+                                                      if (action == 'copy') {
+                                                        await Clipboard.setData(
+                                                            ClipboardData(
+                                                                text: current
+                                                                    .text));
+                                                      }
+                                                      if (action == 'link') {
+                                                        await Clipboard.setData(
+                                                            ClipboardData(
+                                                                text: current
+                                                                    .url));
+                                                      }
+                                                      if (action == 'open' &&
+                                                          context.mounted) {
+                                                        await openAppLink(
+                                                            context,
+                                                            Uri.parse(
+                                                                current.url));
+                                                      }
+                                                      if (action == 'reply' ||
+                                                          action == 'quote') {
+                                                        if (context.mounted) {
+                                                          Navigator.push(
+                                                              context,
+                                                              MaterialPageRoute(
+                                                                  builder: (_) => ComposePage(
+                                                                      reply: action ==
+                                                                              'reply'
+                                                                          ? current
+                                                                          : null,
+                                                                      quote: action ==
+                                                                              'quote'
+                                                                          ? current
+                                                                          : null)));
+                                                        }
+                                                      }
+                                                      if (action ==
+                                                          'bookmark') {
+                                                        try {
+                                                          await controller
+                                                              .bookmark(
+                                                                  current);
+                                                        } catch (error) {
+                                                          if (context.mounted) {
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                                    SnackBar(
+                                                                        content:
+                                                                            Text('$error')));
+                                                          }
+                                                        }
+                                                      }
+                                                      if (action ==
+                                                          'undo_repost') {
+                                                        try {
+                                                          await controller.act(
+                                                              current,
+                                                              like: false);
+                                                        } catch (error) {
+                                                          if (context.mounted) {
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                                    SnackBar(
+                                                                        content:
+                                                                            Text('$error')));
+                                                          }
+                                                        }
+                                                      }
+                                                      if (action == 'delete') {
+                                                        if (!context.mounted) {
+                                                          return;
+                                                        }
+                                                        final confirmed =
+                                                            await showDialog<
+                                                                bool>(
+                                                          context: context,
+                                                          builder: (context) =>
+                                                              AlertDialog(
+                                                            title: const Text(
+                                                                '删除帖子？'),
+                                                            content: const Text(
+                                                                '删除后无法恢复。'),
+                                                            actions: [
+                                                              TextButton(
+                                                                  onPressed: () =>
+                                                                      Navigator.pop(
+                                                                          context,
+                                                                          false),
+                                                                  child:
+                                                                      const Text(
+                                                                          '取消')),
+                                                              TextButton(
+                                                                  onPressed: () =>
+                                                                      Navigator.pop(
+                                                                          context,
+                                                                          true),
+                                                                  child: Text(
+                                                                      '删除',
+                                                                      style: TextStyle(
+                                                                          color:
+                                                                              scheme.error))),
+                                                            ],
+                                                          ),
+                                                        );
+                                                        if (confirmed != true) {
+                                                          return;
+                                                        }
+                                                        if (!context.mounted) {
+                                                          return;
+                                                        }
+                                                        try {
+                                                          await controller
+                                                              .deletePost(
+                                                                  current);
+                                                          if (!context.mounted)
+                                                            return;
+                                                          if (detail) {
+                                                            Navigator.of(
+                                                                    context)
+                                                                .pop();
+                                                          } else {
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                                    const SnackBar(
+                                                                        content:
+                                                                            Text('已删除帖子')));
+                                                          }
+                                                        } catch (error) {
+                                                          if (context.mounted) {
+                                                            ScaffoldMessenger
+                                                                    .of(context)
+                                                                .showSnackBar(
+                                                                    SnackBar(
+                                                                        content:
+                                                                            Text('$error')));
+                                                          }
+                                                        }
+                                                      }
+                                                    },
+                                                    itemBuilder: (_) => [
+                                                          const PopupMenuItem(
+                                                              value: 'copy',
+                                                              child:
+                                                                  Text('复制正文')),
+                                                          const PopupMenuItem(
+                                                              value: 'link',
+                                                              child:
+                                                                  Text('复制链接')),
+                                                          const PopupMenuItem(
+                                                              value: 'open',
+                                                              child: Text(
+                                                                  '在应用内浏览')),
+                                                          const PopupMenuItem(
+                                                              value: 'reply',
+                                                              child:
+                                                                  Text('回复')),
+                                                          const PopupMenuItem(
+                                                              value: 'quote',
+                                                              child:
+                                                                  Text('引用')),
+                                                          PopupMenuItem(
+                                                              value: 'bookmark',
+                                                              enabled: !controller
+                                                                  .actionBlocked(
+                                                                      current
+                                                                          .id),
+                                                              child: Text(current
+                                                                      .bookmarked
+                                                                  ? '移除书签'
+                                                                  : '保存到书签')),
+                                                          if (current.reposted)
+                                                            PopupMenuItem(
+                                                                value:
+                                                                    'undo_repost',
+                                                                enabled: !controller
+                                                                    .actionBlocked(
+                                                                        current
+                                                                            .id),
+                                                                child:
+                                                                    const Text(
+                                                                        '撤销转推')),
+                                                          if (controller
+                                                              .ownsPost(
+                                                                  current))
+                                                            PopupMenuItem(
+                                                                value: 'delete',
+                                                                enabled: !controller
+                                                                    .actionBlocked(
+                                                                        current
+                                                                            .id),
+                                                                child: Text(
+                                                                    '删除帖子',
+                                                                    style: TextStyle(
+                                                                        color: scheme
+                                                                            .error))),
+                                                        ]),
+                                              ),
+                                            ],
+                                          ),
+                                        ])),
+                                  ]),
+                              const SizedBox(height: 12),
+                              if (current.replyToHandle != null ||
+                                  current.replyToId != null)
+                                _ReplyContext(
+                                    post: current,
+                                    parent: replyParent,
+                                    showPreview: showReplyParentPreview),
+                              if (current.text.isNotEmpty)
+                                Padding(
+                                    padding: const EdgeInsets.only(
+                                        top: 8, bottom: 8),
+                                    child: _GrokTranslationText(
+                                        key: ValueKey(current.id),
+                                        original: current.text,
+                                        translated: current.translatedText,
+                                        autoTranslate:
+                                            settings['grokAutoTranslate'] ==
+                                                true,
+                                        maxLines: detail ? null : 12,
+                                        selectable: detail,
+                                        style: TextStyle(
+                                            fontSize: settings['fontSize'],
+                                            height: settings['lineHeight']))),
+                              if (settings['showSource'] == true &&
+                                  current.source.isNotEmpty)
+                                Text(current.source,
+                                    style:
+                                        Theme.of(context).textTheme.labelSmall),
+                              if (current.article != null)
+                                Card(
+                                    clipBehavior: Clip.antiAlias,
+                                    child: InkWell(
+                                        splashFactory: NoSplash.splashFactory,
+                                        highlightColor: Colors.transparent,
+                                        enableFeedback: false,
+                                        onTap: () {
+                                          HapticFeedbackUtil.selection(
+                                              bypassCooldown: true);
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (_) => ArticlePage(
+                                                      post: current)));
+                                        },
+                                        child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              if (current.article!.cover !=
+                                                  null)
+                                                CachedNetworkImage(
+                                                    current.article!.cover!
+                                                        .preview,
+                                                    width: double.infinity,
+                                                    height: 180,
+                                                    fit: BoxFit.cover),
+                                              Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(12),
+                                                  child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                            current
+                                                                .article!.title,
+                                                            style: Theme.of(
+                                                                    context)
+                                                                .textTheme
+                                                                .titleMedium),
+                                                        if (current.article!
+                                                            .preview.isNotEmpty)
+                                                          Text(
+                                                              current.article!
+                                                                  .preview,
+                                                              maxLines: 3,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis),
+                                                        const Text('阅读 X 文章 →'),
+                                                      ]))
+                                            ]))),
+                              if (current.linkCard != null &&
+                                  current.article == null)
+                                Card(
+                                    clipBehavior: Clip.antiAlias,
+                                    child: InkWell(
+                                        onTap: () => openAppLink(context,
+                                            Uri.parse(current.linkCard!.url)),
+                                        child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              if (current
+                                                  .linkCard!.image.isNotEmpty)
+                                                CachedNetworkImage(
+                                                    current.linkCard!.image,
+                                                    width: double.infinity,
+                                                    height: 150,
+                                                    fit: BoxFit.cover),
+                                              Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(12),
+                                                  child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                            current.linkCard!
+                                                                .title,
+                                                            style: Theme.of(
+                                                                    context)
+                                                                .textTheme
+                                                                .titleSmall),
+                                                        Text(
+                                                            current.linkCard!
+                                                                .description,
+                                                            maxLines: 2,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis),
+                                                        Text(Uri.parse(current
+                                                                .linkCard!.url)
+                                                            .host),
+                                                      ]))
+                                            ]))),
+                              if (current.poll != null)
+                                PollView(poll: current.poll!, url: current.url),
+                              if (current.media.isNotEmpty)
+                                MediaGrid(post: current),
+                              if (current.quote != null && !quoted) ...[
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.only(top: 8, bottom: 6),
+                                  child: Row(children: [
+                                    const Icon(Icons.format_quote, size: 16),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                        child: Text(
+                                            '引用 @${current.quote!.author.handle} 的帖子',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelMedium)),
+                                  ]),
+                                ),
+                                PostCard(post: current.quote!, quoted: true),
+                              ],
+                              if (!quoted)
+                                _PostActionRow(post: current, detail: detail),
+                              if (controller.isUncertain(current.id))
+                                const Padding(
+                                    padding: EdgeInsets.only(top: 8),
+                                    child: Text('操作结果待核对，请刷新后再操作'))
+                            ]))))));
     if (!connected) return card;
     return CustomPaint(
       painter: _ConversationConnector(
@@ -790,7 +856,10 @@ class _GrokTranslationTextState extends State<_GrokTranslationText> {
     if (widget.translated.isEmpty &&
         widget.autoTranslate &&
         GoogleTranslateService.needsTranslation(widget.original)) {
-      _fetchGoogleTranslate();
+      // A recycled list child must not lay out the original for one frame.
+      _googleTranslated =
+          GoogleTranslateService.cachedTranslation(widget.original);
+      if (_googleTranslated == null) _fetchGoogleTranslate();
     }
   }
 
@@ -933,79 +1002,93 @@ class _MediaGridState extends ConsumerState<MediaGrid> {
       final width = single
           ? (mediaMaxHeight * ratio).clamp(0.0, constraints.maxWidth)
           : constraints.maxWidth;
+      final logicalTileWidth = single ? width : (constraints.maxWidth - 6) / 2;
+      final requestedCacheWidth =
+          (logicalTileWidth * MediaQuery.devicePixelRatioOf(context)).ceil();
+      final thumbnailCacheWidth =
+          requestedCacheWidth > 0 ? requestedCacheWidth : 1;
+      Widget buildMediaTile(int index) {
+        final item = media[index];
+        final isVideo = item.video != null;
+        final thumbnail = ClipRRect(
+            borderRadius: BorderRadius.circular(settings['imageRadius']),
+            child: Stack(fit: StackFit.expand, children: [
+              CachedNetworkImage(item.preview,
+                  fit: BoxFit.cover, cacheWidth: thumbnailCacheWidth),
+              if (isVideo)
+                const Center(
+                    child: Icon(Icons.play_circle_fill,
+                        color: Colors.white, size: 48)),
+              if (item.alt.isNotEmpty)
+                const Positioned(
+                    left: 8,
+                    bottom: 8,
+                    child: DecoratedBox(
+                        decoration: BoxDecoration(color: Colors.black54),
+                        child: Padding(
+                            padding: EdgeInsets.all(4),
+                            child: Text('ALT',
+                                style: TextStyle(color: Colors.white))))),
+            ]));
+        return GestureDetector(
+          key: ValueKey('post-media-${widget.post.id}-$index'),
+          onTap: () {
+            HapticFeedbackUtil.light();
+            final page = MediaPage(
+                media: media,
+                index: index,
+                post: widget.post,
+                author: widget.post.author.handle,
+                heroScope: isVideo ? null : _heroScope,
+                heroThumbnailUsesCover: !isVideo);
+            Navigator.of(context).push<void>(isVideo
+                ? MaterialPageRoute<void>(
+                    builder: (_) => page,
+                  )
+                : MediaGalleryRoute<void>(child: page));
+          },
+          child: isVideo
+              ? thumbnail
+              : Hero(
+                  tag: mediaGalleryHeroTag(
+                    _heroScope,
+                    index,
+                    imageAspectRatio: mediaGalleryImageAspectRatio(item),
+                    thumbnailUsesCover: true,
+                  ),
+                  flightShuttleBuilder: mediaGalleryHeroFlightShuttleBuilder,
+                  child: thumbnail,
+                ),
+        );
+      }
+
       return Align(
           alignment: Alignment.centerLeft,
           child: SizedBox(
             width: width,
-            child: GridView.builder(
-                padding: EdgeInsets.zero,
-                primary: false,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: media.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: single ? 1 : 2,
-                    childAspectRatio: ratio,
-                    crossAxisSpacing: 6,
-                    mainAxisSpacing: 6),
-                itemBuilder: (context, index) {
-                  final item = media[index];
-                  final isVideo = item.video != null;
-                  final thumbnail = ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(settings['imageRadius']),
-                      child: Stack(fit: StackFit.expand, children: [
-                        CachedNetworkImage(item.preview, fit: BoxFit.cover),
-                        if (isVideo)
-                          const Center(
-                              child: Icon(Icons.play_circle_fill,
-                                  color: Colors.white, size: 48)),
-                        if (item.alt.isNotEmpty)
-                          const Positioned(
-                              left: 8,
-                              bottom: 8,
-                              child: DecoratedBox(
-                                  decoration:
-                                      BoxDecoration(color: Colors.black54),
-                                  child: Padding(
-                                      padding: EdgeInsets.all(4),
-                                      child: Text('ALT',
-                                          style: TextStyle(
-                                              color: Colors.white))))),
-                      ]));
-                  return GestureDetector(
-                    key: ValueKey('post-media-${widget.post.id}-$index'),
-                    onTap: () {
-                      HapticFeedbackUtil.light();
-                      final page = MediaPage(
-                          media: media,
-                          index: index,
-                          post: widget.post,
-                          author: widget.post.author.handle,
-                          heroScope: isVideo ? null : _heroScope,
-                          heroThumbnailUsesCover: !isVideo);
-                      Navigator.of(context).push<void>(isVideo
-                          ? MaterialPageRoute<void>(
-                              builder: (_) => page,
-                            )
-                          : MediaGalleryRoute<void>(child: page));
-                    },
-                    child: isVideo
-                        ? thumbnail
-                        : Hero(
-                            tag: mediaGalleryHeroTag(
-                              _heroScope,
-                              index,
-                              imageAspectRatio:
-                                  mediaGalleryImageAspectRatio(item),
-                              thumbnailUsesCover: true,
-                            ),
-                            flightShuttleBuilder:
-                                mediaGalleryHeroFlightShuttleBuilder,
-                            child: thumbnail,
-                          ),
-                  );
-                }),
+            child: single
+                ? AspectRatio(aspectRatio: ratio, child: buildMediaTile(0))
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var start = 0; start < media.length; start += 2) ...[
+                        if (start > 0) const SizedBox(height: 6),
+                        Row(children: [
+                          Expanded(
+                              child: AspectRatio(
+                                  aspectRatio: 1,
+                                  child: buildMediaTile(start))),
+                          const SizedBox(width: 6),
+                          Expanded(
+                              child: AspectRatio(
+                                  aspectRatio: 1,
+                                  child: start + 1 < media.length
+                                      ? buildMediaTile(start + 1)
+                                      : const SizedBox.shrink())),
+                        ]),
+                      ],
+                    ],
+                  ),
           ));
     });
   }

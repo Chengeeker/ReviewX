@@ -7,6 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'core/services/cache_service.dart';
+import 'core/services/diagnostic_log.dart';
 import 'core/services/image_cache_maintenance.dart';
 import 'core/services/notification_poll.dart';
 import 'core/services/network_routing.dart';
@@ -21,6 +22,7 @@ import 'twitter/auth/app_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  DiagnosticLog.install(version: '1.8.4');
   await LiquidGlassWidgets.initialize(enablePerformanceMonitor: false);
   LicenseRegistry.addLicense(() async* {
     yield LicenseEntryWithLineBreaks(

@@ -155,9 +155,13 @@ void main() {
                         children: const [PostCard(post: post)]))))));
     // Image loading animates independently; this regression checks layout only.
     await tester.pump(const Duration(milliseconds: 100));
-    final grid = tester.widget<GridView>(find.byType(GridView));
-    expect(grid.padding, EdgeInsets.zero);
-    expect(grid.primary, isFalse);
+    expect(
+      find.descendant(
+        of: find.byType(MediaGrid),
+        matching: find.byType(Scrollable),
+      ),
+      findsNothing,
+    );
     final media = tester.getRect(find.byType(MediaGrid));
     final actions =
         tester.getRect(find.byKey(const ValueKey('post-action-row')));
