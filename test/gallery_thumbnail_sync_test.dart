@@ -2,10 +2,17 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:review_x/core/storage/storage_service.dart';
 import 'package:review_x/presentation/media_page.dart';
 import 'package:review_x/twitter/models/social_models.dart';
 
 void main() {
+  late StorageService storage;
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    storage = await StorageService.init();
+  });
   testWidgets('main gallery stays still while thumbnail drag is held',
       (tester) async {
     tester.view.physicalSize = const Size(1000, 1800);
@@ -22,6 +29,7 @@ void main() {
       ),
     );
     await tester.pumpWidget(ProviderScope(
+      overrides: [storageServiceProvider.overrideWithValue(storage)],
       child: MaterialApp(
         home: Builder(
           builder: (context) => Scaffold(

@@ -293,12 +293,14 @@ class MediaPage extends ConsumerStatefulWidget {
       required this.index,
       this.author = '',
       this.post,
+      this.previewCacheWidth,
       this.heroScope,
       this.heroThumbnailUsesCover = false});
   final List<SocialMedia> media;
   final int index;
   final String author;
   final SocialPost? post;
+  final int? previewCacheWidth;
   final Object? heroScope;
   final bool heroThumbnailUsesCover;
   @override
@@ -322,6 +324,33 @@ class _MediaPageState extends ConsumerState<MediaPage>
   final Expando<ExtendedImageGesture> _pagingImages = Expando();
   double _videoBottomControlsHeight = 0;
   double? _thumbnailScrollBottom;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _warmAdjacentImage();
+  }
+
+  void _warmAdjacentImage({int direction = 1}) {
+    final next = _index + direction;
+    if (next < 0 || next >= widget.media.length) return;
+    final media = widget.media[next];
+    if (media.video != null) return;
+    final size = MediaQuery.sizeOf(context);
+    final url = media.viewerImage(
+      viewportWidth: size.width,
+      viewportHeight: size.height,
+      devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+    );
+    unawaited(precacheImage(
+      ExtendedNetworkImageProvider(url,
+          cache: true, headers: XRequestHeaders.media),
+      context,
+      onError: (_, __) {},
+    ));
+  }
+
+
 
   bool get _hasThumbnailStrip => widget.media.length > 1;
 
@@ -436,7 +465,9 @@ class _MediaPageState extends ConsumerState<MediaPage>
     if (index != _index && _thumbnailUserScrolling) {
       HapticFeedbackUtil.selection();
     }
+    final direction = index >= _index ? 1 : -1;
     if (mounted) setState(() => _index = index);
+    _warmAdjacentImage(direction: direction);
     if (!_thumbnailUserScrolling &&
         !_thumbnailSettling &&
         _thumbnailController.hasClients) {
@@ -941,8 +972,11 @@ class _MediaPageState extends ConsumerState<MediaPage>
                               MediaQuery.devicePixelRatioOf(context),
                         );
                         final image = Stack(fit: StackFit.expand, children: [
-                          if (imageUrl != media.preview)
+                          if (imageUrl != media.preview ||
+                              widget.previewCacheWidth != null)
                             CachedNetworkImage(media.preview,
+                                key: ValueKey('gallery-loading-preview-$index'),
+                                cacheWidth: widget.previewCacheWidth,
                                 fit: BoxFit.contain),
                           Semantics(
                             onTap: () => _handleGalleryTap(Offset(

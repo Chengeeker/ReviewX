@@ -4,6 +4,9 @@ import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:review_x/core/storage/storage_service.dart';
 import 'package:review_x/core/utils/haptic_feedback_util.dart';
 import 'package:review_x/presentation/media_page.dart';
 import 'package:review_x/twitter/api/x_request_headers.dart';
@@ -42,6 +45,11 @@ Future<void> _cacheImages(WidgetTester tester, List<String> urls) async {
 }
 
 void main() {
+  late StorageService storage;
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    storage = await StorageService.init();
+  });
   testWidgets('decoded image fast swipe and Hero overlay stay error-free',
       (tester) async {
     final haptics = <Object?>[];
@@ -74,31 +82,34 @@ void main() {
     final scope = Object();
     final heroTag = mediaGalleryHeroTag(scope, 0);
 
-    await tester.pumpWidget(MaterialApp(
-      home: Builder(builder: (context) {
-        return Scaffold(
-          body: Center(
-            child: GestureDetector(
-              key: const ValueKey('open-gallery'),
-              onTap: () => Navigator.of(context).push<void>(
-                MediaGalleryRoute<void>(
-                  child: MediaPage(media: media, index: 0, heroScope: scope),
+    await tester.pumpWidget(ProviderScope(
+        overrides: [storageServiceProvider.overrideWithValue(storage)],
+        child: MaterialApp(
+          home: Builder(builder: (context) {
+            return Scaffold(
+              body: Center(
+                child: GestureDetector(
+                  key: const ValueKey('open-gallery'),
+                  onTap: () => Navigator.of(context).push<void>(
+                    MediaGalleryRoute<void>(
+                      child:
+                          MediaPage(media: media, index: 0, heroScope: scope),
+                    ),
+                  ),
+                  child: Hero(
+                    tag: heroTag,
+                    flightShuttleBuilder: mediaGalleryHeroFlightShuttleBuilder,
+                    child: const SizedBox(
+                      width: 120,
+                      height: 80,
+                      child: ColoredBox(color: Colors.blue),
+                    ),
+                  ),
                 ),
               ),
-              child: Hero(
-                tag: heroTag,
-                flightShuttleBuilder: mediaGalleryHeroFlightShuttleBuilder,
-                child: const SizedBox(
-                  width: 120,
-                  height: 80,
-                  child: ColoredBox(color: Colors.blue),
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
-    ));
+            );
+          }),
+        )));
 
     await tester.tap(find.byKey(const ValueKey('open-gallery')));
     await tester.pump();

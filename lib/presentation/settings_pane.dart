@@ -14,7 +14,7 @@ import 'settings_pages.dart';
 import 'theme_settings_page.dart';
 import 'network_settings_page.dart';
 
-const _appVersion = '1.8.4';
+const _appVersion = '1.8.5';
 
 /// Review-style grouped settings, with X-specific account actions retained.
 class SettingsPane extends ConsumerWidget {

@@ -22,7 +22,7 @@ import 'twitter/auth/app_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  DiagnosticLog.install(version: '1.8.4');
+  DiagnosticLog.install(version: '1.8.5');
   await LiquidGlassWidgets.initialize(enablePerformanceMonitor: false);
   LicenseRegistry.addLicense(() async* {
     yield LicenseEntryWithLineBreaks(

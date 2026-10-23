@@ -1038,6 +1038,7 @@ class _MediaGridState extends ConsumerState<MediaGrid> {
                 media: media,
                 index: index,
                 post: widget.post,
+                previewCacheWidth: thumbnailCacheWidth,
                 author: widget.post.author.handle,
                 heroScope: isVideo ? null : _heroScope,
                 heroThumbnailUsesCover: !isVideo);

@@ -354,6 +354,61 @@ void main() {
     }
   });
 
+  testWidgets(
+      'second gallery page retains decoded feed preview while full image waits',
+      (tester) async {
+    final recorder = ui.PictureRecorder();
+    Canvas(recorder).drawColor(Colors.blue, BlendMode.src);
+    final picture = recorder.endRecording();
+    final image = await tester.runAsync(() => picture.toImage(20, 20));
+    picture.dispose();
+    final waiting = Completer<ImageInfo>();
+    final media = [
+      const SocialMedia(preview: 'https://pbs.twimg.com/preview-first.jpg'),
+      const SocialMedia(preview: 'https://pbs.twimg.com/preview-second.jpg'),
+    ];
+    for (var i = 0; i < media.length; i++) {
+      final preview = ExtendedImage.network(media[i].preview,
+              cache: true, headers: XRequestHeaders.media, cacheWidth: 120)
+          .image;
+      final key = await preview.obtainKey(ImageConfiguration.empty);
+      PaintingBinding.instance.imageCache.putIfAbsent(
+          key,
+          () => OneFrameImageStreamCompleter(
+              Future.value(ImageInfo(image: image!.clone()))));
+      final original = ExtendedNetworkImageProvider(media[i].preview,
+          cache: true, headers: XRequestHeaders.media);
+      final fullKey = await original.obtainKey(ImageConfiguration.empty);
+      PaintingBinding.instance.imageCache.putIfAbsent(
+          fullKey,
+          () => OneFrameImageStreamCompleter(i == 0
+              ? Future.value(ImageInfo(image: image!.clone()))
+              : waiting.future));
+    }
+    await tester.pumpWidget(ProviderScope(
+        overrides: [storageServiceProvider.overrideWithValue(storage)],
+        child: MaterialApp(
+            home: MediaPage(media: media, index: 0, previewCacheWidth: 120))));
+    await tester.pump();
+    await tester.drag(
+        find.byType(ExtendedImageGesturePageView), const Offset(-700, 0));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump();
+    final preview = find.descendant(
+        of: find.byKey(const ValueKey('gallery-loading-preview-1')),
+        matching: find.byType(ExtendedImage));
+    expect(preview, findsOneWidget);
+    expect((tester.state(preview) as ExtendedImageState).extendedImageInfo,
+        isNotNull);
+    expect(waiting.isCompleted, isFalse);
+    waiting.complete(ImageInfo(image: image!.clone()));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump();
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+    image.dispose();
+  });
   testWidgets('gallery double tap zooms without toggling chrome',
       (tester) async {
     tester.view.physicalSize = const Size(360, 800);
