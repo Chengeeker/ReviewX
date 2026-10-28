@@ -882,83 +882,114 @@ class _LiquidGlassNavigationBarState extends State<_LiquidGlassNavigationBar> {
   }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-        bottom: false,
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: EdgeInsets.only(bottom: widget.hasBottomInset ? 6 : 14),
-            child: RepaintBoundary(
-              child: SizedBox(
-                width: widget.width,
-                height: 56,
-                child: Listener(
-                  onPointerDown: _onPointerDown,
-                  onPointerMove: _onPointerMove,
-                  onPointerUp: _onPointerUp,
-                  onPointerCancel: _onPointerCancel,
-                  child: GlassTabBar.bottom(
-                    tabs: const [
-                      GlassTab(
-                        icon: Icon(Icons.home_outlined),
-                        activeIcon: Icon(Icons.home_rounded),
-                        label: '首页',
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isLightMode = theme.brightness == Brightness.light;
+    final contentColor = isLightMode ? theme.colorScheme.primary : Colors.white;
+    final unselectedContentColor =
+        isLightMode ? theme.colorScheme.onSurfaceVariant : Colors.white;
+
+    return SafeArea(
+      bottom: false,
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: widget.hasBottomInset ? 6 : 14),
+          child: RepaintBoundary(
+            child: Container(
+              width: widget.width,
+              height: 56,
+              key:
+                  isLightMode ? const ValueKey('liquid-glass-light-rim') : null,
+              foregroundDecoration: isLightMode
+                  ? BoxDecoration(
+                      borderRadius: BorderRadius.circular(9999),
+                      border: Border.all(
+                        color: const Color(0xF5FFFFFF),
+                        width: 1,
                       ),
-                      GlassTab(
-                        icon: Icon(Icons.explore_outlined),
-                        activeIcon: Icon(Icons.explore),
-                        label: '探索',
-                      ),
-                      GlassTab(
-                        icon: Icon(Icons.settings_outlined),
-                        activeIcon: Icon(Icons.settings_rounded),
-                        label: '设置',
-                      ),
-                    ],
-                    selectedIndex: widget.selectedIndex,
-                    onTabSelected: _onTabSelected,
-                    barHeight: 56,
-                    horizontalPadding: 0,
-                    verticalPadding: 0,
-                    barBorderRadius: 9999,
-                    indicatorBorderRadius: 9999,
-                    settings: const LiquidGlassSettings(
-                      glassColor: Color(0x66000000),
-                      bodyMode: GlassBodyMode.clear,
-                      thickness: 10,
-                      blur: 2,
-                      lightIntensity: 0.25,
-                      ambientStrength: 0,
-                      refractiveIndex: 1.19,
-                      chromaticAberration: 0.008,
-                      shadowElevation: 0,
+                    )
+                  : null,
+              child: Listener(
+                onPointerDown: _onPointerDown,
+                onPointerMove: _onPointerMove,
+                onPointerUp: _onPointerUp,
+                onPointerCancel: _onPointerCancel,
+                child: GlassTabBar.bottom(
+                  tabs: const [
+                    GlassTab(
+                      icon: Icon(Icons.home_outlined),
+                      activeIcon: Icon(Icons.home_rounded),
+                      label: '首页',
                     ),
-                    indicatorSettings: const LiquidGlassSettings(
-                      refractiveIndex: 1.18,
-                      chromaticAberration: 0.025,
+                    GlassTab(
+                      icon: Icon(Icons.explore_outlined),
+                      activeIcon: Icon(Icons.explore),
+                      label: '探索',
                     ),
-                    quality: GlassQuality.premium,
-                    backgroundQuality: GlassQuality.premium,
-                    maskingQuality: MaskingQuality.high,
-                    enableBlend: true,
-                    indicatorColor: const Color(0x66000000),
-                    interactionGlowColor: const Color(0x20FFFFFF),
-                    indicatorPinchStrength: _isJellyDragging ? 0.7 : 0.0,
-                    indicatorExpansion: _isJellyDragging
-                        ? const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8)
-                        : EdgeInsets.zero,
-                    innerBlur: 6,
-                    pressScale: 1.06,
-                    selectedIconColor: Colors.white,
-                    selectedLabelColor: Colors.white,
-                    unselectedIconColor: Colors.white,
-                    unselectedLabelColor: Colors.white,
+                    GlassTab(
+                      icon: Icon(Icons.settings_outlined),
+                      activeIcon: Icon(Icons.settings_rounded),
+                      label: '设置',
+                    ),
+                  ],
+                  selectedIndex: widget.selectedIndex,
+                  onTabSelected: _onTabSelected,
+                  barHeight: 56,
+                  horizontalPadding: 0,
+                  verticalPadding: 0,
+                  barBorderRadius: 9999,
+                  indicatorBorderRadius: 9999,
+                  settings: LiquidGlassSettings(
+                    glassColor: isLightMode
+                        ? const Color(0xF0FFFFFF)
+                        : const Color(0x66000000),
+                    bodyMode: GlassBodyMode.clear,
+                    thickness: 10,
+                    blur: 2,
+                    lightIntensity: 0.25,
+                    ambientStrength: 0,
+                    refractiveIndex: 1.19,
+                    chromaticAberration: 0.008,
+                    shadowElevation: isLightMode ? 0.55 : 0,
+                    rimLight: isLightMode ? 1 : 0,
                   ),
+                  indicatorSettings: LiquidGlassSettings(
+                    glassColor: isLightMode
+                        ? const Color(0x18000000)
+                        : const Color(0x00FFFFFF),
+                    bodyMode: isLightMode
+                        ? GlassBodyMode.clear
+                        : GlassBodyMode.adaptive,
+                    refractiveIndex: 1.18,
+                    chromaticAberration: 0.025,
+                    rimShade: isLightMode ? 0.12 : 0,
+                    rimLight: isLightMode ? 0.35 : 0,
+                  ),
+                  quality: GlassQuality.premium,
+                  backgroundQuality: GlassQuality.premium,
+                  maskingQuality: MaskingQuality.high,
+                  enableBlend: true,
+                  indicatorColor: isLightMode
+                      ? const Color(0x26000000)
+                      : const Color(0x66000000),
+                  interactionGlowColor: const Color(0x20FFFFFF),
+                  indicatorPinchStrength: _isJellyDragging ? 0.7 : 0.0,
+                  indicatorExpansion: _isJellyDragging
+                      ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                      : EdgeInsets.zero,
+                  innerBlur: 6,
+                  pressScale: 1.06,
+                  selectedIconColor: contentColor,
+                  selectedLabelColor: contentColor,
+                  unselectedIconColor: unselectedContentColor,
+                  unselectedLabelColor: unselectedContentColor,
                 ),
               ),
             ),
           ),
         ),
-      );
+      ),
+    );
+  }
 }

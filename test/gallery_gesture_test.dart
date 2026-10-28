@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:review_x/core/storage/storage_service.dart';
 import 'package:review_x/core/utils/haptic_feedback_util.dart';
 import 'package:review_x/presentation/media_page.dart';
@@ -144,5 +145,65 @@ void main() {
     expect(selectedHero.enabled, isTrue);
     expect(tester.takeException(), isNull);
     expect(find.byType(ErrorWidget), findsNothing);
+  });
+
+  testWidgets('liquid glass gallery controls are removed during return',
+      (tester) async {
+    await storage.setUseLiquidGlass(true);
+    const media = [
+      SocialMedia(preview: 'https://gallery-test.invalid/return-one.png'),
+      SocialMedia(preview: 'https://gallery-test.invalid/return-two.png'),
+    ];
+    await _cacheImages(tester, media.map((item) => item.preview).toList());
+    final scope = Object();
+    final navigatorKey = GlobalKey<NavigatorState>();
+
+    await tester.pumpWidget(ProviderScope(
+      overrides: [storageServiceProvider.overrideWithValue(storage)],
+      child: MaterialApp(
+        navigatorKey: navigatorKey,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: GestureDetector(
+                key: const ValueKey('open-glass-gallery'),
+                onTap: () => navigatorKey.currentState!.push<void>(
+                  MediaGalleryRoute<void>(
+                    child: MediaPage(
+                      media: media,
+                      index: 0,
+                      heroScope: scope,
+                    ),
+                  ),
+                ),
+                child: Hero(
+                  tag: mediaGalleryHeroTag(scope, 0),
+                  flightShuttleBuilder: mediaGalleryHeroFlightShuttleBuilder,
+                  child: const SizedBox(
+                    width: 120,
+                    height: 80,
+                    child: ColoredBox(color: Colors.blue),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.byKey(const ValueKey('open-glass-gallery')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 320));
+    expect(find.byType(GlassButton), findsNWidgets(2));
+    expect(
+        find.byKey(const ValueKey('gallery-thumbnail-strip')), findsOneWidget);
+
+    navigatorKey.currentState!.pop();
+    await tester.pump();
+    expect(find.byType(GlassButton), findsNothing);
+    expect(find.byKey(const ValueKey('gallery-thumbnail-strip')), findsNothing);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
   });
 }

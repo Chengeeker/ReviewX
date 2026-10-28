@@ -274,8 +274,8 @@ class MediaGalleryRoute<T> extends PageRouteBuilder<T> {
           opaque: false,
           barrierDismissible: false,
           barrierColor: Colors.black,
-          transitionDuration: const Duration(milliseconds: 280),
-          reverseTransitionDuration: const Duration(milliseconds: 240),
+          transitionDuration: const Duration(milliseconds: 330),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
           pageBuilder: (_, __, ___) => child,
           transitionsBuilder: (_, animation, __, child) => FadeTransition(
             opacity: animation,
@@ -318,6 +318,8 @@ class _MediaPageState extends ConsumerState<MediaPage>
       GlobalKey<ExtendedImageSlidePageState>();
   late int _index = widget.index;
   bool _saving = false, _showChrome = true;
+  bool _isReturning = false;
+  Animation<double>? _routeAnimation;
   bool _thumbnailUserScrolling = false, _thumbnailSettling = false;
   bool _mainUserScrolling = false;
   int _thumbnailSyncEpoch = 0;
@@ -328,7 +330,21 @@ class _MediaPageState extends ConsumerState<MediaPage>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final routeAnimation = ModalRoute.of(context)?.animation;
+    if (!identical(routeAnimation, _routeAnimation)) {
+      _routeAnimation?.removeStatusListener(_handleRouteAnimationStatus);
+      _routeAnimation = routeAnimation;
+      _isReturning = routeAnimation?.status == AnimationStatus.reverse;
+      routeAnimation?.addStatusListener(_handleRouteAnimationStatus);
+    }
     _warmAdjacentImage();
+  }
+
+  void _handleRouteAnimationStatus(AnimationStatus status) {
+    final isReturning = status == AnimationStatus.reverse ||
+        (_isReturning && status != AnimationStatus.completed);
+    if (!mounted || isReturning == _isReturning) return;
+    setState(() => _isReturning = isReturning);
   }
 
   void _warmAdjacentImage({int direction = 1}) {
@@ -383,6 +399,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
   int? _pendingGalleryTapPointer;
   Timer? _galleryTapTimer;
   bool _galleryPointerCancelled = false;
+  ExtendedImageGestureState? _activeImageGestureState;
 
   Future<void> _save() async {
     if (_saving) return;
@@ -461,6 +478,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
   void _onPageChanged(int index) {
     _cancelPendingGalleryTap();
     _ignoreGalleryPointerUp = null;
+    _activeImageGestureState = null;
     _stopDoubleTapAnimation();
     if (index != _index && _thumbnailUserScrolling) {
       HapticFeedbackUtil.selection();
@@ -715,7 +733,9 @@ class _MediaPageState extends ConsumerState<MediaPage>
     final pending = _pendingGalleryTap;
     if (pending != null) {
       if ((position - pending).distance <= kDoubleTapSlop) {
-        _scheduleGalleryTap();
+        final state = _activeImageGestureState;
+        if (state != null) _handleImageDoubleTap(state, _index);
+        _cancelPendingGalleryTap();
         return;
       }
       _galleryTapTimer?.cancel();
@@ -767,11 +787,13 @@ class _MediaPageState extends ConsumerState<MediaPage>
   void dispose() {
     _cancelPendingGalleryTap();
     _ignoreGalleryPointerUp = null;
+    _activeImageGestureState = null;
     _stopDoubleTapAnimation();
     _doubleTapAnimationController.dispose();
     _pages.dispose();
     _thumbnailController.removeListener(_syncMainPageToThumbnail);
     _thumbnailController.dispose();
+    _routeAnimation?.removeStatusListener(_handleRouteAnimationStatus);
     unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
     super.dispose();
   }
@@ -890,6 +912,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
   Widget build(BuildContext context) {
     final useLiquidGlass = ref.watch(
         themeProvider.select((state) => state.useLiquidGlass));
+    final hideGlassControlsForReturn = useLiquidGlass && _isReturning;
     final currentMedia = widget.media[_index];
     final routeAnimation = ModalRoute.of(context)?.animation;
     return GlassPage(
@@ -1007,6 +1030,9 @@ class _MediaPageState extends ConsumerState<MediaPage>
                                   state,
                                   imageBuilder: (image, {imageGestureState}) {
                                     final gestureState = imageGestureState!;
+                                    if (index == _index) {
+                                      _activeImageGestureState = gestureState;
+                                    }
                                     final pager = gestureState.context
                                         .findAncestorStateOfType<
                                             ExtendedImageGesturePageViewState>();
@@ -1057,8 +1083,6 @@ class _MediaPageState extends ConsumerState<MediaPage>
                                   },
                                 );
                               },
-                              onDoubleTap: (state) =>
-                                  _handleImageDoubleTap(state, index),
                               initGestureConfigHandler: (_) => GestureConfig(
                                 minScale: 1.0,
                                 animationMinScale: 1.0,
@@ -1099,7 +1123,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
                 ),
                 ),
               ),
-              if (_hasThumbnailStrip)
+              if (_hasThumbnailStrip && !hideGlassControlsForReturn)
                 Positioned(
                   left: 12,
                   right: 12,
@@ -1116,7 +1140,7 @@ class _MediaPageState extends ConsumerState<MediaPage>
                     ),
                   ),
                 ),
-              if (currentMedia.video == null)
+              if (currentMedia.video == null && !hideGlassControlsForReturn)
                 Positioned(
                   top: 0,
                   left: 0,

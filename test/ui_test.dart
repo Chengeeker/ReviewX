@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:review_x/core/storage/storage_service.dart';
@@ -742,6 +743,58 @@ void main() {
     await tester.drag(list, const Offset(0, -450));
     await tester.pumpAndSettle();
     expect(scrollable.position.pixels, greaterThan(0));
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('liquid glass navigation follows light and dark appearances',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      StorageService.keyUseLiquidGlass: true,
+      'floating_nav': true,
+    });
+    final storage = await StorageService.init();
+
+    Future<GlassTabBar> pumpNavigation(Brightness brightness) async {
+      await tester.pumpWidget(ProviderScope(
+        key: UniqueKey(),
+        overrides: [
+          storageServiceProvider.overrideWithValue(storage),
+          appControllerProvider.overrideWith((ref) => AppController()),
+        ],
+        child: MaterialApp(
+          theme: ThemeData(brightness: brightness),
+          home: const HomePage(),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      return tester.widget<GlassTabBar>(find.byType(GlassTabBar));
+    }
+
+    final lightBar = await pumpNavigation(Brightness.light);
+    expect(lightBar.settings?.glassColor, const Color(0xF0FFFFFF));
+    expect(lightBar.settings?.rimLight, 1);
+    expect(lightBar.settings?.shadowElevation, 0.55);
+    expect(lightBar.indicatorSettings?.glassColor, const Color(0x18000000));
+    expect(lightBar.indicatorSettings?.bodyMode, GlassBodyMode.clear);
+    expect(lightBar.indicatorSettings?.rimShade, 0.12);
+    expect(lightBar.indicatorSettings?.rimLight, 0.35);
+    expect(lightBar.indicatorColor, const Color(0x26000000));
+    final lightRim = tester.widget<Container>(
+        find.byKey(const ValueKey('liquid-glass-light-rim')));
+    final rimDecoration = lightRim.foregroundDecoration! as BoxDecoration;
+    expect(rimDecoration.border, isA<Border>());
+    expect(
+        (rimDecoration.border! as Border).top.color, const Color(0xF5FFFFFF));
+
+    final darkBar = await pumpNavigation(Brightness.dark);
+    expect(darkBar.settings?.glassColor, const Color(0x66000000));
+    expect(darkBar.settings?.rimLight, 0);
+    expect(darkBar.settings?.shadowElevation, 0);
+    expect(darkBar.indicatorSettings?.glassColor, const Color(0x00FFFFFF));
+    expect(darkBar.indicatorSettings?.bodyMode, GlassBodyMode.adaptive);
+    expect(darkBar.indicatorSettings?.rimShade, 0);
+    expect(darkBar.indicatorSettings?.rimLight, 0);
+    expect(darkBar.indicatorColor, const Color(0x66000000));
+    expect(find.byKey(const ValueKey('liquid-glass-light-rim')), findsNothing);
     expect(tester.takeException(), isNull);
   });
   testWidgets('notifications route has its own visible page scaffold',
