@@ -179,7 +179,7 @@ class _ArticleMediaState extends State<ArticleMedia> {
         for (var i = 0; i < widget.media.length; i++)
           Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: GestureDetector(onTap: () {
+              child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () {
                 HapticFeedbackUtil.light();
                 final item = widget.media[i];
                 final page = MediaPage(

@@ -845,10 +845,11 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
                 message: label,
                 child: TextButton(
                     style: TextButton.styleFrom(
-                        foregroundColor: color ?? Colors.white,
-                        disabledForegroundColor: Colors.white38,
-                        minimumSize: const Size(48, 48),
-                        padding: const EdgeInsets.symmetric(horizontal: 4)),
+                            foregroundColor: color ?? Colors.white,
+                            disabledForegroundColor: Colors.white38,
+                            minimumSize: const Size(48, 48),
+                            padding: const EdgeInsets.symmetric(horizontal: 4))
+                        .copyWith(overlayColor: noPressedOverlay),
                     onPressed: onTap,
                     child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -887,7 +888,8 @@ class _ReviewVideoPlayerState extends ConsumerState<ReviewVideoPlayer>
             onPressed: disabled ? null : () => _deleteOwnPost(post),
             icon: const Icon(Icons.delete_outline),
             label: const Text('删除帖子'),
-            style: TextButton.styleFrom(foregroundColor: Colors.redAccent)),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent)
+                .copyWith(overlayColor: noPressedOverlay)),
       if (app.isUncertain(post.id))
         const Text('操作结果待核对，请在帖子详情刷新',
             style: TextStyle(color: Colors.amberAccent, fontSize: 12)),

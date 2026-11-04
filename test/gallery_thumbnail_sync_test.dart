@@ -49,7 +49,7 @@ void main() {
     ));
     await tester.tap(find.text('Open'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 320));
+    await tester.pump(const Duration(milliseconds: 360));
 
     final strip = find.byKey(const ValueKey('gallery-thumbnail-strip'));
     final thumbnails = tester.widget<PageView>(

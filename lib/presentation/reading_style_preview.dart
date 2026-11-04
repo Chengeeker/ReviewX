@@ -28,19 +28,13 @@ class ReadingStylePreview extends StatelessWidget {
       views: 2048);
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-            border: Border(
-                bottom: BorderSide(
-                    color: Theme.of(context).colorScheme.outlineVariant))),
-        child: ClipRect(
-          // Preserve timeline sizing; excess content is clipped, never scrolled.
-          child: OverflowBox(
-            alignment: Alignment.topCenter,
-            minHeight: 0,
-            maxHeight: double.infinity,
-            child: IgnorePointer(child: PostCard(post: _post)),
-          ),
+  Widget build(BuildContext context) => ClipRect(
+        // Preserve timeline sizing; excess content is clipped, never scrolled.
+        child: OverflowBox(
+          alignment: Alignment.topCenter,
+          minHeight: 0,
+          maxHeight: double.infinity,
+          child: IgnorePointer(child: PostCard(post: _post)),
         ),
       );
 }

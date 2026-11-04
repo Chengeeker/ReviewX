@@ -93,4 +93,61 @@ void main() {
     expect(calls, 1);
     expect(find.text('新加载的帖子'), findsOneWidget);
   });
+
+  testWidgets('cached home appends automatically near the bottom',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final storage = await StorageService.init();
+    final cachedPosts = List.generate(
+        20,
+        (index) => SocialPost(
+              id: '${100 + index}',
+              author: author,
+              text: List.filled(8, '缓存帖子内容，保持首页列表可滚动。').join(' '),
+            ));
+    await LocalXCache(storage).writeTimeline('1', 'for_you', cachedPosts);
+    final app = AppController(
+        client: TwitterClient()
+          ..session = const TwitterSession('auth_token=test; ct0=test', '1'));
+    var calls = 0;
+    String? requestedCursor = 'unset';
+    bool? requestedRefresh;
+    List<String>? requestedSeenIds;
+
+    await tester.pumpWidget(ProviderScope(
+        overrides: [
+          storageServiceProvider.overrideWithValue(storage),
+          appControllerProvider.overrideWith((ref) => app),
+        ],
+        child: MaterialApp(
+            home: Scaffold(
+                body: TimelinePage(
+          cacheKey: 'for_you',
+          load: (String? cursor, {bool? refresh, List<String>? seenIds}) async {
+            calls++;
+            requestedCursor = cursor;
+            requestedRefresh = refresh;
+            requestedSeenIds = seenIds;
+            return const PostPage([latest], null);
+          },
+        )))));
+
+    await tester.pumpAndSettle();
+    expect(calls, 0);
+    await tester.drag(find.byType(ListView), const Offset(0, -3000));
+    await tester.pumpAndSettle();
+
+    expect(calls, 1);
+    expect(requestedCursor, isNull);
+    expect(requestedRefresh, isFalse);
+    expect(requestedSeenIds, cachedPosts.map((post) => post.id).toList());
+    await tester.scrollUntilVisible(find.text('新加载的帖子'), 500,
+        scrollable: find
+            .descendant(
+                of: find.byType(ListView), matching: find.byType(Scrollable))
+            .first);
+    expect(find.text('新加载的帖子'), findsOneWidget);
+    expect(calls, 1);
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -386,8 +386,9 @@ class PostCard extends ConsumerWidget {
                                                           await controller
                                                               .deletePost(
                                                                   current);
-                                                          if (!context.mounted)
+                                                          if (!context.mounted) {
                                                             return;
+                                                          }
                                                           if (detail) {
                                                             Navigator.of(
                                                                     context)
@@ -1032,6 +1033,8 @@ class _MediaGridState extends ConsumerState<MediaGrid> {
             ]));
         return GestureDetector(
           key: ValueKey('post-media-${widget.post.id}-$index'),
+          // Hero's empty flight placeholder must still own this tap target.
+          behavior: HitTestBehavior.opaque,
           onTap: () {
             HapticFeedbackUtil.light();
             final page = MediaPage(

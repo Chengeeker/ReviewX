@@ -4,7 +4,9 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.drawable.RippleDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -418,6 +420,7 @@ class XLoginActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             addView(Button(this@XLoginActivity).apply {
                 text = "关闭辅助登录"
+                disableTouchRipple()
                 setOnClickListener { closePopup() }
             }, LinearLayout.LayoutParams(-1, dp(48)))
             addView(child, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -713,6 +716,32 @@ class XLoginActivity : Activity() {
         backConfirmation = dialog
         dialog.setOnDismissListener { if (backConfirmation === dialog) backConfirmation = null }
         dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).disableTouchRipple()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).disableTouchRipple()
+    }
+
+    private fun Button.disableTouchRipple() {
+        val ripple = background?.mutate() as? RippleDrawable ?: return
+        val attributes = obtainStyledAttributes(intArrayOf(android.R.attr.colorControlHighlight))
+        val original = try {
+            attributes.getColorStateList(0) ?: ColorStateList.valueOf(Color.TRANSPARENT)
+        } finally {
+            attributes.recycle()
+        }
+        ripple.setColor(ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_pressed),
+                intArrayOf(android.R.attr.state_focused),
+                intArrayOf(android.R.attr.state_hovered),
+                intArrayOf()
+            ),
+            intArrayOf(
+                Color.TRANSPARENT,
+                original.getColorForState(intArrayOf(android.R.attr.state_focused), original.defaultColor),
+                original.getColorForState(intArrayOf(android.R.attr.state_hovered), original.defaultColor),
+                Color.TRANSPARENT
+            )
+        ))
     }
 
     override fun onDestroy() {

@@ -91,11 +91,30 @@ void main() {
           'https://picsum.photos/id/1015/1200/500',
           cache: true,
           headers: XRequestHeaders.media);
-      imageCache.putIfAbsent(
-          provider,
-          () => OneFrameImageStreamCompleter(
-              Future.value(ImageInfo(image: image))));
-      addTearDown(() => imageCache.evict(provider));
+      final keys = <Object>{provider};
+      for (final ratio in [2.4, 1.4]) {
+        final width =
+            (size.height * 0.42 * ratio).clamp(0, size.width - 24).ceil();
+        final resized = ExtendedImage.network(
+          'https://picsum.photos/id/1015/1200/500',
+          cache: true,
+          headers: XRequestHeaders.media,
+          cacheWidth: width,
+        ).image;
+        keys.add(await resized.obtainKey(ImageConfiguration.empty));
+      }
+      for (final key in keys) {
+        imageCache.putIfAbsent(
+            key,
+            () => OneFrameImageStreamCompleter(
+                Future.value(ImageInfo(image: image.clone()))));
+      }
+      image.dispose();
+      addTearDown(() {
+        for (final key in keys) {
+          imageCache.evict(key);
+        }
+      });
       await pumpSettings(tester, const ReadingSettingsPage(), textScale: 1.4);
       final preview = find.byType(ReadingStylePreview);
       final controls =
@@ -136,7 +155,8 @@ void main() {
               .first)
           .position
           .pixels;
-      await tester.drag(preview, const Offset(0, -120));
+      // The preview deliberately ignores pointers; drag its bounds anyway.
+      await tester.drag(preview, const Offset(0, -120), warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(tester.getTopLeft(card), cardPosition);
       expect(
@@ -150,12 +170,9 @@ void main() {
       final clip = tester.widget<ClipRRect>(
           find.descendant(of: grid, matching: find.byType(ClipRRect)).first);
       expect(clip.borderRadius, BorderRadius.circular(24));
-      final layout = tester.widget<GridView>(
-          find.descendant(of: grid, matching: find.byType(GridView)));
-      expect(
-          (layout.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount)
-              .childAspectRatio,
-          1.4);
+      final layout = tester.widget<AspectRatio>(
+          find.descendant(of: grid, matching: find.byType(AspectRatio)).first);
+      expect(layout.aspectRatio, 1.4);
       expect(find.textContaining('记录生活中的片刻'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });

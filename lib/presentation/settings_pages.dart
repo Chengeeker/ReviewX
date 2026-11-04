@@ -1,15 +1,13 @@
-import 'dart:convert';
+export 'webdav_backup_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/storage/storage_service.dart';
 import '../core/widgets/frosted_app_bar.dart';
 import '../core/widgets/app_section_card.dart';
 import '../core/utils/haptic_feedback_util.dart';
 import '../core/storage/reading_settings.dart';
 import '../core/theme/theme_provider.dart';
-import '../core/services/settings_backup.dart';
 import '../twitter/auth/app_controller.dart';
 import '../core/services/notification_poll.dart';
 import 'timeline_page.dart';
@@ -447,7 +445,6 @@ class StorageSettingsPage extends ConsumerWidget {
                   margin: EdgeInsets.zero,
                   child: Column(children: [
                     for (final video in [false, true]) ...[
-                      if (video) const Divider(height: 1, indent: 72),
                       ListTile(
                           leading: Icon(
                               video
@@ -546,193 +543,5 @@ class HistoryPage extends ConsumerWidget {
                             })
                     ]));
     });
-  }
-}
-
-class BackupSettingsPage extends ConsumerStatefulWidget {
-  const BackupSettingsPage({super.key});
-  @override
-  ConsumerState<BackupSettingsPage> createState() => _BackupSettingsPageState();
-}
-
-class _BackupSettingsPageState extends ConsumerState<BackupSettingsPage> {
-  static const _secure = FlutterSecureStorage(
-      aOptions: AndroidOptions(encryptedSharedPreferences: true));
-  final _url = TextEditingController(),
-      _user = TextEditingController(),
-      _password = TextEditingController();
-  bool _busy = false;
-  String? _status;
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final data =
-          jsonDecode(await _secure.read(key: 'webdav_config') ?? '{}') as Map;
-      if (!mounted) return;
-      _url.text = '${data['url'] ?? ''}';
-      _user.text = '${data['user'] ?? ''}';
-      _password.text = '${data['password'] ?? ''}';
-    } catch (_) {
-      if (mounted) setState(() => _status = '读取 WebDAV 配置失败');
-    }
-  }
-
-  @override
-  void dispose() {
-    _url.dispose();
-    _user.dispose();
-    _password.dispose();
-    super.dispose();
-  }
-
-  Future<void> _run(bool upload) async {
-    if (_busy) return;
-    if (!upload) {
-      final confirm = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-                  title: const Text('恢复 WebDAV 设置？'),
-                  content: const Text('将覆盖本机外观和阅读设置。'),
-                  actions: [
-                    TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('取消')),
-                    TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('恢复'))
-                  ]));
-      if (confirm != true) return;
-    }
-    setState(() {
-      _busy = true;
-      _status = null;
-    });
-    try {
-      final backup = SettingsBackup(ref.read(storageServiceProvider));
-      if (upload) {
-        await backup.upload(_url.text.trim(), _user.text, _password.text);
-      } else {
-        await backup.download(_url.text.trim(), _user.text, _password.text);
-        ref.read(readingProvider.notifier).reload();
-        ref.read(themeProvider.notifier).reload();
-      }
-      await _secure.write(
-          key: 'webdav_config',
-          value: jsonEncode({
-            'url': _url.text.trim(),
-            'user': _user.text,
-            'password': _password.text
-          }));
-      if (mounted) setState(() => _status = upload ? '设置已备份到 WebDAV' : '设置已恢复');
-    } catch (error) {
-      if (mounted) setState(() => _status = '$error');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    Widget section(String title, Widget child) => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
-              child: Text(title, style: theme.textTheme.titleSmall),
-            ),
-            AppSectionCard(margin: EdgeInsets.zero, child: child),
-          ],
-        );
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('WebDAV 设置备份')),
-      body: ListView(
-        padding: EdgeInsets.fromLTRB(
-            16, 12, 16, MediaQuery.paddingOf(context).bottom + 24),
-        children: [
-          section(
-            '连接信息',
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Text(
-                    '指定已存在的 HTTPS WebDAV 文件夹。备份外观和阅读设置；账号凭据、浏览历史与设备刷新率留在本机。',
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                      controller: _url,
-                      enabled: !_busy,
-                      decoration:
-                          const InputDecoration(labelText: 'HTTPS WebDAV 文件夹')),
-                  const SizedBox(height: 12),
-                  TextField(
-                      controller: _user,
-                      enabled: !_busy,
-                      decoration: const InputDecoration(labelText: '用户名')),
-                  const SizedBox(height: 12),
-                  TextField(
-                      controller: _password,
-                      enabled: !_busy,
-                      obscureText: true,
-                      enableSuggestions: false,
-                      autocorrect: false,
-                      decoration: const InputDecoration(labelText: '密码')),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
-          section(
-            '设置同步',
-            Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.cloud_upload_outlined),
-                  title: const Text('立即备份'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  enabled: !_busy,
-                  onTap: _busy ? null : () => _run(true),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.cloud_download_outlined),
-                  title: const Text('恢复设置'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  enabled: !_busy,
-                  onTap: _busy ? null : () => _run(false),
-                ),
-                if (_busy) ...[
-                  const Divider(height: 1),
-                  const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: LinearProgressIndicator(),
-                  ),
-                ],
-                if (_status != null) ...[
-                  const Divider(height: 1),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      _status!,
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

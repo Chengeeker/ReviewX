@@ -14,7 +14,7 @@ import 'settings_pages.dart';
 import 'theme_settings_page.dart';
 import 'network_settings_page.dart';
 
-const _appVersion = '1.8.10';
+const _appVersion = '1.9.5';
 
 /// Review-style grouped settings, with X-specific account actions retained.
 class SettingsPane extends ConsumerWidget {
@@ -256,7 +256,7 @@ class SettingsPane extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: Text(
                 title,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -266,21 +266,7 @@ class SettingsPane extends ConsumerWidget {
             ),
             AppSectionCard(
               margin: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  for (var i = 0; i < items.length; i++) ...[
-                    if (i > 0)
-                      Divider(
-                        height: 1,
-                        thickness: 1,
-                        indent: 56,
-                        color:
-                            colorScheme.outlineVariant.withValues(alpha: 0.5),
-                      ),
-                    items[i],
-                  ],
-                ],
-              ),
+              child: Column(children: items),
             ),
           ],
         );
@@ -327,7 +313,7 @@ class SettingsPane extends ConsumerWidget {
           ),
           row(
             icon: Icons.cloud_sync_outlined,
-            title: 'WebDAV 设置备份',
+            title: 'WebDAV备份',
             onTap: () => open(const BackupSettingsPage()),
           ),
         ]),
@@ -486,7 +472,6 @@ class AccountSettingsPage extends ConsumerWidget {
                       size: 24, color: colors.onSurfaceVariant),
                   onTap: () => _showExportCookie(context, controller),
                 ),
-                const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.verified_user_outlined, size: 24),
                   title: const Text('验证登录状态'),
@@ -513,7 +498,6 @@ class AccountSettingsPage extends ConsumerWidget {
                           }
                         },
                 ),
-                const Divider(height: 1),
                 ListTile(
                   leading:
                       Icon(Icons.logout_rounded, size: 24, color: colors.error),

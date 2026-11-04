@@ -175,7 +175,6 @@ class _CacheManagementPageState extends ConsumerState<CacheManagementPage> {
                   ),
                   if (!_loading && _error == null) ...[
                     const SizedBox(height: 16),
-                    const Divider(height: 1),
                     const SizedBox(height: 8),
                     _CacheRow(label: '图片与媒体', bytes: _stats.imageBytes),
                     _CacheRow(label: '网络与临时文件', bytes: _stats.networkBytes),
@@ -214,12 +213,16 @@ class _CacheManagementPageState extends ConsumerState<CacheManagementPage> {
             ),
           ),
           const SizedBox(height: 24),
-          Text(
-            '自动清理规则',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w700),
+          Padding(
+            // Match the card's 10dp outer margin plus its 16dp content inset.
+            padding: const EdgeInsets.symmetric(horizontal: 26),
+            child: Text(
+              '自动清理规则',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
           ),
           const SizedBox(height: 12),
           AppSectionCard(

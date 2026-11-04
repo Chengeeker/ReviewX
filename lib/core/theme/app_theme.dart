@@ -5,6 +5,51 @@ import '../utils/haptic_feedback_util.dart';
 class AppTheme {
   AppTheme._();
 
+  static ThemeData _withoutTouchInk(ThemeData theme) {
+    ButtonStyle button(ButtonStyle? style) =>
+        (style ?? const ButtonStyle()).copyWith(overlayColor: noPressedOverlay);
+    return theme.copyWith(
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      iconButtonTheme: IconButtonThemeData(
+        style: button(theme.iconButtonTheme.style),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: button(theme.textButtonTheme.style),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: button(theme.filledButtonTheme.style),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: button(theme.outlinedButtonTheme.style),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: button(theme.elevatedButtonTheme.style),
+      ),
+      radioTheme: theme.radioTheme.copyWith(overlayColor: noPressedOverlay),
+      checkboxTheme: theme.checkboxTheme.copyWith(
+        overlayColor: noPressedOverlay,
+      ),
+      switchTheme: theme.switchTheme.copyWith(overlayColor: noPressedOverlay),
+      tabBarTheme: theme.tabBarTheme.copyWith(overlayColor: noPressedOverlay),
+      navigationBarTheme: theme.navigationBarTheme.copyWith(
+        overlayColor: noPressedOverlay,
+      ),
+      searchBarTheme: theme.searchBarTheme.copyWith(
+        overlayColor: noPressedOverlay,
+      ),
+      sliderTheme: theme.sliderTheme.copyWith(
+        overlayColor: WidgetStateColor.resolveWith(
+          (states) => states.contains(WidgetState.pressed) ||
+                  states.contains(WidgetState.dragged)
+              ? Colors.transparent
+              : theme.sliderTheme.overlayColor ??
+                  theme.colorScheme.primary.withValues(alpha: .1),
+        ),
+      ),
+    );
+  }
+
   static const _overlayPageTransitions = PageTransitionsTheme(
     builders: {
       TargetPlatform.android: _OverlayPageTransitionsBuilder(),
@@ -136,7 +181,7 @@ class AppTheme {
       fontWeightAdjustment: fontWeightAdjustment,
     );
 
-    return ThemeData(
+    return _withoutTouchInk(ThemeData(
       useMaterial3: true,
       pageTransitionsTheme: _overlayPageTransitions,
       splashFactory: const HapticSplashFactory(),
@@ -268,7 +313,7 @@ class AppTheme {
         color: scheme.outlineVariant.withValues(alpha: 0.3),
         thickness: 0.5,
       ),
-    );
+    ));
   }
 
   static ThemeData darkTheme({
@@ -305,7 +350,7 @@ class AppTheme {
       fontWeightAdjustment: fontWeightAdjustment,
     );
 
-    return ThemeData(
+    return _withoutTouchInk(ThemeData(
       useMaterial3: true,
       pageTransitionsTheme: _overlayPageTransitions,
       splashFactory: const HapticSplashFactory(),
@@ -446,7 +491,7 @@ class AppTheme {
             : effectiveScheme.outlineVariant.withValues(alpha: 0.2),
         thickness: 0.5,
       ),
-    );
+    ));
   }
 
   static NavigationBarThemeData scaleNavigationBarTheme(

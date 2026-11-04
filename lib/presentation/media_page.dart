@@ -102,11 +102,12 @@ Widget mediaGalleryHeroFlightShuttleBuilder(
 /// Captures the complete image plane and its crop relative to its Hero.
 /// ExtendedImage uses its own RenderBox, separate from Flutter's RenderImage.
 class _HeroImageGeometry {
-  const _HeroImageGeometry(this.image, this.rect, this.radius);
+  const _HeroImageGeometry(this.image, this.rect, this.radius, this.viewport);
 
   final ui.Image image;
   final Rect rect;
   final BorderRadius radius;
+  final Size viewport;
 
   static _HeroImageGeometry? capture(BuildContext context) {
     final root = context.findRenderObject();
@@ -182,6 +183,7 @@ class _HeroImageGeometry {
           image,
           MatrixUtils.transformRect(object.getTransformTo(root), fullImageRect),
           radius,
+          root.size,
         );
         return;
       }
@@ -244,7 +246,16 @@ class _HeroReturnPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final progress = (1 - animation.value).clamp(0.0, 1.0);
+    // A pop-to-push diversion reuses this painter but replaces the Hero animation.
+    final delta = Offset(target.viewport.width - source.viewport.width,
+        target.viewport.height - source.viewport.height);
+    final distanceSquared = delta.distanceSquared;
+    final progress = (distanceSquared > 0.001
+            ? ((size.width - source.viewport.width) * delta.dx +
+                    (size.height - source.viewport.height) * delta.dy) /
+                distanceSquared
+            : 1 - animation.value)
+        .clamp(0.0, 1.0);
     final rect = Rect.lerp(source.rect, target.rect, progress)!;
     final radius = BorderRadius.lerp(source.radius, target.radius, progress)!;
     canvas.save();
@@ -1350,7 +1361,7 @@ class _GalleryGlassIconButtonState extends State<_GalleryGlassIconButton> {
               foregroundColor: Colors.white,
               backgroundColor: Colors.transparent,
               shape: const CircleBorder(),
-            ),
+            ).copyWith(overlayColor: noPressedOverlay),
             onPressed: widget.onPressed,
             icon: widget.icon,
           ),

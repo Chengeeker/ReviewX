@@ -778,6 +778,11 @@ void main() {
     expect(lightBar.indicatorSettings?.rimShade, 0.12);
     expect(lightBar.indicatorSettings?.rimLight, 0.35);
     expect(lightBar.indicatorColor, const Color(0x26000000));
+    final lightScheme =
+        Theme.of(tester.element(find.byType(GlassTabBar))).colorScheme;
+    expect(lightBar.selectedIconColor, lightScheme.primary);
+    expect(lightBar.selectedLabelColor, lightScheme.primary);
+    expect(lightBar.unselectedIconColor, lightScheme.onSurfaceVariant);
     final lightRim = tester.widget<Container>(
         find.byKey(const ValueKey('liquid-glass-light-rim')));
     final rimDecoration = lightRim.foregroundDecoration! as BoxDecoration;
@@ -789,11 +794,17 @@ void main() {
     expect(darkBar.settings?.glassColor, const Color(0x66000000));
     expect(darkBar.settings?.rimLight, 0);
     expect(darkBar.settings?.shadowElevation, 0);
-    expect(darkBar.indicatorSettings?.glassColor, const Color(0x00FFFFFF));
-    expect(darkBar.indicatorSettings?.bodyMode, GlassBodyMode.adaptive);
+    expect(darkBar.indicatorSettings?.glassColor, const Color(0x26FFFFFF));
+    expect(darkBar.indicatorSettings?.bodyMode, GlassBodyMode.clear);
     expect(darkBar.indicatorSettings?.rimShade, 0);
     expect(darkBar.indicatorSettings?.rimLight, 0);
-    expect(darkBar.indicatorColor, const Color(0x66000000));
+    expect(darkBar.indicatorColor, const Color(0x26FFFFFF));
+    final darkScheme =
+        Theme.of(tester.element(find.byType(GlassTabBar))).colorScheme;
+    expect(darkBar.selectedIconColor, darkScheme.primary);
+    expect(darkBar.selectedLabelColor, darkScheme.primary);
+    expect(darkBar.unselectedIconColor, Colors.white);
+    expect(darkBar.unselectedLabelColor, Colors.white);
     expect(find.byKey(const ValueKey('liquid-glass-light-rim')), findsNothing);
     expect(tester.takeException(), isNull);
   });

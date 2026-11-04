@@ -301,7 +301,8 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
                 final progress = metrics.pixels / metrics.maxScrollExtent;
                 final remaining = metrics.maxScrollExtent - metrics.pixels;
                 if ((progress >= 0.60 || remaining < 1500) &&
-                    _cursor != null &&
+                    (_cursor != null || _restoredSnapshot) &&
+                    _error == null &&
                     !_loading &&
                     !_refreshing) {
                   unawaited(_fetch());
@@ -760,8 +761,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       TextButton(
           onPressed: action,
           style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              foregroundColor: Theme.of(context).colorScheme.onSurface),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  foregroundColor: Theme.of(context).colorScheme.onSurface)
+              .copyWith(overlayColor: noPressedOverlay),
           child: Text.rich(TextSpan(children: [
             TextSpan(
                 text: _user.knownCounts.contains(key) ? '$value ' : '— ',
@@ -849,13 +851,16 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         : TextButton(
                             onPressed: () => setState(() => _category = index),
                             style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 16),
-                                foregroundColor: _category == index
-                                    ? Theme.of(context).colorScheme.onSurface
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 16),
+                                    foregroundColor: _category == index
+                                        ? Theme.of(context)
+                                            .colorScheme
+                                            .onSurface
+                                        : Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant)
+                                .copyWith(overlayColor: noPressedOverlay),
                             child: label(index)))
             ])));
   }
@@ -874,6 +879,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   height: bannerHeight,
                   child: _user.banner.isNotEmpty && safeMediaUrl(_user.banner)
                       ? GestureDetector(
+                          behavior: HitTestBehavior.opaque,
                           onTap: () {
                             HapticFeedbackUtil.light();
                             _image(_user.banner, _profileBannerHeroScope);
@@ -893,6 +899,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 left: 16,
                 top: showBanner ? bannerHeight - 38 : 8,
                 child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
                     onTap: _user.avatar.isNotEmpty
                         ? () {
                             HapticFeedbackUtil.light();
