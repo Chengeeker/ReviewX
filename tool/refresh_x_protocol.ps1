@@ -1,5 +1,5 @@
 param(
-  [string]$ProtocolPath = (Join-Path $PSScriptRoot '../assets/twitter_protocol.json'),
+  [string]$ProtocolPath = (Join-Path $PSScriptRoot '../app/src/main/assets/twitter_protocol.json'),
   [string]$WebShellUrl = 'https://x.com/i/jf/'
 )
 

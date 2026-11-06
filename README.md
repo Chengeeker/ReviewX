@@ -1,165 +1,21 @@
-<div align="center">
-
 # ReviewX
 
-**一款面向 X（原 Twitter）的 Flutter 客户端，专注于时间线阅读与轻量互动。**
+ReviewX 是一款面向 X 的原生 Android 客户端，使用 Kotlin 和 Jetpack Compose。支持双时间线、探索与搜索、帖子互动、图片画廊、视频播放、WebDAV 备份及本地设置。
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)](https://dart.dev)
-[![Platform](https://img.shields.io/badge/Platform-Android%20arm64--v8a-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+## 构建
 
-*Material Design 3 界面，支持浅色、深色和动态配色。*
-
----
-
-</div>
-
-## 🌟 功能与设计
-
-### 🏠 时间线与探索
-
-- **首页时间线**：切换“为你推荐”和“正在关注”，显示内嵌媒体和帖子互动；连续回复会依据真实回复关系用头像连线呈现为一组对话。
-- **快速重开**：本机按账号保留有限的资料和首页首屏快照，打开时先显示已有内容，再向 X 刷新；快照不含登录 Cookie 或翻页游标。
-- **探索**：浏览 X 返回的趋势及地区信息、推荐关注与搜索结果。
-- **侧边栏**：进入个人主页、书签、通知和本机浏览历史；历史记录在应用内重新打开帖子。
-- **X/Twitter 网页链接**：Android 可将 X 和 Twitter 域名链接交给 ReviewX，在应用内打开帖子、个人主页、搜索、探索、书签和通知；其他 X 页面使用应用内浏览器。
-
-### 📝 阅读与互动
-
-- 阅读帖子详情、回复、用户帖子/媒体列表和关系列表；支持关注、点赞、转发、书签以及文字发帖、回复和引用。
-- 帖子卡片将回复、转发、喜欢、查看次数、书签和分享压缩在同一行；书签名称统一为“书签”。
-- 回复支持相关、最近、喜欢排序；详情中显示回复对象和会话层级，引用内容单独呈现，正文与媒体采用全宽排版。
-- 个人主页支持推文/亮点、回复、转推、照片/视频、文章及自己的喜欢；资料统计兼容 X 新旧字段。
-- 查看 X 返回的文章、链接卡片和投票信息；点信息流图片可连续放大进入全屏画廊，返回时从当前显示图片收回，并逐步匹配缩略图的实际图像区域与圆角裁切；多图支持同步滑动/点选的缩略图条，控件覆盖在全屏画面上且不会因显隐而重置图片位置。返回和保存按钮使用局部磨砂效果。图片查看器复用信息流缓存，只在原图能明显增加屏幕细节时加载大图，并支持缩放和保存原图。
-- 视频播放器复用 Review 的倍速、清晰度选择、横竖屏切换和手势控制；底部提供评论、转发、喜欢和书签，支持视频保存与分享。切换媒体或进入后台时暂停播放，不提供小窗播放。阅读设置可开启默认静音，右侧滑动调整应用内音量，不修改手机系统媒体音量。
-- 对 X 响应中提供完整中文译文的帖子，可选择自动显示 Grok 翻译，也可在帖子内手动切换原文/译文。
-- 通过设置调整主题、帖子显示和阅读样式；设置支持 WebDAV 备份与恢复。
-- 设置页可查看并复制当前 X 登录 Cookie；只有用户明确选择复制时才写入系统剪贴板。
-- 网络设置提供自动、直连、手动 HTTP 代理及匿名连接测试，覆盖应用内 API、图片、视频、下载和 X 登录网页；保存后完全关闭并重新打开应用生效。直连仍受手机 VPN 路由影响；手动代理需填写实际地址和端口，目前不支持 SOCKS、代理认证、PAC 或机场订阅。
-
-### 🔐 账号与登录说明
-
-- **X 官方网页登录（首选路径）**：
-  - 点击登录直接打开 X 官方全屏登录页面；账号、密码及两步验证完全在 X 官方页面中进行，ReviewX **绝不收集也不保存用户密码**。
-  - ⚠️ **关于通行密钥（Passkey）的重要说明**：
-    - 因 Android Credential Manager 与 W3C WebAuthn 规范要求严格校验域名的数字资产关联（Digital Asset Links / `assetlinks.json`），第三方应用内嵌 WebView 无法代表 `x.com` 请求系统级通行密钥。
-    - 若您的 X 账号开启了通行密钥，提交用户名后页面通常会提示“通行密钥或安全密钥发生问题，请试试其他方式”。**此时请手动点击【使用其他方法】（或【使用其他方式】）**，切换到“输入密码”即可顺利继续（支持 Bitwarden 等密码管理器的表单自动填充）。
-- **Cookie 导入保底方案**：
-  - 登录入口保留了独立的“输入 Cookie”通道。如果遇到复杂网络环境或网页端特殊挑战，可随时粘贴在浏览器中已登录的 Cookie 字符串进行身份核验与会话恢复。
-- **安全与隐私**：
-  - 登录成功后，ReviewX 仅提取必需的会话 Cookie（`auth_token`, `ct0`, `twid`），经官方接口双重核验后存入 Android 本地加密存储（`EncryptedSharedPreferences`），不自动上传到其他服务。标题栏与设置页支持安全查看与复制当前会话 Cookie。
-- 请求 X 内容时，会话 Cookie 会发送到 X 的服务端点。项目不提供自有账号代理服务；不要在 Issue、截图或日志中粘贴 Cookie。
-- WebDAV 默认使用“全量安全备份”：按白名单备份设置、历史及账号本地快照，排除 Cookie、Token 和 WebDAV 密码。主动选择“全量备份”并上传时，这些凭据会以明文 JSON 一同写入备份文件；请使用可信的 HTTPS WebDAV 存储并妥善保护备份。恢复全量备份会替换登录凭据，恢复后需重启应用。
-- 时间线与资料快照在本机按账号隔离；退出账号时删除该账号的本地快照。媒体缓存和诊断日志不包含在上述备份中。
-- 图片由 ExtendedImage 缓存在 Android 临时目录，系统可能回收。应用会按容量和时间上限整理缓存。
-- 后台通知由 Android WorkManager 定期检查，通常至少间隔 15 分钟，不是实时推送。
-
----
-
-## 🏗️ 项目结构
-
-```text
-lib/
-├── core/                     # 主题、存储、缓存、备份、媒体与通用组件
-├── presentation/             # 首页、时间线、帖子、探索、登录、设置等页面
-├── twitter/
-│   ├── api/                  # X 请求和交易头
-│   ├── auth/                 # Cookie 会话与账号状态
-│   ├── cache/                # 本地首页/资料快照
-│   ├── models/               # 用户、帖子和媒体模型
-│   └── repositories/         # X 数据适配层
-└── main.dart
-
-android/                      # Android 容器、通知和启动器资源
-assets/                       # X 请求参数、交易数据与应用图标
-licenses/                     # Review 与交易头组件的 MIT 声明
-tool/                         # X 协议/交易数据刷新、Release 构建与 APK 校验脚本
-```
-
-ReviewX 源码采用 MIT 许可。第三方来源和许可说明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)，其中包括 Review 组件和交易头编码/数据的独立 MIT 声明。
-
-## 🧹 本地构建缓存与生成文件
-
-以下目录由 Flutter、Dart 或 Gradle 生成，不属于源码，且已加入 `.gitignore`：
-
-| 路径 | 用途 | 清理影响 |
-| --- | --- | --- |
-| `.dart_tool/`、`.flutter-plugins-dependencies` | Dart 依赖解析、插件清单和生成状态 | 可重新生成；下次运行 Flutter 工具时会重建 |
-| `build/` 中除明确保留项外 | APK 中间文件、插件构建结果和测试缓存 | 可重新生成；清理后下次构建会更慢 |
-| `android/.gradle/` | Android 项目的本地 Gradle 状态 | 可重新生成；必要时 Gradle 会重新解析依赖 |
-| `.build-temp-<PID>/` | Release 脚本专用的 Windows `TEMP/TMP` 和 Java 探测文件 | 构建结束时自动删除；异常中断后，确认没有构建进程再清理残留目录 |
-| `build/.gradle-user-home-release/` | 独立 Gradle 依赖缓存；当前项目脚本没有引用该路径 | 删除后若某个环境指定了它，Gradle 需要重新下载依赖 |
-| `build/previous-releases/`、项目根目录最新 Release APK | 历史与当前回退安装包 | 属于交付产物，清理构建缓存时保留 |
-| 项目根目录 `.signing-temp/` | BKS 转换后的临时 Release 签名文件 | 不提交；不要在构建过程中手动清理 |
-
-Flutter 的 `flutter clean` 会清除整个 `build/` 和 `.dart_tool/`，运行前先确认 `build/previous-releases/` 中的回退 APK 已另行保留。
-
----
-
-## 🚀 开发与构建
-
-### 环境要求
-
-- Flutter 3.x / Dart 3.5 或更新版本
-- JDK 17
-- Android SDK，项目使用 Android API 36 编译，最低支持 API 24
-- 目标架构：`arm64-v8a`
-
-### 获取依赖、运行和检查
-
-```bash
-flutter pub get
-flutter run
-flutter analyze
-flutter test
-```
-
-构建 Debug 开发 APK：
-
-```bash
-flutter build apk --debug --target-platform android-arm64
-```
-
-### 构建签名 Release APK
-
-Release 签名密钥不包含在仓库中。`tool/build_release.ps1` 从环境变量读取密钥路径、别名、JDK 路径和 Bouncy Castle Provider JAR 路径，并从标准输入读取密钥口令；临时 PKCS12 文件会在脚本结束时删除。
-
-脚本会先检查 JDK 管道。如果 Windows 的 Unix 域套接字连接导致管道初始化失败，脚本会临时启用 JDK 17 的 TCP 回环兼容方式，再次验证后才构建。临时 Java agent 在构建结束时删除，原有进程环境恢复；此处理不会打包进 APK。
-
-PowerShell 7 示例（把路径和别名改成自己的值；不要把口令写进脚本或提交到仓库）：
+需要 JDK 17 和 Android SDK 36。在仓库根目录配置 Android SDK 路径后，可运行：
 
 ```powershell
-$env:JAVA_HOME = 'C:\Path\To\JDK-17'
-$env:REVIEW_X_KEYSTORE = 'C:\Path\To\release.bks'
-$env:REVIEW_X_KEY_ALIAS = 'your-key-alias'
-$env:REVIEW_X_BC_PROVIDER = 'C:\Path\To\bcprov-jdk18on.jar'
-
-$secure = Read-Host 'Keystore password' -AsSecureString
-$handle = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
-try {
-  $password = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($handle)
-  $password | pwsh -NoProfile -File .\tool\build_release.ps1
-  if ($LASTEXITCODE -ne 0) { throw 'Release build failed.' }
-} finally {
-  [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($handle)
-  $password = $null
-  $secure.Dispose()
-}
+.\gradlew.bat :app:testReleaseUnitTest :app:lintRelease
 ```
 
-Release APK 元数据、签名、ABI 和 16 KiB 原生库对齐可用以下脚本检查：
+签名发布使用 PowerShell 7 和 `tool/build_release.ps1`。在本机配置 `JAVA_HOME`、`REVIEW_X_KEYSTORE`、`REVIEW_X_KEY_ALIAS` 和 `REVIEW_X_BC_PROVIDER`，通过标准输入提供 BKS 口令。脚本运行 Release 测试和 Lint，生成并核验签名后的 ARM64 APK。签名材料和 APK 保存在本机。
 
-```powershell
-.\tool\verify_release.ps1 -Apk .\Review_X_v<version>.apk
-```
+## 升级与备份
 
----
+Compose 版沿用包名 `com.review.x`。使用相同签名安装时会更新旧版。应用可只读导入旧版的受支持设置和会话，升级前可先备份数据。Android 的常规安装流程不支持直接安装较低版本号的 APK。
 
-## ⚠️ 项目说明
+WebDAV 默认使用全量安全备份，排除会话和 WebDAV 密码。全量备份含明文凭据，请妥善保管。
 
-- ReviewX 是非官方第三方客户端，与 X Corp. 无隶属关系。应用使用的 X 网页端接口并非稳定公开 API，登录和数据读取行为可能随 X 的调整而变化。
-- X 登录依赖 X 网页流程和 Android System WebView，账号字段预填行为及验证要求可能随 X 的登录策略变化；构建与自动化测试不代表真实账号、通行密钥或特定设备登录已通过。Cookie 导入仅适用于用户有权访问的 X 账号。请勿分享个人 Cookie；遇到登录或会话问题时应在应用内重新验证或退出账号。
-- 媒体上传、私信和原生投票写入尚未实现；投票可在 X 网页中操作。
-- 成功编译和静态 APK 核验不代表已完成真实账号或 Android 设备验收。
-- X/Twitter 域名的 Android 链接关联未经域名所有者验证；系统是否直接打开 ReviewX 取决于用户的默认链接设置，首次可在系统提示中选择 ReviewX，或在应用信息里启用“打开支持的链接”。
+源代码遵循 [MIT 许可](LICENSE)。第三方许可见 [THIRD_PARTY_NOTICES.md](app/src/main/assets/THIRD_PARTY_NOTICES.md)。

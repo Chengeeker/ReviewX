@@ -1,0 +1,1 @@
+uniform float2 uSize; uniform shader uBackgroundTexture; half4 main(float2 p) { return uBackgroundTexture.eval(clamp(p,float2(0),uSize)); }

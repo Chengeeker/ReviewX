@@ -1,0 +1,3194 @@
+{
+  "light_0": {
+    "colors": {
+      "primary": 4287646278,
+      "onPrimary": 4294967295,
+      "primaryContainer": 4294957783,
+      "onPrimaryContainer": 4285739824,
+      "secondary": 4286010964,
+      "onSecondary": 4294967295,
+      "secondaryContainer": 4294957783,
+      "onSecondaryContainer": 4284301117,
+      "tertiary": 4285750062,
+      "onTertiary": 4294967295,
+      "tertiaryContainer": 4294958759,
+      "onTertiaryContainer": 4284039961,
+      "error": 4290386458,
+      "onError": 4294967295,
+      "errorContainer": 4294957782,
+      "onErrorContainer": 4287823882,
+      "surface": 4294965495,
+      "onSurface": 4280490265,
+      "onSurfaceVariant": 4283646786,
+      "surfaceVariant": 4294041309,
+      "surfaceContainer": 4294765288,
+      "surfaceContainerLow": 4294963439,
+      "surfaceContainerLowest": 4294967295,
+      "surfaceContainerHigh": 4294370530,
+      "surfaceContainerHighest": 4294041309,
+      "surfaceBright": 4294965495,
+      "surfaceDim": 4293449428,
+      "outline": 4286935921,
+      "outlineVariant": 4292395712,
+      "inverseSurface": 4281871917,
+      "inverseOnSurface": 4294962667,
+      "inversePrimary": 4294947758,
+      "scrim": 4278190080,
+      "background": 4294965495,
+      "appBar": 4294965495,
+      "card": 4294967295,
+      "navigationBar": 4294765288
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "dark_0": {
+    "colors": {
+      "primary": 4294947758,
+      "onPrimary": 4283899164,
+      "primaryContainer": 4285739824,
+      "onPrimaryContainer": 4294957783,
+      "secondary": 4293377465,
+      "onSecondary": 4282657064,
+      "secondaryContainer": 4284301117,
+      "onSecondaryContainer": 4294957783,
+      "tertiary": 4293051020,
+      "onTertiary": 4282395908,
+      "tertiaryContainer": 4284039961,
+      "onTertiaryContainer": 4294958759,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4279898385,
+      "onSurface": 4294041309,
+      "onSurfaceVariant": 4292395712,
+      "surfaceVariant": 4282200625,
+      "surfaceContainer": 4280753437,
+      "surfaceContainerLow": 4280490265,
+      "surfaceContainerLowest": 4279503884,
+      "surfaceContainerHigh": 4281477159,
+      "surfaceContainerHighest": 4282200625,
+      "surfaceBright": 4282529590,
+      "surfaceDim": 4279898385,
+      "outline": 4288711819,
+      "outlineVariant": 4283646786,
+      "inverseSurface": 4294041309,
+      "inverseOnSurface": 4281871917,
+      "inversePrimary": 4287646278,
+      "scrim": 4278190080,
+      "background": 4279308821,
+      "appBar": 4279308821,
+      "card": 4279966752,
+      "navigationBar": 4279637787
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "black_0": {
+    "colors": {
+      "primary": 4294947758,
+      "onPrimary": 4283899164,
+      "primaryContainer": 4285739824,
+      "onPrimaryContainer": 4294957783,
+      "secondary": 4293377465,
+      "onSecondary": 4282657064,
+      "secondaryContainer": 4284301117,
+      "onSecondaryContainer": 4294957783,
+      "tertiary": 4293051020,
+      "onTertiary": 4282395908,
+      "tertiaryContainer": 4284039961,
+      "onTertiaryContainer": 4294958759,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4278190080,
+      "onSurface": 4294041309,
+      "onSurfaceVariant": 4292395712,
+      "surfaceVariant": 4280427042,
+      "surfaceContainer": 4279374354,
+      "surfaceContainerLow": 4280490265,
+      "surfaceContainerLowest": 4279503884,
+      "surfaceContainerHigh": 4279769112,
+      "surfaceContainerHighest": 4280427042,
+      "surfaceBright": 4282529590,
+      "surfaceDim": 4279898385,
+      "outline": 4288711819,
+      "outlineVariant": 4283646786,
+      "inverseSurface": 4294041309,
+      "inverseOnSurface": 4281871917,
+      "inversePrimary": 4287646278,
+      "scrim": 4278190080,
+      "background": 4278190080,
+      "appBar": 4278190080,
+      "card": 4279374354,
+      "navigationBar": 4278190080
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "light_1": {
+    "colors": {
+      "primary": 4287254563,
+      "onPrimary": 4294967295,
+      "primaryContainer": 4294958278,
+      "onPrimaryContainer": 4285413645,
+      "secondary": 4285880390,
+      "onSecondary": 4294967295,
+      "secondaryContainer": 4294958278,
+      "onSecondaryContainer": 4284170544,
+      "tertiary": 4284440884,
+      "onTertiary": 4294967295,
+      "tertiaryContainer": 4293256878,
+      "onTertiaryContainer": 4282861855,
+      "error": 4290386458,
+      "onError": 4294967295,
+      "errorContainer": 4294957782,
+      "onErrorContainer": 4287823882,
+      "surface": 4294965493,
+      "onSurface": 4280424981,
+      "onSurfaceVariant": 4283581499,
+      "surfaceVariant": 4293976022,
+      "surfaceContainer": 4294765538,
+      "surfaceContainerLow": 4294963690,
+      "surfaceContainerLowest": 4294967295,
+      "surfaceContainerHigh": 4294370780,
+      "surfaceContainerHighest": 4293976022,
+      "surfaceBright": 4294965493,
+      "surfaceDim": 4293384142,
+      "outline": 4286870634,
+      "outlineVariant": 4292330423,
+      "inverseSurface": 4281871913,
+      "inverseOnSurface": 4294897124,
+      "inversePrimary": 4294948741,
+      "scrim": 4278190080,
+      "background": 4294965493,
+      "appBar": 4294965493,
+      "card": 4294967295,
+      "navigationBar": 4294765538
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "dark_1": {
+    "colors": {
+      "primary": 4294948741,
+      "onPrimary": 4283442176,
+      "primaryContainer": 4285413645,
+      "onPrimaryContainer": 4294958278,
+      "secondary": 4293181352,
+      "onSecondary": 4282526491,
+      "secondaryContainer": 4284170544,
+      "onSecondaryContainer": 4294958278,
+      "tertiary": 4291414676,
+      "onTertiary": 4281414154,
+      "tertiaryContainer": 4282861855,
+      "onTertiaryContainer": 4293256878,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4279833101,
+      "onSurface": 4293976022,
+      "onSurfaceVariant": 4292330423,
+      "surfaceVariant": 4282200877,
+      "surfaceContainer": 4280688153,
+      "surfaceContainerLow": 4280424981,
+      "surfaceContainerLowest": 4279504136,
+      "surfaceContainerHigh": 4281411619,
+      "surfaceContainerHighest": 4282200877,
+      "surfaceBright": 4282464049,
+      "surfaceDim": 4279833101,
+      "outline": 4288646531,
+      "outlineVariant": 4283581499,
+      "inverseSurface": 4293976022,
+      "inverseOnSurface": 4281871913,
+      "inversePrimary": 4287254563,
+      "scrim": 4278190080,
+      "background": 4279308821,
+      "appBar": 4279308821,
+      "card": 4279966752,
+      "navigationBar": 4279637787
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "black_1": {
+    "colors": {
+      "primary": 4294948741,
+      "onPrimary": 4283442176,
+      "primaryContainer": 4285413645,
+      "onPrimaryContainer": 4294958278,
+      "secondary": 4293181352,
+      "onSecondary": 4282526491,
+      "secondaryContainer": 4284170544,
+      "onSecondaryContainer": 4294958278,
+      "tertiary": 4291414676,
+      "onTertiary": 4281414154,
+      "tertiaryContainer": 4282861855,
+      "onTertiaryContainer": 4293256878,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4278190080,
+      "onSurface": 4293976022,
+      "onSurfaceVariant": 4292330423,
+      "surfaceVariant": 4280427042,
+      "surfaceContainer": 4279374354,
+      "surfaceContainerLow": 4280424981,
+      "surfaceContainerLowest": 4279504136,
+      "surfaceContainerHigh": 4279769112,
+      "surfaceContainerHighest": 4280427042,
+      "surfaceBright": 4282464049,
+      "surfaceDim": 4279833101,
+      "outline": 4288646531,
+      "outlineVariant": 4283581499,
+      "inverseSurface": 4293976022,
+      "inverseOnSurface": 4281871913,
+      "inversePrimary": 4287254563,
+      "scrim": 4278190080,
+      "background": 4278190080,
+      "appBar": 4278190080,
+      "card": 4279374354,
+      "navigationBar": 4278190080
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "light_2": {
+    "colors": {
+      "primary": 4282146960,
+      "onPrimary": 4294967295,
+      "primaryContainer": 4292142079,
+      "onPrimaryContainer": 4280436854,
+      "secondary": 4283719537,
+      "onSecondary": 4294967295,
+      "secondaryContainer": 4292404216,
+      "onSecondaryContainer": 4282206040,
+      "tertiary": 4285421174,
+      "onTertiary": 4294967295,
+      "tertiaryContainer": 4294433023,
+      "onTertiaryContainer": 4283776861,
+      "error": 4290386458,
+      "onError": 4294967295,
+      "errorContainer": 4294957782,
+      "onErrorContainer": 4287823882,
+      "surface": 4294572543,
+      "onSurface": 4279835680,
+      "onSurfaceVariant": 4282599246,
+      "surfaceVariant": 4292993769,
+      "surfaceContainer": 4293783028,
+      "surfaceContainerLow": 4294177786,
+      "surfaceContainerLowest": 4294967295,
+      "surfaceContainerHigh": 4293388526,
+      "surfaceContainerHighest": 4292993769,
+      "surfaceBright": 4294572543,
+      "surfaceDim": 4292467424,
+      "outline": 4285822847,
+      "outlineVariant": 4291020495,
+      "inverseSurface": 4281217077,
+      "inverseOnSurface": 4293980407,
+      "inversePrimary": 4289120511,
+      "scrim": 4278190080,
+      "background": 4294572543,
+      "appBar": 4294572543,
+      "card": 4294967295,
+      "navigationBar": 4293783028
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "dark_2": {
+    "colors": {
+      "primary": 4289120511,
+      "onPrimary": 4278268254,
+      "primaryContainer": 4280436854,
+      "onPrimaryContainer": 4292142079,
+      "secondary": 4290562012,
+      "onSecondary": 4280758593,
+      "secondaryContainer": 4282206040,
+      "onSecondaryContainer": 4292404216,
+      "tertiary": 4292525538,
+      "onTertiary": 4282198086,
+      "tertiaryContainer": 4283776861,
+      "onTertiaryContainer": 4294433023,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4279309080,
+      "onSurface": 4292993769,
+      "onSurfaceVariant": 4291020495,
+      "surfaceVariant": 4281480506,
+      "surfaceContainer": 4280098852,
+      "surfaceContainerLow": 4279835680,
+      "surfaceContainerLowest": 4278980115,
+      "surfaceContainerHigh": 4280822319,
+      "surfaceContainerHighest": 4281480506,
+      "surfaceBright": 4281809214,
+      "surfaceDim": 4279309080,
+      "outline": 4287467929,
+      "outlineVariant": 4282599246,
+      "inverseSurface": 4292993769,
+      "inverseOnSurface": 4281217077,
+      "inversePrimary": 4282146960,
+      "scrim": 4278190080,
+      "background": 4279308821,
+      "appBar": 4279308821,
+      "card": 4279966752,
+      "navigationBar": 4279637787
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "black_2": {
+    "colors": {
+      "primary": 4289120511,
+      "onPrimary": 4278268254,
+      "primaryContainer": 4280436854,
+      "onPrimaryContainer": 4292142079,
+      "secondary": 4290562012,
+      "onSecondary": 4280758593,
+      "secondaryContainer": 4282206040,
+      "onSecondaryContainer": 4292404216,
+      "tertiary": 4292525538,
+      "onTertiary": 4282198086,
+      "tertiaryContainer": 4283776861,
+      "onTertiaryContainer": 4294433023,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4278190080,
+      "onSurface": 4292993769,
+      "onSurfaceVariant": 4291020495,
+      "surfaceVariant": 4280427042,
+      "surfaceContainer": 4279374354,
+      "surfaceContainerLow": 4279835680,
+      "surfaceContainerLowest": 4278980115,
+      "surfaceContainerHigh": 4279769112,
+      "surfaceContainerHighest": 4280427042,
+      "surfaceBright": 4281809214,
+      "surfaceDim": 4279309080,
+      "outline": 4287467929,
+      "outlineVariant": 4282599246,
+      "inverseSurface": 4292993769,
+      "inverseOnSurface": 4281217077,
+      "inversePrimary": 4282146960,
+      "scrim": 4278190080,
+      "background": 4278190080,
+      "appBar": 4278190080,
+      "card": 4279374354,
+      "navigationBar": 4278190080
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "light_3": {
+    "colors": {
+      "primary": 4282149177,
+      "onPrimary": 4294967295,
+      "primaryContainer": 4290572468,
+      "onPrimaryContainer": 4280569892,
+      "secondary": 4283589455,
+      "onSecondary": 4294967295,
+      "secondaryContainer": 4292274382,
+      "onSecondaryContainer": 4282075960,
+      "tertiary": 4281886058,
+      "onTertiary": 4294967295,
+      "tertiaryContainer": 4290571248,
+      "onTertiaryContainer": 4280241490,
+      "error": 4290386458,
+      "onError": 4294967295,
+      "errorContainer": 4294957782,
+      "onErrorContainer": 4287823882,
+      "surface": 4294441969,
+      "onSurface": 4279835927,
+      "onSurfaceVariant": 4282534208,
+      "surfaceVariant": 4292928731,
+      "surfaceContainer": 4293717990,
+      "surfaceContainerLow": 4294047211,
+      "surfaceContainerLowest": 4294967295,
+      "surfaceContainerHigh": 4293323232,
+      "surfaceContainerHighest": 4292928731,
+      "surfaceBright": 4294441969,
+      "surfaceDim": 4292402130,
+      "outline": 4285692271,
+      "outlineVariant": 4290955709,
+      "inverseSurface": 4281152044,
+      "inverseOnSurface": 4293915369,
+      "inversePrimary": 4288795546,
+      "scrim": 4278190080,
+      "background": 4294441969,
+      "appBar": 4294441969,
+      "card": 4294967295,
+      "navigationBar": 4293717990
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "dark_3": {
+    "colors": {
+      "primary": 4288795546,
+      "onPrimary": 4278860047,
+      "primaryContainer": 4280569892,
+      "onPrimaryContainer": 4290572468,
+      "secondary": 4290432179,
+      "onSecondary": 4280628259,
+      "secondaryContainer": 4282075960,
+      "onSecondaryContainer": 4292274382,
+      "tertiary": 4288729044,
+      "onTertiary": 4278203963,
+      "tertiaryContainer": 4280241490,
+      "onTertiaryContainer": 4290571248,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4279243791,
+      "onSurface": 4292928731,
+      "onSurfaceVariant": 4290955709,
+      "surfaceVariant": 4281480752,
+      "surfaceContainer": 4280099099,
+      "surfaceContainerLow": 4279835927,
+      "surfaceContainerLowest": 4278914826,
+      "surfaceContainerHigh": 4280757029,
+      "surfaceContainerHighest": 4281480752,
+      "surfaceBright": 4281743924,
+      "surfaceDim": 4279243791,
+      "outline": 4287402888,
+      "outlineVariant": 4282534208,
+      "inverseSurface": 4292928731,
+      "inverseOnSurface": 4281152044,
+      "inversePrimary": 4282149177,
+      "scrim": 4278190080,
+      "background": 4279308821,
+      "appBar": 4279308821,
+      "card": 4279966752,
+      "navigationBar": 4279637787
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "black_3": {
+    "colors": {
+      "primary": 4288795546,
+      "onPrimary": 4278860047,
+      "primaryContainer": 4280569892,
+      "onPrimaryContainer": 4290572468,
+      "secondary": 4290432179,
+      "onSecondary": 4280628259,
+      "secondaryContainer": 4282075960,
+      "onSecondaryContainer": 4292274382,
+      "tertiary": 4288729044,
+      "onTertiary": 4278203963,
+      "tertiaryContainer": 4280241490,
+      "onTertiaryContainer": 4290571248,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4278190080,
+      "onSurface": 4292928731,
+      "onSurfaceVariant": 4290955709,
+      "surfaceVariant": 4280427042,
+      "surfaceContainer": 4279374354,
+      "surfaceContainerLow": 4279835927,
+      "surfaceContainerLowest": 4278914826,
+      "surfaceContainerHigh": 4279769112,
+      "surfaceContainerHighest": 4280427042,
+      "surfaceBright": 4281743924,
+      "surfaceDim": 4279243791,
+      "outline": 4287402888,
+      "outlineVariant": 4282534208,
+      "inverseSurface": 4292928731,
+      "inverseOnSurface": 4281152044,
+      "inversePrimary": 4282149177,
+      "scrim": 4278190080,
+      "background": 4278190080,
+      "appBar": 4278190080,
+      "card": 4279374354,
+      "navigationBar": 4278190080
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "light_4": {
+    "colors": {
+      "primary": 4285943940,
+      "onPrimary": 4294967295,
+      "primaryContainer": 4294498559,
+      "onPrimaryContainer": 4284299371,
+      "secondary": 4285094253,
+      "onSecondary": 4294967295,
+      "secondaryContainer": 4294040820,
+      "onSecondaryContainer": 4283449941,
+      "tertiary": 4286665296,
+      "onTertiary": 4294967295,
+      "tertiaryContainer": 4294957784,
+      "onTertiaryContainer": 4284889913,
+      "error": 4290386458,
+      "onError": 4294967295,
+      "errorContainer": 4294957782,
+      "onErrorContainer": 4287823882,
+      "surface": 4294965243,
+      "onSurface": 4280228383,
+      "onSurfaceVariant": 4283188301,
+      "surfaceVariant": 4293517543,
+      "surfaceContainer": 4294306802,
+      "surfaceContainerLow": 4294701560,
+      "surfaceContainerLowest": 4294967295,
+      "surfaceContainerHigh": 4293912045,
+      "surfaceContainerHighest": 4293517543,
+      "surfaceBright": 4294965243,
+      "surfaceDim": 4292990943,
+      "outline": 4286411901,
+      "outlineVariant": 4291740621,
+      "inverseSurface": 4281610036,
+      "inverseOnSurface": 4294504181,
+      "inversePrimary": 4293179379,
+      "scrim": 4278190080,
+      "background": 4294965243,
+      "appBar": 4294965243,
+      "card": 4294967295,
+      "navigationBar": 4294306802
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "dark_4": {
+    "colors": {
+      "primary": 4293179379,
+      "onPrimary": 4282655315,
+      "primaryContainer": 4284299371,
+      "onPrimaryContainer": 4294498559,
+      "secondary": 4292133079,
+      "onSecondary": 4281936957,
+      "secondaryContainer": 4283449941,
+      "onSecondaryContainer": 4294040820,
+      "tertiary": 4294293429,
+      "onTertiary": 4283180324,
+      "tertiaryContainer": 4284889913,
+      "onTertiaryContainer": 4294957784,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4279636503,
+      "onSurface": 4293517543,
+      "onSurfaceVariant": 4291740621,
+      "surfaceVariant": 4281873209,
+      "surfaceContainer": 4280491555,
+      "surfaceContainerLow": 4280228383,
+      "surfaceContainerLowest": 4279307538,
+      "surfaceContainerHigh": 4281149486,
+      "surfaceContainerHighest": 4281873209,
+      "surfaceBright": 4282201917,
+      "surfaceDim": 4279636503,
+      "outline": 4288122519,
+      "outlineVariant": 4283188301,
+      "inverseSurface": 4293517543,
+      "inverseOnSurface": 4281610036,
+      "inversePrimary": 4285943940,
+      "scrim": 4278190080,
+      "background": 4279308821,
+      "appBar": 4279308821,
+      "card": 4279966752,
+      "navigationBar": 4279637787
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "black_4": {
+    "colors": {
+      "primary": 4293179379,
+      "onPrimary": 4282655315,
+      "primaryContainer": 4284299371,
+      "onPrimaryContainer": 4294498559,
+      "secondary": 4292133079,
+      "onSecondary": 4281936957,
+      "secondaryContainer": 4283449941,
+      "onSecondaryContainer": 4294040820,
+      "tertiary": 4294293429,
+      "onTertiary": 4283180324,
+      "tertiaryContainer": 4284889913,
+      "onTertiaryContainer": 4294957784,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4278190080,
+      "onSurface": 4293517543,
+      "onSurfaceVariant": 4291740621,
+      "surfaceVariant": 4280427042,
+      "surfaceContainer": 4279374354,
+      "surfaceContainerLow": 4280228383,
+      "surfaceContainerLowest": 4279307538,
+      "surfaceContainerHigh": 4279769112,
+      "surfaceContainerHighest": 4280427042,
+      "surfaceBright": 4282201917,
+      "surfaceDim": 4279636503,
+      "outline": 4288122519,
+      "outlineVariant": 4283188301,
+      "inverseSurface": 4293517543,
+      "inverseOnSurface": 4281610036,
+      "inversePrimary": 4285943940,
+      "scrim": 4278190080,
+      "background": 4278190080,
+      "appBar": 4278190080,
+      "card": 4279374354,
+      "navigationBar": 4278190080
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "light_5": {
+    "colors": {
+      "primary": 4287514967,
+      "onPrimary": 4294967295,
+      "primaryContainer": 4294957534,
+      "onPrimaryContainer": 4285608767,
+      "secondary": 4285879899,
+      "onSecondary": 4294967295,
+      "secondaryContainer": 4294957534,
+      "onSecondaryContainer": 4284235587,
+      "tertiary": 4286142513,
+      "onTertiary": 4294967295,
+      "tertiaryContainer": 4294958522,
+      "onTertiaryContainer": 4284432668,
+      "error": 4290386458,
+      "onError": 4294967295,
+      "errorContainer": 4294957782,
+      "onErrorContainer": 4287823882,
+      "surface": 4294965495,
+      "onSurface": 4280424730,
+      "onSurfaceVariant": 4283581253,
+      "surfaceVariant": 4293975776,
+      "surfaceContainer": 4294699755,
+      "surfaceContainerLow": 4294963441,
+      "surfaceContainerLowest": 4294967295,
+      "surfaceContainerHigh": 4294304997,
+      "surfaceContainerHighest": 4293975776,
+      "surfaceBright": 4294965495,
+      "surfaceDim": 4293383895,
+      "outline": 4286870389,
+      "outlineVariant": 4292264643,
+      "inverseSurface": 4281871919,
+      "inverseOnSurface": 4294897134,
+      "inversePrimary": 4294947518,
+      "scrim": 4278190080,
+      "background": 4294965495,
+      "appBar": 4294965495,
+      "card": 4294967295,
+      "navigationBar": 4294699755
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "dark_5": {
+    "colors": {
+      "primary": 4294947518,
+      "onPrimary": 4283833642,
+      "primaryContainer": 4285608767,
+      "onPrimaryContainer": 4294957534,
+      "secondary": 4293246402,
+      "onSecondary": 4282591533,
+      "secondaryContainer": 4284235587,
+      "onSecondaryContainer": 4294957534,
+      "tertiary": 4293640080,
+      "onTertiary": 4282723080,
+      "tertiaryContainer": 4284432668,
+      "onTertiaryContainer": 4294958522,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4279832850,
+      "onSurface": 4293975776,
+      "onSurfaceVariant": 4292264643,
+      "surfaceVariant": 4282135091,
+      "surfaceContainer": 4280687902,
+      "surfaceContainerLow": 4280424730,
+      "surfaceContainerLowest": 4279503885,
+      "surfaceContainerHigh": 4281411625,
+      "surfaceContainerHighest": 4282135091,
+      "surfaceBright": 4282464056,
+      "surfaceDim": 4279832850,
+      "outline": 4288646286,
+      "outlineVariant": 4283581253,
+      "inverseSurface": 4293975776,
+      "inverseOnSurface": 4281871919,
+      "inversePrimary": 4287514967,
+      "scrim": 4278190080,
+      "background": 4279308821,
+      "appBar": 4279308821,
+      "card": 4279966752,
+      "navigationBar": 4279637787
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "black_5": {
+    "colors": {
+      "primary": 4294947518,
+      "onPrimary": 4283833642,
+      "primaryContainer": 4285608767,
+      "onPrimaryContainer": 4294957534,
+      "secondary": 4293246402,
+      "onSecondary": 4282591533,
+      "secondaryContainer": 4284235587,
+      "onSecondaryContainer": 4294957534,
+      "tertiary": 4293640080,
+      "onTertiary": 4282723080,
+      "tertiaryContainer": 4284432668,
+      "onTertiaryContainer": 4294958522,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4278190080,
+      "onSurface": 4293975776,
+      "onSurfaceVariant": 4292264643,
+      "surfaceVariant": 4280427042,
+      "surfaceContainer": 4279374354,
+      "surfaceContainerLow": 4280424730,
+      "surfaceContainerLowest": 4279503885,
+      "surfaceContainerHigh": 4279769112,
+      "surfaceContainerHighest": 4280427042,
+      "surfaceBright": 4282464056,
+      "surfaceDim": 4279832850,
+      "outline": 4288646286,
+      "outlineVariant": 4283581253,
+      "inverseSurface": 4293975776,
+      "inverseOnSurface": 4281871919,
+      "inversePrimary": 4287514967,
+      "scrim": 4278190080,
+      "background": 4278190080,
+      "appBar": 4278190080,
+      "card": 4279374354,
+      "navigationBar": 4278190080
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "light_6": {
+    "colors": {
+      "primary": 4278217567,
+      "onPrimary": 4294967295,
+      "primaryContainer": 4288606947,
+      "onPrimaryContainer": 4278210632,
+      "secondary": 4283065182,
+      "onSecondary": 4294967295,
+      "secondaryContainer": 4291619042,
+      "onSecondaryContainer": 4281551687,
+      "tertiary": 4282737017,
+      "onTertiary": 4294967295,
+      "tertiaryContainer": 4291553023,
+      "onTertiaryContainer": 4281158240,
+      "error": 4290386458,
+      "onError": 4294967295,
+      "errorContainer": 4294957782,
+      "onErrorContainer": 4287823882,
+      "surface": 4294245368,
+      "onSurface": 4279639323,
+      "onSurfaceVariant": 4282337606,
+      "surfaceVariant": 4292732129,
+      "surfaceContainer": 4293521388,
+      "surfaceContainerLow": 4293916146,
+      "surfaceContainerLowest": 4294967295,
+      "surfaceContainerHigh": 4293126887,
+      "surfaceContainerHighest": 4292732129,
+      "surfaceBright": 4294245368,
+      "surfaceDim": 4292205529,
+      "outline": 4285495670,
+      "outlineVariant": 4290693573,
+      "inverseSurface": 4281020976,
+      "inverseOnSurface": 4293718767,
+      "inversePrimary": 4286764487,
+      "scrim": 4278190080,
+      "background": 4294245368,
+      "appBar": 4294245368,
+      "card": 4294967295,
+      "navigationBar": 4293521388
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "dark_6": {
+    "colors": {
+      "primary": 4286764487,
+      "onPrimary": 4278204209,
+      "primaryContainer": 4278210632,
+      "onPrimaryContainer": 4288606947,
+      "secondary": 4289842374,
+      "onSecondary": 4280038705,
+      "secondaryContainer": 4281551687,
+      "onSecondaryContainer": 4291619042,
+      "tertiary": 4289579749,
+      "onTertiary": 4279513929,
+      "tertiaryContainer": 4281158240,
+      "onTertiaryContainer": 4291553023,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4279112979,
+      "onSurface": 4292732129,
+      "onSurfaceVariant": 4290693573,
+      "surfaceVariant": 4281349684,
+      "surfaceContainer": 4279902495,
+      "surfaceContainerLow": 4279639323,
+      "surfaceContainerLowest": 4278783758,
+      "surfaceContainerHigh": 4280625962,
+      "surfaceContainerHighest": 4281349684,
+      "surfaceBright": 4281613113,
+      "surfaceDim": 4279112979,
+      "outline": 4287206288,
+      "outlineVariant": 4282337606,
+      "inverseSurface": 4292732129,
+      "inverseOnSurface": 4281020976,
+      "inversePrimary": 4278217567,
+      "scrim": 4278190080,
+      "background": 4279308821,
+      "appBar": 4279308821,
+      "card": 4279966752,
+      "navigationBar": 4279637787
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "black_6": {
+    "colors": {
+      "primary": 4286764487,
+      "onPrimary": 4278204209,
+      "primaryContainer": 4278210632,
+      "onPrimaryContainer": 4288606947,
+      "secondary": 4289842374,
+      "onSecondary": 4280038705,
+      "secondaryContainer": 4281551687,
+      "onSecondaryContainer": 4291619042,
+      "tertiary": 4289579749,
+      "onTertiary": 4279513929,
+      "tertiaryContainer": 4281158240,
+      "onTertiaryContainer": 4291553023,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4278190080,
+      "onSurface": 4292732129,
+      "onSurfaceVariant": 4290693573,
+      "surfaceVariant": 4280427042,
+      "surfaceContainer": 4279374354,
+      "surfaceContainerLow": 4279639323,
+      "surfaceContainerLowest": 4278783758,
+      "surfaceContainerHigh": 4279769112,
+      "surfaceContainerHighest": 4280427042,
+      "surfaceBright": 4281613113,
+      "surfaceDim": 4279112979,
+      "outline": 4287206288,
+      "outlineVariant": 4282337606,
+      "inverseSurface": 4292732129,
+      "inverseOnSurface": 4281020976,
+      "inversePrimary": 4278217567,
+      "scrim": 4278190080,
+      "background": 4278190080,
+      "appBar": 4278190080,
+      "card": 4279374354,
+      "navigationBar": 4278190080
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "light_7": {
+    "colors": {
+      "primary": 4279264897,
+      "onPrimary": 4294967295,
+      "primaryContainer": 4290570751,
+      "onPrimaryContainer": 4278209891,
+      "secondary": 4283261291,
+      "onSecondary": 4294967295,
+      "secondaryContainer": 4291880690,
+      "onSecondaryContainer": 4281682515,
+      "tertiary": 4284242813,
+      "onTertiary": 4294967295,
+      "tertiaryContainer": 4293058559,
+      "onTertiaryContainer": 4282729316,
+      "error": 4290386458,
+      "onError": 4294967295,
+      "errorContainer": 4294957782,
+      "onErrorContainer": 4287823882,
+      "surface": 4294376189,
+      "onSurface": 4279704607,
+      "onSurfaceVariant": 4282402892,
+      "surfaceVariant": 4292862950,
+      "surfaceContainer": 4293586674,
+      "surfaceContainerLow": 4293981432,
+      "surfaceContainerLowest": 4294967295,
+      "surfaceContainerHigh": 4293192172,
+      "surfaceContainerHighest": 4292862950,
+      "surfaceBright": 4294376189,
+      "surfaceDim": 4292271070,
+      "outline": 4285560957,
+      "outlineVariant": 4290824397,
+      "inverseSurface": 4281086260,
+      "inverseOnSurface": 4293784053,
+      "inversePrimary": 4287287535,
+      "scrim": 4278190080,
+      "background": 4294376189,
+      "appBar": 4294376189,
+      "card": 4294967295,
+      "navigationBar": 4293586674
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "dark_7": {
+    "colors": {
+      "primary": 4287287535,
+      "onPrimary": 4278203717,
+      "primaryContainer": 4278209891,
+      "onPrimaryContainer": 4290570751,
+      "secondary": 4290038485,
+      "onSecondary": 4280169276,
+      "secondaryContainer": 4281682515,
+      "onSecondaryContainer": 4291880690,
+      "tertiary": 4291150570,
+      "onTertiary": 4281216333,
+      "tertiaryContainer": 4282729316,
+      "onTertiaryContainer": 4293058559,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4279178263,
+      "onSurface": 4292862950,
+      "onSurfaceVariant": 4290824397,
+      "surfaceVariant": 4281349432,
+      "surfaceContainer": 4279967779,
+      "surfaceContainerLow": 4279704607,
+      "surfaceContainerLowest": 4278849297,
+      "surfaceContainerHigh": 4280691501,
+      "surfaceContainerHighest": 4281349432,
+      "surfaceBright": 4281678397,
+      "surfaceDim": 4279178263,
+      "outline": 4287271575,
+      "outlineVariant": 4282402892,
+      "inverseSurface": 4292862950,
+      "inverseOnSurface": 4281086260,
+      "inversePrimary": 4279264897,
+      "scrim": 4278190080,
+      "background": 4279308821,
+      "appBar": 4279308821,
+      "card": 4279966752,
+      "navigationBar": 4279637787
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  },
+  "black_7": {
+    "colors": {
+      "primary": 4287287535,
+      "onPrimary": 4278203717,
+      "primaryContainer": 4278209891,
+      "onPrimaryContainer": 4290570751,
+      "secondary": 4290038485,
+      "onSecondary": 4280169276,
+      "secondaryContainer": 4281682515,
+      "onSecondaryContainer": 4291880690,
+      "tertiary": 4291150570,
+      "onTertiary": 4281216333,
+      "tertiaryContainer": 4282729316,
+      "onTertiaryContainer": 4293058559,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294957782,
+      "surface": 4278190080,
+      "onSurface": 4292862950,
+      "onSurfaceVariant": 4290824397,
+      "surfaceVariant": 4280427042,
+      "surfaceContainer": 4279374354,
+      "surfaceContainerLow": 4279704607,
+      "surfaceContainerLowest": 4278849297,
+      "surfaceContainerHigh": 4279769112,
+      "surfaceContainerHighest": 4280427042,
+      "surfaceBright": 4281678397,
+      "surfaceDim": 4279178263,
+      "outline": 4287271575,
+      "outlineVariant": 4282402892,
+      "inverseSurface": 4292862950,
+      "inverseOnSurface": 4281086260,
+      "inversePrimary": 4279264897,
+      "scrim": 4278190080,
+      "background": 4278190080,
+      "appBar": 4278190080,
+      "card": 4279374354,
+      "navigationBar": 4278190080
+    },
+    "typography": {
+      "displayLarge": {
+        "size": 57.0,
+        "weight": 400,
+        "height": 1.12,
+        "letterSpacing": 0.0
+      },
+      "displayMedium": {
+        "size": 45.0,
+        "weight": 400,
+        "height": 1.16,
+        "letterSpacing": 0.0
+      },
+      "displaySmall": {
+        "size": 36.0,
+        "weight": 400,
+        "height": 1.22,
+        "letterSpacing": 0.0
+      },
+      "headlineLarge": {
+        "size": 32.0,
+        "weight": 400,
+        "height": 1.25,
+        "letterSpacing": 0.0
+      },
+      "headlineMedium": {
+        "size": 28.0,
+        "weight": 400,
+        "height": 1.29,
+        "letterSpacing": 0.0
+      },
+      "headlineSmall": {
+        "size": 24.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "titleLarge": {
+        "size": 22.0,
+        "weight": 700,
+        "height": 1.27,
+        "letterSpacing": 0.0
+      },
+      "titleMedium": {
+        "size": 16.0,
+        "weight": 600,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "titleSmall": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodyLarge": {
+        "size": 16.0,
+        "weight": 400,
+        "height": 1.5,
+        "letterSpacing": 0.0
+      },
+      "bodyMedium": {
+        "size": 14.0,
+        "weight": 400,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "bodySmall": {
+        "size": 12.0,
+        "weight": 400,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelLarge": {
+        "size": 14.0,
+        "weight": 600,
+        "height": 1.43,
+        "letterSpacing": 0.0
+      },
+      "labelMedium": {
+        "size": 12.0,
+        "weight": 500,
+        "height": 1.33,
+        "letterSpacing": 0.0
+      },
+      "labelSmall": {
+        "size": 11.0,
+        "weight": 400,
+        "height": 1.45,
+        "letterSpacing": 0.0
+      }
+    }
+  }
+}

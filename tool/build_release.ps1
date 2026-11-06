@@ -1,8 +1,7 @@
 param(
   [string]$KeyStore = $env:REVIEW_X_KEYSTORE,
   [string]$JavaHome = $env:JAVA_HOME,
-  [string]$BcProvider = $env:REVIEW_X_BC_PROVIDER,
-  [string]$FlutterCommand = 'flutter'
+  [string]$BcProvider = $env:REVIEW_X_BC_PROVIDER
 )
 $ErrorActionPreference = 'Stop'
 $keyAlias = $env:REVIEW_X_KEY_ALIAS
@@ -18,13 +17,13 @@ if ([string]::IsNullOrWhiteSpace($JavaHome)) {
 if ([string]::IsNullOrWhiteSpace($BcProvider) -or !(Test-Path -LiteralPath $BcProvider -PathType Leaf)) {
   throw 'Set REVIEW_X_BC_PROVIDER to a local Bouncy Castle provider JAR.'
 }
-if (!(Get-Command $FlutterCommand -ErrorAction SilentlyContinue)) {
-  throw 'Flutter was not found. Add it to PATH or pass -FlutterCommand.'
-}
 $projectRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $tempRoot = Join-Path $projectRoot ".build-temp-$PID"
+if ([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($tempRoot)) -ne $projectRoot) {
+  throw 'Temporary build directory escaped the Compose project.'
+}
 $signingTempRoot = Join-Path $projectRoot '.signing-temp'
-$temporaryStore = Join-Path $signingTempRoot 'release.p12'
+$temporaryStore = Join-Path $signingTempRoot "release-$PID.p12"
 $taskPassword = [Console]::ReadLine()
 if ([string]::IsNullOrEmpty($taskPassword)) { throw 'Supply signing password through standard input.' }
 $signingEnvironmentNames = @(
@@ -91,12 +90,11 @@ public class ReviewXPipeAgent {
   if ($LASTEXITCODE -ne 0) { throw 'BKS conversion failed.' }
   Push-Location $projectRoot
   try {
-    & $FlutterCommand build apk --release --target-platform android-arm64 --no-pub
-    if ($LASTEXITCODE -ne 0) { throw 'Release build failed.' }
-    $versionLine = Select-String -LiteralPath (Join-Path $projectRoot 'pubspec.yaml') -Pattern '^version:\s*(\d+\.\d+\.\d+)\+\d+'
-    if (!$versionLine) { throw 'Invalid pubspec version.' }
-    $versionName = $versionLine.Matches[0].Groups[1].Value
-    Copy-Item -LiteralPath (Join-Path $projectRoot 'build/app/outputs/flutter-apk/app-release.apk') -Destination (Join-Path $projectRoot "Review_X_v$versionName.apk") -Force
+    & .\gradlew.bat --no-daemon :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease
+    if ($LASTEXITCODE -ne 0) { throw 'Compose checks or release build failed.' }
+    $apk = Join-Path $projectRoot 'app/build/outputs/apk/release/app-release.apk'
+    & (Join-Path $PSScriptRoot 'verify_release.ps1') -Apk $apk -JavaHome $JavaHome
+    Copy-Item -LiteralPath $apk -Destination (Join-Path $projectRoot 'ReviewX_2.0.0_arm64-v8a.apk') -Force
   } finally { Pop-Location }
 } finally {
   if (Test-Path -LiteralPath $temporaryStore) { Remove-Item -LiteralPath $temporaryStore -Force }
@@ -114,3 +112,4 @@ public class ReviewXPipeAgent {
   }
   $taskPassword = $null
 }
+

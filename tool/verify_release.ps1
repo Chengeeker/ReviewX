@@ -33,14 +33,19 @@ try {
   if (!($metadata | Where-Object { $_ -match "^package: name='com.review.x'" })) { throw 'Unexpected package name' }
   $signature = & (Join-Path $BuildTools 'apksigner.bat') verify --verbose --print-certs $resolvedApk
   if ($LASTEXITCODE -ne 0) { throw 'APK signature failed' }
+  $expected = '3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975'
+  if (!(($signature -join "`n") -match "certificate SHA-256 digest: $expected")) { throw 'Unexpected signing certificate' }
+  if (!(($signature -join "`n") -match 'Verified using v2 scheme.*true')) { throw 'APK v2 signature is required' }
+  if (!(($metadata -join "`n") -match "versionCode='125'.*versionName='2\.0\.0'")) { throw 'Unexpected ReviewX version' }
   $signature | Where-Object { $_ -match '^Verifies|v2 scheme|certificate SHA-256 digest|Number of signers:' }
   & (Join-Path $BuildTools 'zipalign.exe') -c -P 16 4 $resolvedApk
   if ($LASTEXITCODE -ne 0) { throw 'APK alignment failed' }
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   $zip = [IO.Compression.ZipFile]::OpenRead($resolvedApk)
   try {
+    if ($zip.Entries | Where-Object { $_.FullName -match 'flutter_assets|libflutter\.so|libapp\.so' }) { throw 'Flutter runtime leaked into Compose APK' }
     $libraries = @($zip.Entries | Where-Object { $_.FullName -match '^lib/[^/]+/[^/]+\.so$' })
-    if (!$libraries.Count) { throw 'No native libraries found' }
+    if (!$libraries.Count) { Write-Output 'Managed-code APK: no native ABI or ELF alignment requirement.' }
     foreach ($entry in $libraries) {
       if (!$entry.FullName.StartsWith('lib/arm64-v8a/')) { throw "Unexpected ABI: $($entry.FullName)" }
       $stream = $entry.Open()
@@ -68,3 +73,4 @@ try {
   Write-Output "SHA256: $((Get-FileHash -LiteralPath $resolvedApk -Algorithm SHA256).Hash)"
   Write-Output 'Static APK verification passed. This is not device acceptance.'
 } finally { $env:JAVA_HOME = $previousJava }
+

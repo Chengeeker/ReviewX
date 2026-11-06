@@ -1,0 +1,22 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+    <application android:name=".ReviewApplication" android:allowBackup="false" android:fullBackupContent="false" android:usesCleartextTraffic="false" android:dataExtractionRules="@xml/data_extraction_rules"
+        android:label="ReviewX" android:icon="@mipmap/ic_launcher" android:theme="@style/AppTheme"
+        android:supportsRtl="true" android:enableOnBackInvokedCallback="true">
+        <activity android:name=".XLoginActivity" android:theme="@style/NormalTheme" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <provider android:name="androidx.core.content.FileProvider" android:authorities="com.review.x.compose.files" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>
+        <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop" android:configChanges="orientation|screenSize|keyboardHidden" android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.DEFAULT" /><category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" /><data android:scheme="http" /><data android:host="x.com" /><data android:host="www.x.com" /><data android:host="twitter.com" /><data android:host="www.twitter.com" /><data android:host="mobile.twitter.com" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

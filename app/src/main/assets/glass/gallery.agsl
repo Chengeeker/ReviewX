@@ -1,0 +1,30 @@
+
+
+
+uniform float2 uSize;
+uniform shader uBackgroundTexture;
+
+
+
+float4 main(float2 coordinate) {
+  float2 position = coordinate;
+
+
+  float2 center = uSize * 0.5;
+  float2 radial = position - center;
+  float radius = min(uSize.x, uSize.y) * 0.5;
+  float normalizedRadius = clamp(length(radial) / radius, 0.0, 0.98);
+
+  float capHeight = 1.4;
+  float surfaceSlope = (capHeight / radius) * normalizedRadius /
+      sqrt(max(1.0 - normalizedRadius * normalizedRadius, 0.04));
+  float incidence = atan(surfaceSlope);
+  float transmission = asin(clamp(sin(incidence) / 1.52, 0.0, 0.99));
+  float shift = clamp((incidence - transmission) * 8.0, 0.0, 0.45);
+  shift *= smoothstep(0.08, 0.42, normalizedRadius);
+
+  float2 direction = radial / max(length(radial), 0.001);
+  float2 samplePosition = position + direction * shift;
+  float2 uv = clamp(samplePosition / uSize, float2(0.001), float2(0.999));
+  return uBackgroundTexture.eval(uv*uSize);
+}

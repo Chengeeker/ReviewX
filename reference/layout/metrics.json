@@ -1,0 +1,3892 @@
+{
+  "settings-light": {
+    "texts": {
+      "偏好与功能": {
+        "x": 32.0,
+        "y": 20.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "个性化": {
+        "x": 72.0,
+        "y": 73.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "帖子与阅读样式": {
+        "x": 72.0,
+        "y": 135.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "网络设置": {
+        "x": 72.0,
+        "y": 197.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "订阅消息提醒": {
+        "x": 72.0,
+        "y": 259.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "存储与备份": {
+        "x": 32.0,
+        "y": 332.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "存储设置": {
+        "x": 72.0,
+        "y": 385.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "缓存管理": {
+        "x": 72.0,
+        "y": 445.12837982177734,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "查看与清理应用缓存": {
+        "x": 72.0,
+        "y": 467.2837839126587,
+        "width": 267.0,
+        "height": 17.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "WebDAV备份": {
+        "x": 72.0,
+        "y": 525.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "账号与应用": {
+        "x": 32.0,
+        "y": 598.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "登录 X 账号": {
+        "x": 72.0,
+        "y": 651.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "导出诊断日志": {
+        "x": 72.0,
+        "y": 711.1283798217773,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "遇到问题时分享给开发者": {
+        "x": 72.0,
+        "y": 733.2837839126587,
+        "width": 267.0,
+        "height": 17.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "关于 ReviewX": {
+        "x": 72.0,
+        "y": 791.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      }
+    },
+    "rows": {
+      "个性化": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "帖子与阅读样式": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "网络设置": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "订阅消息提醒": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "存储设置": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "缓存管理": {
+        "height": 78.0,
+        "width": 379.0
+      },
+      "WebDAV备份": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "登录 X 账号": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "导出诊断日志": {
+        "height": 78.0,
+        "width": 379.0
+      },
+      "关于 ReviewX": {
+        "height": 62.0,
+        "width": 379.0
+      }
+    }
+  },
+  "theme-light": {
+    "texts": {
+      "明暗模式": {
+        "x": 32.0,
+        "y": 68.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "跟随系统": {
+        "x": 88.0,
+        "y": 121.0,
+        "width": 291.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "浅色模式": {
+        "x": 88.0,
+        "y": 183.0,
+        "width": 291.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "深色模式": {
+        "x": 88.0,
+        "y": 245.0,
+        "width": 291.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "纯黑深色模式 (OLED 省电)": {
+        "x": 72.0,
+        "y": 307.0,
+        "width": 231.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "色彩方案": {
+        "x": 32.0,
+        "y": 380.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "Material You (Monet) 动态取色": {
+        "x": 72.0,
+        "y": 433.0,
+        "width": 231.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "预置主题配色搭配": {
+        "x": 32.0,
+        "y": 486.0,
+        "width": 112.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "经典红": {
+        "x": 86.5,
+        "y": 530.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "活力橙": {
+        "x": 194.5,
+        "y": 530.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "极光蓝": {
+        "x": 302.5,
+        "y": 530.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "翡翠绿": {
+        "x": 86.5,
+        "y": 590.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "优雅紫": {
+        "x": 194.5,
+        "y": 590.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "樱花粉": {
+        "x": 302.5,
+        "y": 590.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "青碧色": {
+        "x": 86.5,
+        "y": 650.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "经典黑灰": {
+        "x": 194.5,
+        "y": 650.0,
+        "width": 56.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "字体粗细": {
+        "x": 32.0,
+        "y": 728.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "自定义应用字体粗细": {
+        "x": 72.0,
+        "y": 779.1283798217773,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "当前：默认": {
+        "x": 72.0,
+        "y": 801.2837839126587,
+        "width": 267.0,
+        "height": 17.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "字体大小": {
+        "x": 32.0,
+        "y": 870.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "应用字体大小": {
+        "x": 72.0,
+        "y": 913.0,
+        "width": 307.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "100%": {
+        "x": 72.0,
+        "y": 933.0,
+        "width": 30.21240234375,
+        "height": 18.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "个性化": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 54.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "跟随系统": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "浅色模式": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "深色模式": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "纯黑深色模式 (OLED 省电)": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "Material You (Monet) 动态取色": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "自定义应用字体粗细": {
+        "height": 78.0,
+        "width": 379.0
+      },
+      "应用字体大小": {
+        "height": 108.0,
+        "width": 379.0
+      }
+    }
+  },
+  "login-light": {
+    "texts": {
+      "使用 X 官方页面登录": {
+        "x": 56.0,
+        "y": 204.0,
+        "width": 299.0,
+        "height": 29.0,
+        "fontSize": 22.0,
+        "lineHeight": 1.27,
+        "weight": 700
+      },
+      "账号、密码和安全验证都在 X 页面完成。ReviewX 不会收集或保存你的密码；登录成功后会验证会话并返回应用。": {
+        "x": 56.0,
+        "y": 245.0,
+        "width": 299.0,
+        "height": 62.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "前往 X 登录": {
+        "x": 169.6455078125,
+        "y": 344.5,
+        "width": 71.708984375,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "复制登录诊断（不含账号凭据）": {
+        "x": 118.5,
+        "y": 429.0,
+        "width": 196.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "账号登录": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      },
+      "Cookie 导入": {
+        "x": 324.54296875,
+        "y": 17.5,
+        "width": 74.45703125,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      }
+    },
+    "rows": {}
+  },
+  "network-light": {
+    "texts": {
+      "连接方式": {
+        "x": 16.0,
+        "y": 72.0,
+        "width": 379.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "自动": {
+        "x": 32.0,
+        "y": 120.0,
+        "width": 32.0,
+        "height": 24.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 600
+      },
+      "启动时读取系统静态 HTTP 代理；Flutter 请求、视频和 X 登录网页使用系统网络路由。VPN 由系统处理，不支持 PAC 自动代理脚本。": {
+        "x": 16.0,
+        "y": 172.0,
+        "width": 379.0,
+        "height": 62.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "设置用于应用内 API、图片、视频、下载和 WebDAV。外部浏览器遵循自身网络设置。保存后下次启动生效；仅切到后台不会应用新设置。": {
+        "x": 16.0,
+        "y": 258.0,
+        "width": 379.0,
+        "height": 61.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "测试连接": {
+        "x": 58.0,
+        "y": 349.0,
+        "width": 56.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "保存": {
+        "x": 174.0,
+        "y": 349.0,
+        "width": 28.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "网络设置": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {}
+  },
+  "diagnostics-light": {
+    "texts": {
+      "导出诊断日志": {
+        "x": 139.5,
+        "y": 155.0,
+        "width": 132.0,
+        "height": 28.0,
+        "fontSize": 22.0,
+        "lineHeight": 1.27,
+        "weight": 700
+      },
+      "日志保存在本机，最多保留最近 300 条记录。点击下方按钮后，系统会打开分享菜单，由你选择是否发送。": {
+        "x": 46.0,
+        "y": 191.0,
+        "width": 319.0,
+        "height": 61.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.45,
+        "weight": 400
+      },
+      "生成并分享日志": {
+        "x": 165.5,
+        "y": 286.0,
+        "width": 98.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "日志包含应用版本、系统版本、崩溃类型与精简调用位置，以及接口操作、状态码和耗时。不会记录 Cookie、账号、帖子内容或接口正文；异常原文也不会导出。": {
+        "x": 76.0,
+        "y": 382.0,
+        "width": 293.0,
+        "height": 81.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.45,
+        "weight": 400
+      },
+      "诊断日志": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {}
+  },
+  "storage-light": {
+    "texts": {
+      "图片存储路径": {
+        "x": 72.0,
+        "y": 85.77646923065186,
+        "width": 267.0,
+        "height": 22.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "Pictures/ReviewX/": {
+        "x": 72.0,
+        "y": 107.77646923065186,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "视频存储路径": {
+        "x": 72.0,
+        "y": 163.77646923065186,
+        "width": 267.0,
+        "height": 22.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "Movies/ReviewX/": {
+        "x": 72.0,
+        "y": 185.77646923065186,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "存储设置": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "图片存储路径": {
+        "height": 78.0,
+        "width": 379.0
+      },
+      "视频存储路径": {
+        "height": 78.0,
+        "width": 379.0
+      }
+    }
+  },
+  "reading-light": {
+    "texts": {
+      "Review X ✓": {
+        "x": 62.0,
+        "y": 67.0,
+        "width": 69.33543395996094,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "@reviewx": {
+        "x": 62.0,
+        "y": 88.5,
+        "width": 51.052734375,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "· 5 分钟前": {
+        "x": 119.052734375,
+        "y": 88.0,
+        "width": 47.4912109375,
+        "height": 17.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.45,
+        "weight": 400
+      },
+      "Grok 翻译": {
+        "x": 42.0,
+        "y": 164.5,
+        "width": 60.6826171875,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "12": {
+        "x": 48.0732421875,
+        "y": 382.25,
+        "width": 12.353515625,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "24": {
+        "x": 112.5732421875,
+        "y": 382.25,
+        "width": 12.353515625,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "128": {
+        "x": 173.98486328125,
+        "y": 382.25,
+        "width": 18.5302734375,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "2K": {
+        "x": 241.21337890625,
+        "y": 382.25,
+        "width": 13.0732421875,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "相对时间": {
+        "x": 16.0,
+        "y": 437.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "显示年份": {
+        "x": 16.0,
+        "y": 499.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "显示星期": {
+        "x": 16.0,
+        "y": 561.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "显示秒数": {
+        "x": 16.0,
+        "y": 623.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "使用 UTC 时间": {
+        "x": 16.0,
+        "y": 685.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "显示发布来源": {
+        "x": 16.0,
+        "y": 747.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "自动翻译外文推文": {
+        "x": 16.0,
+        "y": 809.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "显示主页背景图": {
+        "x": 16.0,
+        "y": 871.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "帖子与阅读样式": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 126.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "相对时间": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "显示年份": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "显示星期": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "显示秒数": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "使用 UTC 时间": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "显示发布来源": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "自动翻译外文推文": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "显示主页背景图": {
+        "height": 62.0,
+        "width": 411.0
+      }
+    }
+  },
+  "cache-light": {
+    "texts": {
+      "0 B": {
+        "x": 347.8203125,
+        "y": 329.0,
+        "width": 17.1796875,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 600
+      },
+      "可管理的应用缓存": {
+        "x": 149.5,
+        "y": 209.0,
+        "width": 112.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "图片与媒体、网络临时文件及系统运行时缓存": {
+        "x": 85.5,
+        "y": 237.0,
+        "width": 240.0,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "图片与媒体": {
+        "x": 46.0,
+        "y": 281.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "网络与临时文件": {
+        "x": 46.0,
+        "y": 305.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "系统运行时": {
+        "x": 46.0,
+        "y": 329.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "清理所有缓存": {
+        "x": 172.5,
+        "y": 429.0,
+        "width": 84.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "自动清理规则": {
+        "x": 42.0,
+        "y": 508.0,
+        "width": 327.0,
+        "height": 24.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 700
+      },
+      "自动清理缓存阈值": {
+        "x": 82.0,
+        "y": 560.0,
+        "width": 223.01171875,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "达到阈值时在启动阶段自动清理；更改后也会立即检查一次": {
+        "x": 82.0,
+        "y": 580.0,
+        "width": 223.01171875,
+        "height": 34.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "200 MB": {
+        "x": 321.01171875,
+        "y": 577.0,
+        "width": 47.98828125,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.45,
+        "weight": 600
+      },
+      "清理仅针对 Android 应用缓存目录，并清空 Flutter 图片内存缓存；账号凭据、设置、本地时间线快照和已保存到相册的媒体不会受影响。缓存分类按文件路径估算；正在播放或保存的临时媒体可能需要重新加载。": {
+        "x": 42.0,
+        "y": 675.0,
+        "width": 327.0,
+        "height": 101.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.45,
+        "weight": 400
+      },
+      "刷新缓存占用": {
+        "x": 174.5,
+        "y": 827.0,
+        "width": 84.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "缓存管理": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "自动清理缓存阈值": {
+        "height": 76.0,
+        "width": 359.0
+      }
+    }
+  },
+  "cache-threshold-light": {
+    "texts": {
+      "0 B": {
+        "x": 347.8203125,
+        "y": 329.0,
+        "width": 17.1796875,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 600
+      },
+      "可管理的应用缓存": {
+        "x": 149.5,
+        "y": 209.0,
+        "width": 112.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "图片与媒体、网络临时文件及系统运行时缓存": {
+        "x": 85.5,
+        "y": 237.0,
+        "width": 240.0,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "图片与媒体": {
+        "x": 46.0,
+        "y": 281.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "网络与临时文件": {
+        "x": 46.0,
+        "y": 305.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "系统运行时": {
+        "x": 46.0,
+        "y": 329.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "清理所有缓存": {
+        "x": 172.5,
+        "y": 429.0,
+        "width": 84.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "自动清理规则": {
+        "x": 42.0,
+        "y": 508.0,
+        "width": 327.0,
+        "height": 24.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 700
+      },
+      "自动清理缓存阈值": {
+        "x": 82.0,
+        "y": 560.0,
+        "width": 223.01171875,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "达到阈值时在启动阶段自动清理；更改后也会立即检查一次": {
+        "x": 82.0,
+        "y": 580.0,
+        "width": 223.01171875,
+        "height": 34.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "200 MB": {
+        "x": 137.5,
+        "y": 426.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "清理仅针对 Android 应用缓存目录，并清空 Flutter 图片内存缓存；账号凭据、设置、本地时间线快照和已保存到相册的媒体不会受影响。缓存分类按文件路径估算；正在播放或保存的临时媒体可能需要重新加载。": {
+        "x": 42.0,
+        "y": 675.0,
+        "width": 327.0,
+        "height": 101.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.45,
+        "weight": 400
+      },
+      "刷新缓存占用": {
+        "x": 174.5,
+        "y": 827.0,
+        "width": 84.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "缓存管理": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      },
+      "选择自动清理阈值": {
+        "x": 89.5,
+        "y": 211.0,
+        "width": 232.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      },
+      "不限制总缓存占用": {
+        "x": 137.5,
+        "y": 264.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "50 MB": {
+        "x": 137.5,
+        "y": 318.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "100 MB": {
+        "x": 137.5,
+        "y": 372.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "500 MB": {
+        "x": 137.5,
+        "y": 480.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "1 GB": {
+        "x": 137.5,
+        "y": 534.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "2 GB": {
+        "x": 137.5,
+        "y": 588.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "取消": {
+        "x": 275.5,
+        "y": 646.0,
+        "width": 28.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      }
+    },
+    "rows": {
+      "自动清理缓存阈值": {
+        "height": 76.0,
+        "width": 359.0
+      },
+      "不限制总缓存占用": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "50 MB": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "100 MB": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "200 MB": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "500 MB": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "1 GB": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "2 GB": {
+        "height": 54.0,
+        "width": 280.0
+      }
+    }
+  },
+  "account-light": {
+    "texts": {
+      "X 账号": {
+        "x": 88.0,
+        "y": 93.0,
+        "width": 291.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "导出 Cookie": {
+        "x": 72.0,
+        "y": 179.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "验证登录状态": {
+        "x": 72.0,
+        "y": 241.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "退出登录": {
+        "x": 72.0,
+        "y": 303.0,
+        "width": 307.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "账号管理": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "X 账号": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "导出 Cookie": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "验证登录状态": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "退出登录": {
+        "height": 62.0,
+        "width": 379.0
+      }
+    }
+  },
+  "display-light": {
+    "texts": {
+      "跟随系统": {
+        "x": 56.0,
+        "y": 77.0,
+        "width": 339.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "屏幕刷新率": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 90.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "跟随系统": {
+        "height": 62.0,
+        "width": 411.0
+      }
+    }
+  },
+  "notification-settings-light": {
+    "texts": {
+      "定期读取 X 官方通知；首次读取只建立基线。Android 系统安排至少 15 分钟一次的任务，省电策略可能延迟，无法保证即时通知。": {
+        "x": 16.0,
+        "y": 72.0,
+        "width": 379.0,
+        "height": 62.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "启用消息提醒": {
+        "x": 16.0,
+        "y": 171.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "提及与回复": {
+        "x": 16.0,
+        "y": 233.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "点赞": {
+        "x": 16.0,
+        "y": 295.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "转发": {
+        "x": 16.0,
+        "y": 357.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "关注": {
+        "x": 16.0,
+        "y": 419.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "其他通知": {
+        "x": 16.0,
+        "y": 481.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "订阅消息提醒": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 108.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "启用消息提醒": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "提及与回复": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "点赞": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "转发": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "关注": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "其他通知": {
+        "height": 62.0,
+        "width": 411.0
+      }
+    }
+  },
+  "history-empty-light": {
+    "texts": {
+      "暂无本机浏览历史": {
+        "x": 149.5,
+        "y": 435.5,
+        "width": 112.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "本机浏览历史": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 108.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {}
+  },
+  "webdav-light": {
+    "texts": {
+      "备份内容": {
+        "x": 67.0,
+        "y": 85.0,
+        "width": 64.0,
+        "height": 23.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.43,
+        "weight": 700
+      },
+      "备份应用设置、搜索与浏览历史等本地数据，不包含图片和视频缓存。": {
+        "x": 67.0,
+        "y": 112.0,
+        "width": 313.0,
+        "height": 40.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "全量安全备份": {
+        "x": 88.0,
+        "y": 199.77646923065186,
+        "width": 291.0,
+        "height": 22.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "Cookie、Token 和 WebDAV 密码不会上传。": {
+        "x": 88.0,
+        "y": 221.77646923065186,
+        "width": 291.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "全量备份": {
+        "x": 88.0,
+        "y": 269.0,
+        "width": 291.0,
+        "height": 22.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "同时上传 Cookie、Token 和 WebDAV 密码。备份文件含明文凭据，请妥善保管云盘及历史备份。": {
+        "x": 88.0,
+        "y": 291.0,
+        "width": 291.0,
+        "height": 60.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "WebDAV 服务器配置": {
+        "x": 32.0,
+        "y": 393.0,
+        "width": 145.6328125,
+        "height": 24.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "服务器 URL": {
+        "x": 84.0,
+        "y": 449.0,
+        "width": 80.796875,
+        "height": 17.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.0,
+        "weight": 400
+      },
+      "例如: https://dav.jianguoyun.com/dav/": {
+        "x": 84.0,
+        "y": 445.0,
+        "width": 279.0,
+        "height": 25.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 400
+      },
+      "账号 / 邮箱": {
+        "x": 84.0,
+        "y": 509.5,
+        "width": 78.515625,
+        "height": 17.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.0,
+        "weight": 400
+      },
+      "应用密码 / Token": {
+        "x": 84.0,
+        "y": 569.5,
+        "width": 121.671875,
+        "height": 17.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.0,
+        "weight": 400
+      },
+      "备份文件夹名称": {
+        "x": 48.0,
+        "y": 608.5,
+        "width": 112.0,
+        "height": 16.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.0,
+        "weight": 400
+      },
+      "默认: ReviewX": {
+        "x": 84.0,
+        "y": 626.0,
+        "width": 279.0,
+        "height": 25.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 400
+      },
+      "测试服务器连接": {
+        "x": 165.5,
+        "y": 693.0,
+        "width": 98.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "云端备份与还原操作": {
+        "x": 32.0,
+        "y": 775.0,
+        "width": 144.0,
+        "height": 23.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "立即备份到云端": {
+        "x": 79.75,
+        "y": 828.0,
+        "width": 98.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "从云端恢复备份": {
+        "x": 259.25,
+        "y": 828.0,
+        "width": 98.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "WebDAV 云端备份与恢复": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 199.8369140625,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "全量安全备份": {
+        "height": 76.0,
+        "width": 379.0
+      },
+      "全量备份": {
+        "height": 102.0,
+        "width": 379.0
+      }
+    }
+  },
+  "drawer-light": {
+    "texts": {
+      "未登录 / 访客": {
+        "x": 24.0,
+        "y": 102.0,
+        "width": 97.46923828125,
+        "height": 25.0,
+        "fontSize": 16.5,
+        "lineHeight": 1.43,
+        "weight": 700
+      },
+      "历史": {
+        "x": 56.0,
+        "y": 164.0,
+        "width": 204.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 500
+      },
+      "通知": {
+        "x": 56.0,
+        "y": 212.0,
+        "width": 204.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 500
+      },
+      "本机浏览历史": {
+        "x": 56.0,
+        "y": 260.0,
+        "width": 204.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 500
+      }
+    },
+    "rows": {
+      "历史": {
+        "height": 48.0,
+        "width": 280.0
+      },
+      "通知": {
+        "height": 48.0,
+        "width": 280.0
+      },
+      "本机浏览历史": {
+        "height": 48.0,
+        "width": 280.0
+      }
+    }
+  },
+  "composer-light": {
+    "texts": {
+      "@reviewx\n原版引用内容": {
+        "x": 42.0,
+        "y": 93.0,
+        "width": 327.0,
+        "height": 40.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "有什么新鲜事？": {
+        "x": 36.0,
+        "y": 166.0,
+        "width": 339.0,
+        "height": 24.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 400
+      },
+      "本页发布文字，X 会校验账号对应的长度限制": {
+        "x": 36.0,
+        "y": 330.0,
+        "width": 238.494140625,
+        "height": 17.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "0/10000": {
+        "x": 329.625,
+        "y": 330.838828086853,
+        "width": 45.375,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "引用帖子": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      },
+      "发布": {
+        "x": 365.0,
+        "y": 18.0,
+        "width": 28.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      }
+    },
+    "rows": {}
+  },
+  "request-error-light": {
+    "texts": {
+      "连接失败，请重试": {
+        "x": 48.0,
+        "y": 22.0,
+        "width": 283.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "重试": {
+        "x": 349.0,
+        "y": 22.0,
+        "width": 28.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      }
+    },
+    "rows": {}
+  },
+  "request-loading-light": {
+    "texts": {
+      "正在连接 X… 若等待较久，请检查 VPN 或代理": {
+        "x": 46.0,
+        "y": 8.0,
+        "width": 349.0,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      }
+    },
+    "rows": {}
+  },
+  "timeline-empty-light": {
+    "texts": {
+      "暂无帖子，下拉刷新": {
+        "x": 142.5,
+        "y": 24.0,
+        "width": 126.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      }
+    },
+    "rows": {}
+  },
+  "video-chip-light": {
+    "texts": {
+      "2.0X 倍速快进中": {
+        "x": 17.0,
+        "y": 13.5,
+        "width": 101.650390625,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      }
+    },
+    "rows": {
+      "Chip": {
+        "width": 135.650390625,
+        "height": 48.0
+      }
+    }
+  },
+  "home-logged-in-light": {
+    "texts": {
+      "Review X": {
+        "x": 62.0,
+        "y": 888.0,
+        "width": 56.3076171875,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "@reviewx": {
+        "x": 62.0,
+        "y": 908.0,
+        "width": 51.052734375,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "0": {
+        "x": 244.66162109375,
+        "y": 993.0,
+        "width": 6.1767578125,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "ReviewX": {
+        "x": 72.0,
+        "y": 13.0,
+        "width": 67.939453125,
+        "height": 22.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      },
+      "为你推荐": {
+        "x": 72.75,
+        "y": 60.5,
+        "width": 60.0,
+        "height": 21.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "正在关注": {
+        "x": 278.25,
+        "y": 60.5,
+        "width": 60.0,
+        "height": 21.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "首页": {
+        "x": 114.72141444544445,
+        "y": 855.00006,
+        "width": 22.0,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "探索": {
+        "x": 194.49999000100001,
+        "y": 855.00006,
+        "width": 22.0,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "设置": {
+        "x": 274.2785655565556,
+        "y": 855.00006,
+        "width": 22.0,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 500
+      }
+    },
+    "rows": {}
+  },
+  "post-light": {
+    "texts": {
+      "显示对照 ✓": {
+        "x": 62.0,
+        "y": 11.5,
+        "width": 69.02781677246094,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "@reviewx": {
+        "x": 62.0,
+        "y": 32.5,
+        "width": 51.052734375,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "24": {
+        "x": 48.0732421875,
+        "y": 116.0,
+        "width": 12.353515625,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "12": {
+        "x": 112.5732421875,
+        "y": 116.0,
+        "width": 12.353515625,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "128": {
+        "x": 173.98486328125,
+        "y": 116.0,
+        "width": 18.5302734375,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "2K": {
+        "x": 241.21337890625,
+        "y": 116.0,
+        "width": 13.0732421875,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      }
+    },
+    "rows": {}
+  },
+  "settings-dark": {
+    "texts": {
+      "偏好与功能": {
+        "x": 32.0,
+        "y": 20.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "个性化": {
+        "x": 72.0,
+        "y": 73.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "帖子与阅读样式": {
+        "x": 72.0,
+        "y": 135.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "网络设置": {
+        "x": 72.0,
+        "y": 197.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "订阅消息提醒": {
+        "x": 72.0,
+        "y": 259.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "存储与备份": {
+        "x": 32.0,
+        "y": 332.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "存储设置": {
+        "x": 72.0,
+        "y": 385.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "缓存管理": {
+        "x": 72.0,
+        "y": 445.12837982177734,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "查看与清理应用缓存": {
+        "x": 72.0,
+        "y": 467.2837839126587,
+        "width": 267.0,
+        "height": 17.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "WebDAV备份": {
+        "x": 72.0,
+        "y": 525.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "账号与应用": {
+        "x": 32.0,
+        "y": 598.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "登录 X 账号": {
+        "x": 72.0,
+        "y": 651.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "导出诊断日志": {
+        "x": 72.0,
+        "y": 711.1283798217773,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "遇到问题时分享给开发者": {
+        "x": 72.0,
+        "y": 733.2837839126587,
+        "width": 267.0,
+        "height": 17.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "关于 ReviewX": {
+        "x": 72.0,
+        "y": 791.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      }
+    },
+    "rows": {
+      "个性化": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "帖子与阅读样式": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "网络设置": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "订阅消息提醒": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "存储设置": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "缓存管理": {
+        "height": 78.0,
+        "width": 379.0
+      },
+      "WebDAV备份": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "登录 X 账号": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "导出诊断日志": {
+        "height": 78.0,
+        "width": 379.0
+      },
+      "关于 ReviewX": {
+        "height": 62.0,
+        "width": 379.0
+      }
+    }
+  },
+  "theme-dark": {
+    "texts": {
+      "明暗模式": {
+        "x": 32.0,
+        "y": 68.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "跟随系统": {
+        "x": 88.0,
+        "y": 121.0,
+        "width": 291.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "浅色模式": {
+        "x": 88.0,
+        "y": 183.0,
+        "width": 291.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "深色模式": {
+        "x": 88.0,
+        "y": 245.0,
+        "width": 291.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "纯黑深色模式 (OLED 省电)": {
+        "x": 72.0,
+        "y": 307.0,
+        "width": 231.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "色彩方案": {
+        "x": 32.0,
+        "y": 380.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "Material You (Monet) 动态取色": {
+        "x": 72.0,
+        "y": 433.0,
+        "width": 231.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "预置主题配色搭配": {
+        "x": 32.0,
+        "y": 486.0,
+        "width": 112.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "经典红": {
+        "x": 86.5,
+        "y": 530.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "活力橙": {
+        "x": 194.5,
+        "y": 530.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "极光蓝": {
+        "x": 302.5,
+        "y": 530.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "翡翠绿": {
+        "x": 86.5,
+        "y": 590.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "优雅紫": {
+        "x": 194.5,
+        "y": 590.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "樱花粉": {
+        "x": 302.5,
+        "y": 590.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "青碧色": {
+        "x": 86.5,
+        "y": 650.0,
+        "width": 42.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "经典黑灰": {
+        "x": 194.5,
+        "y": 650.0,
+        "width": 56.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "字体粗细": {
+        "x": 32.0,
+        "y": 728.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "自定义应用字体粗细": {
+        "x": 72.0,
+        "y": 779.1283798217773,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "当前：默认": {
+        "x": 72.0,
+        "y": 801.2837839126587,
+        "width": 267.0,
+        "height": 17.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "字体大小": {
+        "x": 32.0,
+        "y": 870.0,
+        "width": 347.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "应用字体大小": {
+        "x": 72.0,
+        "y": 913.0,
+        "width": 307.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "100%": {
+        "x": 72.0,
+        "y": 933.0,
+        "width": 30.21240234375,
+        "height": 18.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "个性化": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 54.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "跟随系统": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "浅色模式": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "深色模式": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "纯黑深色模式 (OLED 省电)": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "Material You (Monet) 动态取色": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "自定义应用字体粗细": {
+        "height": 78.0,
+        "width": 379.0
+      },
+      "应用字体大小": {
+        "height": 108.0,
+        "width": 379.0
+      }
+    }
+  },
+  "login-dark": {
+    "texts": {
+      "使用 X 官方页面登录": {
+        "x": 56.0,
+        "y": 204.0,
+        "width": 299.0,
+        "height": 29.0,
+        "fontSize": 22.0,
+        "lineHeight": 1.27,
+        "weight": 700
+      },
+      "账号、密码和安全验证都在 X 页面完成。ReviewX 不会收集或保存你的密码；登录成功后会验证会话并返回应用。": {
+        "x": 56.0,
+        "y": 245.0,
+        "width": 299.0,
+        "height": 62.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "前往 X 登录": {
+        "x": 169.6455078125,
+        "y": 344.5,
+        "width": 71.708984375,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "复制登录诊断（不含账号凭据）": {
+        "x": 118.5,
+        "y": 429.0,
+        "width": 196.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "账号登录": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      },
+      "Cookie 导入": {
+        "x": 324.54296875,
+        "y": 17.5,
+        "width": 74.45703125,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      }
+    },
+    "rows": {}
+  },
+  "network-dark": {
+    "texts": {
+      "连接方式": {
+        "x": 16.0,
+        "y": 72.0,
+        "width": 379.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "自动": {
+        "x": 32.0,
+        "y": 120.0,
+        "width": 32.0,
+        "height": 24.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 600
+      },
+      "启动时读取系统静态 HTTP 代理；Flutter 请求、视频和 X 登录网页使用系统网络路由。VPN 由系统处理，不支持 PAC 自动代理脚本。": {
+        "x": 16.0,
+        "y": 172.0,
+        "width": 379.0,
+        "height": 62.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "设置用于应用内 API、图片、视频、下载和 WebDAV。外部浏览器遵循自身网络设置。保存后下次启动生效；仅切到后台不会应用新设置。": {
+        "x": 16.0,
+        "y": 258.0,
+        "width": 379.0,
+        "height": 61.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "测试连接": {
+        "x": 58.0,
+        "y": 349.0,
+        "width": 56.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "保存": {
+        "x": 174.0,
+        "y": 349.0,
+        "width": 28.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "网络设置": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {}
+  },
+  "diagnostics-dark": {
+    "texts": {
+      "导出诊断日志": {
+        "x": 139.5,
+        "y": 155.0,
+        "width": 132.0,
+        "height": 28.0,
+        "fontSize": 22.0,
+        "lineHeight": 1.27,
+        "weight": 700
+      },
+      "日志保存在本机，最多保留最近 300 条记录。点击下方按钮后，系统会打开分享菜单，由你选择是否发送。": {
+        "x": 46.0,
+        "y": 191.0,
+        "width": 319.0,
+        "height": 61.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.45,
+        "weight": 400
+      },
+      "生成并分享日志": {
+        "x": 165.5,
+        "y": 286.0,
+        "width": 98.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "日志包含应用版本、系统版本、崩溃类型与精简调用位置，以及接口操作、状态码和耗时。不会记录 Cookie、账号、帖子内容或接口正文；异常原文也不会导出。": {
+        "x": 76.0,
+        "y": 382.0,
+        "width": 293.0,
+        "height": 81.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.45,
+        "weight": 400
+      },
+      "诊断日志": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {}
+  },
+  "storage-dark": {
+    "texts": {
+      "图片存储路径": {
+        "x": 72.0,
+        "y": 85.77646923065186,
+        "width": 267.0,
+        "height": 22.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "Pictures/ReviewX/": {
+        "x": 72.0,
+        "y": 107.77646923065186,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "视频存储路径": {
+        "x": 72.0,
+        "y": 163.77646923065186,
+        "width": 267.0,
+        "height": 22.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "Movies/ReviewX/": {
+        "x": 72.0,
+        "y": 185.77646923065186,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "存储设置": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "图片存储路径": {
+        "height": 78.0,
+        "width": 379.0
+      },
+      "视频存储路径": {
+        "height": 78.0,
+        "width": 379.0
+      }
+    }
+  },
+  "reading-dark": {
+    "texts": {
+      "Review X ✓": {
+        "x": 62.0,
+        "y": 67.0,
+        "width": 69.33543395996094,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "@reviewx": {
+        "x": 62.0,
+        "y": 88.5,
+        "width": 51.052734375,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "· 5 分钟前": {
+        "x": 119.052734375,
+        "y": 88.0,
+        "width": 47.4912109375,
+        "height": 17.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.45,
+        "weight": 400
+      },
+      "Grok 翻译": {
+        "x": 42.0,
+        "y": 164.5,
+        "width": 60.6826171875,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "12": {
+        "x": 48.0732421875,
+        "y": 382.25,
+        "width": 12.353515625,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "24": {
+        "x": 112.5732421875,
+        "y": 382.25,
+        "width": 12.353515625,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "128": {
+        "x": 173.98486328125,
+        "y": 382.25,
+        "width": 18.5302734375,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "2K": {
+        "x": 241.21337890625,
+        "y": 382.25,
+        "width": 13.0732421875,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "相对时间": {
+        "x": 16.0,
+        "y": 437.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "显示年份": {
+        "x": 16.0,
+        "y": 499.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "显示星期": {
+        "x": 16.0,
+        "y": 561.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "显示秒数": {
+        "x": 16.0,
+        "y": 623.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "使用 UTC 时间": {
+        "x": 16.0,
+        "y": 685.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "显示发布来源": {
+        "x": 16.0,
+        "y": 747.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "自动翻译外文推文": {
+        "x": 16.0,
+        "y": 809.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "显示主页背景图": {
+        "x": 16.0,
+        "y": 871.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "帖子与阅读样式": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 126.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "相对时间": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "显示年份": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "显示星期": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "显示秒数": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "使用 UTC 时间": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "显示发布来源": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "自动翻译外文推文": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "显示主页背景图": {
+        "height": 62.0,
+        "width": 411.0
+      }
+    }
+  },
+  "cache-dark": {
+    "texts": {
+      "0 B": {
+        "x": 347.8203125,
+        "y": 329.0,
+        "width": 17.1796875,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 600
+      },
+      "可管理的应用缓存": {
+        "x": 149.5,
+        "y": 209.0,
+        "width": 112.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "图片与媒体、网络临时文件及系统运行时缓存": {
+        "x": 85.5,
+        "y": 237.0,
+        "width": 240.0,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "图片与媒体": {
+        "x": 46.0,
+        "y": 281.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "网络与临时文件": {
+        "x": 46.0,
+        "y": 305.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "系统运行时": {
+        "x": 46.0,
+        "y": 329.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "清理所有缓存": {
+        "x": 172.5,
+        "y": 429.0,
+        "width": 84.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "自动清理规则": {
+        "x": 42.0,
+        "y": 508.0,
+        "width": 327.0,
+        "height": 24.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 700
+      },
+      "自动清理缓存阈值": {
+        "x": 82.0,
+        "y": 560.0,
+        "width": 223.01171875,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "达到阈值时在启动阶段自动清理；更改后也会立即检查一次": {
+        "x": 82.0,
+        "y": 580.0,
+        "width": 223.01171875,
+        "height": 34.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "200 MB": {
+        "x": 321.01171875,
+        "y": 577.0,
+        "width": 47.98828125,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.45,
+        "weight": 600
+      },
+      "清理仅针对 Android 应用缓存目录，并清空 Flutter 图片内存缓存；账号凭据、设置、本地时间线快照和已保存到相册的媒体不会受影响。缓存分类按文件路径估算；正在播放或保存的临时媒体可能需要重新加载。": {
+        "x": 42.0,
+        "y": 675.0,
+        "width": 327.0,
+        "height": 101.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.45,
+        "weight": 400
+      },
+      "刷新缓存占用": {
+        "x": 174.5,
+        "y": 827.0,
+        "width": 84.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "缓存管理": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "自动清理缓存阈值": {
+        "height": 76.0,
+        "width": 359.0
+      }
+    }
+  },
+  "cache-threshold-dark": {
+    "texts": {
+      "0 B": {
+        "x": 347.8203125,
+        "y": 329.0,
+        "width": 17.1796875,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 600
+      },
+      "可管理的应用缓存": {
+        "x": 149.5,
+        "y": 209.0,
+        "width": 112.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "图片与媒体、网络临时文件及系统运行时缓存": {
+        "x": 85.5,
+        "y": 237.0,
+        "width": 240.0,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "图片与媒体": {
+        "x": 46.0,
+        "y": 281.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "网络与临时文件": {
+        "x": 46.0,
+        "y": 305.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "系统运行时": {
+        "x": 46.0,
+        "y": 329.0,
+        "width": 301.8203125,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "清理所有缓存": {
+        "x": 172.5,
+        "y": 429.0,
+        "width": 84.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "自动清理规则": {
+        "x": 42.0,
+        "y": 508.0,
+        "width": 327.0,
+        "height": 24.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 700
+      },
+      "自动清理缓存阈值": {
+        "x": 82.0,
+        "y": 560.0,
+        "width": 223.01171875,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "达到阈值时在启动阶段自动清理；更改后也会立即检查一次": {
+        "x": 82.0,
+        "y": 580.0,
+        "width": 223.01171875,
+        "height": 34.0,
+        "fontSize": 12.5,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "200 MB": {
+        "x": 137.5,
+        "y": 426.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "清理仅针对 Android 应用缓存目录，并清空 Flutter 图片内存缓存；账号凭据、设置、本地时间线快照和已保存到相册的媒体不会受影响。缓存分类按文件路径估算；正在播放或保存的临时媒体可能需要重新加载。": {
+        "x": 42.0,
+        "y": 675.0,
+        "width": 327.0,
+        "height": 101.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.45,
+        "weight": 400
+      },
+      "刷新缓存占用": {
+        "x": 174.5,
+        "y": 827.0,
+        "width": 84.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "缓存管理": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      },
+      "选择自动清理阈值": {
+        "x": 89.5,
+        "y": 211.0,
+        "width": 232.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      },
+      "不限制总缓存占用": {
+        "x": 137.5,
+        "y": 264.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "50 MB": {
+        "x": 137.5,
+        "y": 318.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "100 MB": {
+        "x": 137.5,
+        "y": 372.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "500 MB": {
+        "x": 137.5,
+        "y": 480.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "1 GB": {
+        "x": 137.5,
+        "y": 534.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "2 GB": {
+        "x": 137.5,
+        "y": 588.0,
+        "width": 192.0,
+        "height": 18.0,
+        "fontSize": 13.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "取消": {
+        "x": 275.5,
+        "y": 646.0,
+        "width": 28.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      }
+    },
+    "rows": {
+      "自动清理缓存阈值": {
+        "height": 76.0,
+        "width": 359.0
+      },
+      "不限制总缓存占用": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "50 MB": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "100 MB": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "200 MB": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "500 MB": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "1 GB": {
+        "height": 54.0,
+        "width": 280.0
+      },
+      "2 GB": {
+        "height": 54.0,
+        "width": 280.0
+      }
+    }
+  },
+  "account-dark": {
+    "texts": {
+      "X 账号": {
+        "x": 88.0,
+        "y": 93.0,
+        "width": 291.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "导出 Cookie": {
+        "x": 72.0,
+        "y": 179.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "验证登录状态": {
+        "x": 72.0,
+        "y": 241.0,
+        "width": 267.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "退出登录": {
+        "x": 72.0,
+        "y": 303.0,
+        "width": 307.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "账号管理": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "X 账号": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "导出 Cookie": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "验证登录状态": {
+        "height": 62.0,
+        "width": 379.0
+      },
+      "退出登录": {
+        "height": 62.0,
+        "width": 379.0
+      }
+    }
+  },
+  "display-dark": {
+    "texts": {
+      "跟随系统": {
+        "x": 56.0,
+        "y": 77.0,
+        "width": 339.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "屏幕刷新率": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 90.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "跟随系统": {
+        "height": 62.0,
+        "width": 411.0
+      }
+    }
+  },
+  "notification-settings-dark": {
+    "texts": {
+      "定期读取 X 官方通知；首次读取只建立基线。Android 系统安排至少 15 分钟一次的任务，省电策略可能延迟，无法保证即时通知。": {
+        "x": 16.0,
+        "y": 72.0,
+        "width": 379.0,
+        "height": 62.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "启用消息提醒": {
+        "x": 16.0,
+        "y": 171.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "提及与回复": {
+        "x": 16.0,
+        "y": 233.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "点赞": {
+        "x": 16.0,
+        "y": 295.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "转发": {
+        "x": 16.0,
+        "y": 357.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "关注": {
+        "x": 16.0,
+        "y": 419.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "其他通知": {
+        "x": 16.0,
+        "y": 481.0,
+        "width": 303.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "订阅消息提醒": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 108.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "启用消息提醒": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "提及与回复": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "点赞": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "转发": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "关注": {
+        "height": 62.0,
+        "width": 411.0
+      },
+      "其他通知": {
+        "height": 62.0,
+        "width": 411.0
+      }
+    }
+  },
+  "history-empty-dark": {
+    "texts": {
+      "暂无本机浏览历史": {
+        "x": 149.5,
+        "y": 435.5,
+        "width": 112.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "本机浏览历史": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 108.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {}
+  },
+  "webdav-dark": {
+    "texts": {
+      "备份内容": {
+        "x": 67.0,
+        "y": 85.0,
+        "width": 64.0,
+        "height": 23.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.43,
+        "weight": 700
+      },
+      "备份应用设置、搜索与浏览历史等本地数据，不包含图片和视频缓存。": {
+        "x": 67.0,
+        "y": 112.0,
+        "width": 313.0,
+        "height": 40.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "全量安全备份": {
+        "x": 88.0,
+        "y": 199.77646923065186,
+        "width": 291.0,
+        "height": 22.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "Cookie、Token 和 WebDAV 密码不会上传。": {
+        "x": 88.0,
+        "y": 221.77646923065186,
+        "width": 291.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "全量备份": {
+        "x": 88.0,
+        "y": 269.0,
+        "width": 291.0,
+        "height": 22.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.35,
+        "weight": 600
+      },
+      "同时上传 Cookie、Token 和 WebDAV 密码。备份文件含明文凭据，请妥善保管云盘及历史备份。": {
+        "x": 88.0,
+        "y": 291.0,
+        "width": 291.0,
+        "height": 60.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.4,
+        "weight": 400
+      },
+      "WebDAV 服务器配置": {
+        "x": 32.0,
+        "y": 393.0,
+        "width": 145.6328125,
+        "height": 24.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "服务器 URL": {
+        "x": 84.0,
+        "y": 449.0,
+        "width": 80.796875,
+        "height": 17.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.0,
+        "weight": 400
+      },
+      "例如: https://dav.jianguoyun.com/dav/": {
+        "x": 84.0,
+        "y": 445.0,
+        "width": 279.0,
+        "height": 25.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 400
+      },
+      "账号 / 邮箱": {
+        "x": 84.0,
+        "y": 509.5,
+        "width": 78.515625,
+        "height": 17.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.0,
+        "weight": 400
+      },
+      "应用密码 / Token": {
+        "x": 84.0,
+        "y": 569.5,
+        "width": 121.671875,
+        "height": 17.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.0,
+        "weight": 400
+      },
+      "备份文件夹名称": {
+        "x": 48.0,
+        "y": 608.5,
+        "width": 112.0,
+        "height": 16.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.0,
+        "weight": 400
+      },
+      "默认: ReviewX": {
+        "x": 84.0,
+        "y": 626.0,
+        "width": 279.0,
+        "height": 25.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 400
+      },
+      "测试服务器连接": {
+        "x": 165.5,
+        "y": 693.0,
+        "width": 98.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "云端备份与还原操作": {
+        "x": 32.0,
+        "y": 775.0,
+        "width": 144.0,
+        "height": 23.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "立即备份到云端": {
+        "x": 79.75,
+        "y": 828.0,
+        "width": 98.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "从云端恢复备份": {
+        "x": 259.25,
+        "y": 828.0,
+        "width": 98.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "WebDAV 云端备份与恢复": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 199.8369140625,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      }
+    },
+    "rows": {
+      "全量安全备份": {
+        "height": 76.0,
+        "width": 379.0
+      },
+      "全量备份": {
+        "height": 102.0,
+        "width": 379.0
+      }
+    }
+  },
+  "drawer-dark": {
+    "texts": {
+      "未登录 / 访客": {
+        "x": 24.0,
+        "y": 102.0,
+        "width": 97.46923828125,
+        "height": 25.0,
+        "fontSize": 16.5,
+        "lineHeight": 1.43,
+        "weight": 700
+      },
+      "历史": {
+        "x": 56.0,
+        "y": 164.0,
+        "width": 204.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 500
+      },
+      "通知": {
+        "x": 56.0,
+        "y": 212.0,
+        "width": 204.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 500
+      },
+      "本机浏览历史": {
+        "x": 56.0,
+        "y": 260.0,
+        "width": 204.0,
+        "height": 20.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.35,
+        "weight": 500
+      }
+    },
+    "rows": {
+      "历史": {
+        "height": 48.0,
+        "width": 280.0
+      },
+      "通知": {
+        "height": 48.0,
+        "width": 280.0
+      },
+      "本机浏览历史": {
+        "height": 48.0,
+        "width": 280.0
+      }
+    }
+  },
+  "composer-dark": {
+    "texts": {
+      "@reviewx\n原版引用内容": {
+        "x": 42.0,
+        "y": 93.0,
+        "width": 327.0,
+        "height": 40.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "有什么新鲜事？": {
+        "x": 36.0,
+        "y": 166.0,
+        "width": 339.0,
+        "height": 24.0,
+        "fontSize": 16.0,
+        "lineHeight": 1.5,
+        "weight": 400
+      },
+      "本页发布文字，X 会校验账号对应的长度限制": {
+        "x": 36.0,
+        "y": 330.0,
+        "width": 238.494140625,
+        "height": 17.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "0/10000": {
+        "x": 329.625,
+        "y": 330.838828086853,
+        "width": 45.375,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "引用帖子": {
+        "x": 16.0,
+        "y": 14.5,
+        "width": 72.0,
+        "height": 27.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      },
+      "发布": {
+        "x": 365.0,
+        "y": 18.0,
+        "width": 28.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      }
+    },
+    "rows": {}
+  },
+  "request-error-dark": {
+    "texts": {
+      "连接失败，请重试": {
+        "x": 48.0,
+        "y": 22.0,
+        "width": 283.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "重试": {
+        "x": 349.0,
+        "y": 22.0,
+        "width": 28.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      }
+    },
+    "rows": {}
+  },
+  "request-loading-dark": {
+    "texts": {
+      "正在连接 X… 若等待较久，请检查 VPN 或代理": {
+        "x": 46.0,
+        "y": 8.0,
+        "width": 349.0,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      }
+    },
+    "rows": {}
+  },
+  "timeline-empty-dark": {
+    "texts": {
+      "暂无帖子，下拉刷新": {
+        "x": 142.5,
+        "y": 24.0,
+        "width": 126.0,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      }
+    },
+    "rows": {}
+  },
+  "video-chip-dark": {
+    "texts": {
+      "2.0X 倍速快进中": {
+        "x": 17.0,
+        "y": 13.5,
+        "width": 101.650390625,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      }
+    },
+    "rows": {
+      "Chip": {
+        "width": 135.650390625,
+        "height": 48.0
+      }
+    }
+  },
+  "home-logged-in-dark": {
+    "texts": {
+      "Review X": {
+        "x": 62.0,
+        "y": 888.0,
+        "width": 56.3076171875,
+        "height": 20.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "@reviewx": {
+        "x": 62.0,
+        "y": 908.0,
+        "width": 51.052734375,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "0": {
+        "x": 244.66162109375,
+        "y": 993.0,
+        "width": 6.1767578125,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "ReviewX": {
+        "x": 72.0,
+        "y": 13.0,
+        "width": 67.939453125,
+        "height": 22.0,
+        "fontSize": 18.0,
+        "lineHeight": null,
+        "weight": 700
+      },
+      "为你推荐": {
+        "x": 72.75,
+        "y": 60.5,
+        "width": 60.0,
+        "height": 21.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "正在关注": {
+        "x": 278.25,
+        "y": 60.5,
+        "width": 60.0,
+        "height": 21.0,
+        "fontSize": 15.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "首页": {
+        "x": 114.72141444544445,
+        "y": 855.00006,
+        "width": 22.0,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "探索": {
+        "x": 194.49999000100001,
+        "y": 855.00006,
+        "width": 22.0,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "设置": {
+        "x": 274.2785655565556,
+        "y": 855.00006,
+        "width": 22.0,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 500
+      }
+    },
+    "rows": {}
+  },
+  "post-dark": {
+    "texts": {
+      "显示对照 ✓": {
+        "x": 62.0,
+        "y": 11.5,
+        "width": 69.02781677246094,
+        "height": 21.0,
+        "fontSize": 14.0,
+        "lineHeight": 1.43,
+        "weight": 600
+      },
+      "@reviewx": {
+        "x": 62.0,
+        "y": 32.5,
+        "width": 51.052734375,
+        "height": 16.0,
+        "fontSize": 12.0,
+        "lineHeight": 1.33,
+        "weight": 400
+      },
+      "24": {
+        "x": 48.0732421875,
+        "y": 116.0,
+        "width": 12.353515625,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "12": {
+        "x": 112.5732421875,
+        "y": 116.0,
+        "width": 12.353515625,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "128": {
+        "x": 173.98486328125,
+        "y": 116.0,
+        "width": 18.5302734375,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      },
+      "2K": {
+        "x": 241.21337890625,
+        "y": 116.0,
+        "width": 13.0732421875,
+        "height": 16.0,
+        "fontSize": 11.0,
+        "lineHeight": 1.43,
+        "weight": 400
+      }
+    },
+    "rows": {}
+  }
+}

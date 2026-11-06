@@ -1,0 +1,2 @@
+#version 300 es
+precision highp float; uniform vec2 uSize; uniform sampler2D uBackgroundTexture; out vec4 color; void main() {color=texture(uBackgroundTexture,vec2(gl_FragCoord.x,uSize.y-gl_FragCoord.y)/uSize);}

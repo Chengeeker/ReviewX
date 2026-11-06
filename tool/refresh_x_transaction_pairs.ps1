@@ -1,6 +1,6 @@
 param(
   [string]$Commit = 'ce8b0a2a7fcbb9b8b0bf594a25344c9fc3a0c00d',
-  [string]$OutputPath = (Join-Path $PSScriptRoot '../assets/x_transaction_pairs.json')
+  [string]$OutputPath = (Join-Path $PSScriptRoot '../app/src/main/assets/x_transaction_pairs.json')
 )
 
 $ErrorActionPreference = 'Stop'
