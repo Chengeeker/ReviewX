@@ -6,6 +6,17 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class MigrationTest {
+    @Test fun cachedTimelinePrefetchWaitsForScrollAndStopsAfterFailure() {
+        val cached = ReaderScreen(loaded = true, restoredSnapshot = true)
+        assertFalse(cached.shouldPrefetch(4, 6, hasScrolled = false))
+        assertFalse(cached.shouldPrefetch(-1, 21, hasScrolled = true))
+        assertFalse(cached.shouldPrefetch(2, 21, hasScrolled = true))
+        assertTrue(cached.shouldPrefetch(12, 21, hasScrolled = true))
+        assertFalse(cached.copy(error = "网络错误").shouldPrefetch(20, 21, hasScrolled = true))
+        assertFalse(cached.copy(busy = true).shouldPrefetch(20, 21, hasScrolled = true))
+        assertFalse(cached.copy(restoredSnapshot = false).shouldPrefetch(20, 21, hasScrolled = true))
+        assertTrue(cached.copy(restoredSnapshot = false, cursor = "next").shouldPrefetch(20, 21, hasScrolled = true))
+    }
     @Test fun richTextPreservesOriginalUnicodeAndUrlBoundaries() {
         val text="😀 #中文，＃测试! #123 &amp#tag https://example.com/#section @reader $"+"ABC"
         val links=textLinks(text)

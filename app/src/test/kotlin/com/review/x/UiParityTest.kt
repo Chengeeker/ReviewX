@@ -16,6 +16,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.unit.dp
@@ -94,16 +96,31 @@ class UiParityTest {
             val window = activity.get().window
             window.statusBarColor = android.graphics.Color.BLACK
             window.isStatusBarContrastEnforced = true
+            window.isNavigationBarContrastEnforced = true
             val insets = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
             window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK))
             window.applyReaderWindow(androidx.compose.ui.graphics.Color.White)
             Assert.assertEquals(android.graphics.Color.TRANSPARENT, window.statusBarColor)
             Assert.assertFalse(window.isStatusBarContrastEnforced)
+            Assert.assertFalse(window.isNavigationBarContrastEnforced)
+            Assert.assertTrue(insets.isAppearanceLightNavigationBars)
             Assert.assertTrue(insets.isAppearanceLightStatusBars)
             val background = org.robolectric.Shadows.shadowOf(window).backgroundDrawable as android.graphics.drawable.ColorDrawable
             Assert.assertEquals(android.graphics.Color.WHITE, background.color)
             window.applyReaderWindow(androidx.compose.ui.graphics.Color.Black)
             Assert.assertFalse(insets.isAppearanceLightStatusBars)
+            Assert.assertFalse(insets.isAppearanceLightNavigationBars)
+        }
+    }
+    @Suppress("DEPRECATION")
+    @Config(sdk = [25])
+    @GraphicsMode(GraphicsMode.Mode.LEGACY)
+    @Test fun legacyNavigationRetainsContrastWithoutDarkButtonSupport() {
+        activity.setup()
+        compose.runOnUiThread {
+            val window = activity.get().window
+            window.applyReaderWindow(androidx.compose.ui.graphics.Color.White)
+            Assert.assertEquals(android.graphics.Color.BLACK, window.navigationBarColor)
         }
     }
     @Test fun restoredHomeFeedsAreReadyAndOnlyManualPaginationCanStartWithoutCursor() {
@@ -188,6 +205,107 @@ class UiParityTest {
         compose.onNodeWithText("偏好与功能").assertIsDisplayed();compose.onNodeWithText("首页").assertIsDisplayed()
         capture("root-settings-light")
     }
+    @Test fun pullRefreshMovesContentAndShowsProgressBelowHeader() {
+        activity.setup()
+        var refreshing by mutableStateOf(false)
+        var requests = 0
+        val header = 96.dp
+        compose.setContent {
+            ReviewTheme(JSONObject()) {
+                CompositionLocalProvider(LocalHeaderInset provides header) {
+                    TimelinePullRefresh(refreshing, enabled = true, onRefresh = {
+                        requests++
+                        refreshing = true
+                    }) { stretch ->
+                        androidx.compose.foundation.lazy.LazyColumn(
+                            Modifier.fillMaxSize().then(stretch),
+                            contentPadding = PaddingValues(top = header),
+                        ) { item { Text("现有帖子", Modifier.padding(24.dp)) } }
+                    }
+                }
+            }
+        }
+        val post = compose.onNodeWithText("现有帖子")
+        val top = post.fetchSemanticsNode().boundsInRoot.top
+        val surface = compose.onRoot()
+        surface.performTouchInput {
+            down(center)
+            moveBy(Offset(0f, 80f))
+        }
+        Assert.assertTrue(post.fetchSemanticsNode().boundsInRoot.top > top)
+        surface.performTouchInput { up() }
+        compose.runOnIdle { Assert.assertEquals(0, requests) }
+        Assert.assertEquals(top, post.fetchSemanticsNode().boundsInRoot.top, 1f)
+
+        surface.performTouchInput {
+            down(center)
+            moveBy(Offset(0f, 400f))
+            up()
+        }
+        compose.runOnIdle { Assert.assertEquals(1, requests) }
+        val indicator = compose.onNode(SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsProperties.ProgressBarRangeInfo))
+        indicator.assertIsDisplayed()
+        Assert.assertTrue(indicator.getUnclippedBoundsInRoot().top >= header)
+        compose.runOnIdle { refreshing = false }
+        Assert.assertEquals(top, post.fetchSemanticsNode().boundsInRoot.top, 1f)
+        indicator.assertIsNotDisplayed()
+    }
+    @Test @Config(sdk=[35]) fun rootSettingsScrollsUnderFixedLiquidNavigation() {
+        activity.setup()
+        val model = ReaderViewModel(activity.get().application)
+        val settings = JSONObject().put("theme_mode", 1).put("floating_nav", true).put("use_liquid_glass_effect", true)
+        val state = ReaderState(authenticating = false, rootTab = 2, settings = settings,
+            screens = listOf(ReaderScreen(Feed("Settings", title = "设置"), loaded = true)))
+        compose.setContent { ReviewTheme(settings) { ReaderApp(model, state) } }
+        val row = compose.onNodeWithText("WebDAV备份")
+        val tab = compose.onNodeWithText("首页")
+        val start = row.fetchSemanticsNode().boundsInRoot.top
+        val navigation = tab.fetchSemanticsNode().boundsInRoot
+        compose.onRoot().performTouchInput { swipeUp(startY = height * .75f, endY = height * .25f) }
+        Assert.assertTrue(row.fetchSemanticsNode().boundsInRoot.top < start)
+        Assert.assertEquals(navigation, tab.fetchSemanticsNode().boundsInRoot)
+    }
+    @Test fun settingsReversesAtBothScrollEdgesWithoutStretch() {
+        activity.setup()
+        val model = ReaderViewModel(activity.get().application)
+        val settings = JSONObject().put("floating_nav", true)
+        val noStretch = object : androidx.compose.foundation.OverscrollFactory {
+            override fun equals(other: Any?) = this === other
+            override fun hashCode() = System.identityHashCode(this)
+            override fun createOverscrollEffect(): androidx.compose.foundation.OverscrollEffect =
+                error("Settings must not attach a stretch effect")
+        }
+        compose.setContent {
+            ReviewTheme(settings) {
+                CompositionLocalProvider(androidx.compose.foundation.LocalOverscrollFactory provides noStretch) {
+                    SettingsHome(model, ReaderState(authenticating = false, settings = settings))
+                }
+            }
+        }
+        val range = androidx.compose.ui.semantics.SemanticsProperties.VerticalScrollAxisRange
+        val list = compose.onNode(SemanticsMatcher.keyIsDefined(range))
+        val axis = list.fetchSemanticsNode().config[range]
+        Assert.assertEquals(0f, axis.value(), 0f)
+        list.performTouchInput {
+            down(center)
+            moveBy(Offset(0f, 80f))
+            moveBy(Offset(0f, -8f))
+        }
+        Assert.assertTrue(axis.value() > 0f)
+        list.performTouchInput { cancel() }
+
+        list.performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) { it(0f, 10_000f) }
+        compose.waitForIdle()
+        val bottom = axis.maxValue()
+        Assert.assertEquals(bottom, axis.value(), 0f)
+        list.performTouchInput {
+            down(center)
+            moveBy(Offset(0f, -80f))
+            moveBy(Offset(0f, 8f))
+        }
+        Assert.assertTrue(axis.value() < bottom)
+        list.performTouchInput { cancel() }
+    }
     @Test fun originalSliderRetainsAccessibleProgressAction() {
         activity.setup();var value by mutableFloatStateOf(.5f);var committed=false
         compose.runOnUiThread {activity.get().setContent {ReviewTheme(JSONObject().put("theme_mode",1)){Surface {OriginalSlider(value,{value=it},0f..1f,10,{committed=true})}}}}
@@ -234,7 +352,7 @@ class UiParityTest {
         Assert.assertTrue("Pinch must alter real sampled pixels",differences>100)
         val file=File("build/parity/glass-kernel.png");requireNotNull(file.parentFile).mkdirs();file.outputStream().use{pinched.compress(Bitmap.CompressFormat.PNG,100,it)}
     }
-    @Test fun darkSettingsWithLiquidBarRemainReadable() {
+    @Test @Config(sdk=[35]) fun darkSettingsWithLiquidBarRemainReadable() {
         activity.setup();val model=ReaderViewModel(activity.get().application)
         val settings=JSONObject().put("theme_mode",2).put("floating_nav",true).put("use_liquid_glass_effect",true)
         compose.runOnUiThread {activity.get().setContent {ReviewTheme(settings){Surface(color=LocalChrome.current.background){ReaderApp(model,ReaderState(authenticating=false,rootTab=2,settings=settings,screens=listOf(ReaderScreen(Feed("Settings",title="设置"),loaded=true))))}}}}
@@ -243,7 +361,7 @@ class UiParityTest {
         Assert.assertTrue(layouts.single().layoutInput.style.color.red>.5f)
         capture("settings-dark-liquid")
     }
-    @Test fun loggedInFirstFrameAndRootTabTransitionKeepChromeInPlace() {
+    @Test @Config(sdk=[35]) fun loggedInFirstFrameAndRootTabTransitionKeepChromeInPlace() {
         activity.setup()
         val model = ReaderViewModel(activity.get().application)
         val settings = JSONObject().put("theme_mode", 2).put("key_is_pure_black_dark", true)
@@ -415,6 +533,35 @@ class UiParityTest {
         compose.mainClock.autoAdvance = true
     }
 
+    @Test fun imageDoubleTapEmitsOncePerZoomAndHonorsHapticSetting() {
+        activity.setup()
+        val model = ReaderViewModel(activity.get().application)
+        var enabled by mutableStateOf(true)
+        val events = mutableListOf<HapticFeedbackType>()
+        val feedback = object : HapticFeedback {
+            override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+                events.add(hapticFeedbackType)
+            }
+        }
+        val preview = Bitmap.createBitmap(120, 120, Bitmap.Config.ARGB_8888).asImageBitmap()
+        val request = GalleryRequest(listOf(Media("", "", false)), 0, "", sourceImage = preview)
+        compose.setContent {
+            CompositionLocalProvider(LocalHapticFeedback provides feedback) {
+                ReviewTheme(JSONObject().put("haptics", enabled)) { MediaGallery(request, model, {}) }
+            }
+        }
+        compose.onNodeWithContentDescription("返回").assertIsDisplayed()
+        val dialog = compose.onNode(isDialog())
+        repeat(3) { index ->
+            dialog.performTouchInput { doubleClick(center) }
+            compose.runOnIdle { Assert.assertEquals(List(index + 1) { HapticFeedbackType.VirtualKey }, events) }
+        }
+        compose.runOnIdle { enabled = false }
+        dialog.performTouchInput { doubleClick(center) }
+        compose.runOnIdle { Assert.assertEquals(3, events.size) }
+        dialog.performTouchInput { swipeUp() }
+        compose.runOnIdle { Assert.assertEquals(3, events.size) }
+    }
     @Test fun galleryRetapCanCrossReturnEndpointAndStillHandOffToPageSwipe() {
         activity.setup()
         val model = ReaderViewModel(activity.get().application)
@@ -427,11 +574,15 @@ class UiParityTest {
             }
         }
         val source = androidx.compose.ui.geometry.Rect(0f, 60f, 300f, 620f)
+        val preview = Bitmap.createBitmap(120, 120, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(android.graphics.Color.CYAN)
+        }.asImageBitmap()
         val request = GalleryRequest(
             List(2) { Media("", "", false) }, 0, "",
             sourceAnchor = { GalleryAnchor(source, source) },
             sourceScope = Any(),
-            sourceImage = androidx.compose.ui.graphics.ImageBitmap(120, 120),
+            sourceImage = preview,
+            previewImage = { preview },
         )
         compose.setContent {
             CompositionLocalProvider(LocalHapticFeedback provides feedback) {
@@ -451,8 +602,10 @@ class UiParityTest {
         val target = Offset(100f, 260f)
         for (delayBeforePress in listOf(64L, 144L, 176L)) {
             compose.onNodeWithContentDescription("返回").performClick()
+            compose.mainClock.advanceTimeByFrame()
+            compose.onNodeWithContentDescription("返回").assertDoesNotExist()
             compose.runOnIdle { events.clear() }
-            compose.mainClock.advanceTimeBy(delayBeforePress)
+            compose.mainClock.advanceTimeBy(delayBeforePress - 16L)
             dialog.performTouchInput { down(target) }
             compose.mainClock.advanceTimeBy(112)
             compose.runOnIdle {
@@ -473,6 +626,8 @@ class UiParityTest {
         }
         compose.mainClock.advanceTimeBy(800)
         compose.onNodeWithText("2 / 2").assertIsDisplayed()
+        val pagePreview = capture("gallery-paged-preview", dialog = true)
+        Assert.assertEquals(android.graphics.Color.CYAN, pagePreview.getPixel(pagePreview.width / 2, pagePreview.height / 2))
         compose.runOnIdle {
             Assert.assertEquals(0, dismissals)
             Assert.assertFalse(request.flight.active)
@@ -496,6 +651,123 @@ class UiParityTest {
         }
         compose.mainClock.autoAdvance = true
     }
+    @Test fun settingsCardsRenderDistinctFromPageAcrossThemes() {
+        activity.setup()
+        val model = ReaderViewModel(activity.get().application)
+        var settings by mutableStateOf(JSONObject())
+        var appearance by mutableStateOf(false)
+        var background = 0
+        var card = 0
+        compose.setContent {
+            ReviewTheme(settings) {
+                val scheme = MaterialTheme.colorScheme
+                background = LocalChrome.current.background.toArgb()
+                card = scheme.settingsCardColor(LocalChrome.current.background).toArgb()
+                Surface(color = LocalChrome.current.background) {
+                    val state = ReaderState(authenticating = false, settings = settings)
+                    if (appearance) SettingsScreen("Theme", model, state) else SettingsHome(model, state)
+                }
+            }
+        }
+        for (mode in listOf("light", "dark", "black", "dynamic-light", "dynamic-dark")) {
+            compose.runOnIdle {
+                settings = JSONObject().put("theme_mode", if (mode.endsWith("light")) 1 else 2)
+                    .put("key_is_pure_black_dark", mode == "black")
+                    .put("use_dynamic_color", mode.startsWith("dynamic"))
+            }
+            for (personalization in listOf(false, true)) {
+                compose.runOnIdle { appearance = personalization }
+                val label = if (personalization) "跟随系统" else "个性化"
+                val row = compose.onNode(hasText(label) and hasClickAction()).fetchSemanticsNode().boundsInRoot
+                val bitmap = capture("settings-card-$mode-${if (personalization) "appearance" else "home"}")
+                val density = activity.get().resources.displayMetrics.density
+                val y = row.center.y.toInt()
+                Assert.assertNotEquals(mode, background, card)
+                Assert.assertEquals(mode, background, bitmap.getPixel((8 * density).toInt(), y))
+                Assert.assertEquals(mode, card, bitmap.getPixel(bitmap.width - (32 * density).toInt(), y))
+            }
+        }
+    }
+    @Test fun cachedTranslationRespectsAutoSettingWhenCardsAreRecreated() {
+        activity.setup()
+        val model = ReaderViewModel(activity.get().application)
+        val original = "A cached translation must respect the automatic translation switch"
+        val field = NativeServices::class.java.getDeclaredField("translations").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val cache = field.get(NativeServices) as android.util.LruCache<String, String>
+        cache.put(original, "缓存译文")
+        val post = Post("123", User("1", "作者", "author", "", ""), original, "", emptyList(),
+            null, null, "", 0, 0, 0, "", false)
+        var showing by mutableStateOf(true)
+        var automatic by mutableStateOf(false)
+        compose.setContent {
+            val settings = JSONObject().put("reading_settings", JSONObject().put("grokAutoTranslate", automatic).toString())
+            ReviewTheme(settings) {
+                CompositionLocalProvider(LocalActions provides UiActions(model, {}, {}, {})) {
+                    if (showing) TranslatableText(post)
+                }
+            }
+        }
+        compose.onNodeWithText(original).assertIsDisplayed()
+        compose.onNodeWithText("由 Google 翻译").performClick()
+        compose.onNodeWithText("缓存译文").assertIsDisplayed()
+        compose.runOnIdle { showing = false }
+        compose.waitForIdle()
+        compose.runOnIdle { showing = true }
+        compose.onNodeWithText(original).assertIsDisplayed()
+        compose.runOnIdle { automatic = true }
+        compose.onNodeWithText("缓存译文").assertIsDisplayed()
+        cache.remove(original)
+    }
+    @Test fun standardNavigationGrowsWithSystemFontScale() {
+        activity.setup()
+        var scale by mutableFloatStateOf(1f)
+        compose.setContent {
+            CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(2f, scale)) {
+                ReviewTheme(JSONObject().put("floating_nav", false)) {
+                    Box(Modifier.testTag("navigation")) { BottomNavigation(0, {}, {}) }
+                }
+            }
+        }
+        val bar = compose.onNodeWithTag("navigation")
+        val bounds = bar.getUnclippedBoundsInRoot()
+        val height = bounds.bottom - bounds.top
+        compose.runOnIdle { scale = 1.8f }
+        val enlarged = bar.getUnclippedBoundsInRoot()
+        Assert.assertTrue(enlarged.bottom - enlarged.top > height)
+        val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        compose.onNodeWithText("首页", useUnmergedTree = true)
+            .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+        val layout = layouts.single()
+        Assert.assertFalse(layout.didOverflowHeight)
+        Assert.assertTrue(layout.getLineRight(0) <= layout.size.width + 1f)
+    }
+    @Test fun loginTaskIsolationAndAutomaticCacheLimitPreservePrivateSettings() {
+        activity.setup()
+        val context = activity.get()
+        val info = context.packageManager.getActivityInfo(android.content.ComponentName(context, XLoginActivity::class.java), 0)
+        Assert.assertTrue(info.taskAffinity.isNullOrEmpty())
+        val settings = AppSettings(context)
+        settings.set("cache-audit-marker", true)
+        val file = File(context.cacheDir, "cache-audit.tmp")
+        java.io.RandomAccessFile(file, "rw").use { it.setLength(50L * 1024 * 1024) }
+        kotlinx.coroutines.runBlocking { NativeServices.enforceCacheLimit(context, 0) }
+        Assert.assertTrue(file.exists())
+        kotlinx.coroutines.runBlocking { NativeServices.enforceCacheLimit(context, 50) }
+        Assert.assertFalse(file.exists())
+        Assert.assertTrue(settings.bool("cache-audit-marker"))
+    }
+    @Test fun diagnosticsRetainBoundsAndOmitExceptionMessageSecrets() {
+        activity.setup()
+        val context = activity.get()
+        DiagnosticLog.initialize(context)
+        repeat(320) { DiagnosticLog.record("audit.event", status = 200) }
+        DiagnosticLog.record("audit.failure", error = IllegalStateException("auth_token=PRIVATE_TEST_VALUE"))
+        val exported = DiagnosticLog.export(context)
+        Assert.assertFalse(exported.contains("PRIVATE_TEST_VALUE"))
+        val data = org.json.JSONTokener(exported.lineSequence().drop(2).joinToString("\n")).nextValue() as org.json.JSONArray
+        Assert.assertEquals(300, data.length())
+    }
     @Test fun settingsGeometryMatchesExportedFlutterLayout() {
         activity.setup();val model=ReaderViewModel(activity.get().application);val settings=JSONObject().put("theme_mode",1)
         compose.runOnUiThread {activity.get().setContent {ReviewTheme(settings){Surface {SettingsHome(model,ReaderState(authenticating=false,settings=settings))}}}}
@@ -509,14 +781,22 @@ class UiParityTest {
             Assert.assertEquals("$text vertical",expected.getDouble("y")-20.0,((actual.top-anchor.top)/density).toDouble(),1.5)
         }
     }
-    @Test fun themeSwitchesAndChipsKeepFlutterSectionPositions() {
-        activity.setup();val model=ReaderViewModel(activity.get().application);val settings=JSONObject().put("theme_mode",1)
-        compose.runOnUiThread {activity.get().setContent {ReviewTheme(settings){Surface {Column{AppTopBar("个性化",leadingWidth=16);ThemeSettings(model,ReaderState(authenticating=false,settings=settings))}}}}}
-        val reference=JSONObject(File("../reference/layout/metrics.json").readText()).getJSONObject("theme-light").getJSONObject("texts")
-        val density=activity.get().resources.displayMetrics.density
-        fun top(text:String)=compose.onNodeWithText(text,useUnmergedTree=true).fetchSemanticsNode().boundsInRoot.top/density
-        val anchor=top("明暗模式")
-        for(text in listOf("色彩方案","字体粗细"))Assert.assertEquals(text,reference.getJSONObject(text).getDouble("y")-reference.getJSONObject("明暗模式").getDouble("y"),(top(text)-anchor).toDouble(),2.0)
+    @Test fun personalizationUsesTheSelectedTemplateAndThemeColor() {
+        activity.setup()
+        val model=ReaderViewModel(activity.get().application)
+        val settings=JSONObject().put("theme_mode",1)
+        var primary=androidx.compose.ui.graphics.Color.Unspecified
+        compose.runOnUiThread {activity.get().setContent {ReviewTheme(settings){
+            primary=androidx.compose.material3.MaterialTheme.colorScheme.primary
+            Surface {Column{AppTopBar("个性化",leadingWidth=16);ThemeSettings(model,ReaderState(authenticating=false,settings=settings))}}
+        }}}
+        compose.onNodeWithText("自动匹配系统深色/浅色设置").assertDoesNotExist()
+        for (title in listOf("明暗模式","色彩方案","字体粗细","字体大小","底部导航","显示效果","屏幕显示","触感与震动")) {
+            val layouts=mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            compose.onNodeWithText(title,useUnmergedTree=true).performScrollTo()
+                .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult){it(layouts)}
+            Assert.assertEquals(title,primary,layouts.single().layoutInput.style.color)
+        }
     }
     @Test fun videoMenuTextIsWhiteEvenInLightAppTheme() {
         activity.setup()
@@ -543,6 +823,12 @@ class UiParityTest {
                 compose.onNodeWithText("全量安全备份").assertIsSelected()
                 compose.onNodeWithText("不含会话及 WebDAV 密码").assertIsDisplayed()
                 compose.onNodeWithText("含明文凭据，请妥善保管", substring = true).assertIsDisplayed()
+                for ((title, detail) in listOf("全量安全备份" to "不含会话及 WebDAV 密码", "全量备份" to "含明文凭据，请妥善保管")) {
+                    val row = compose.onNodeWithText(title).fetchSemanticsNode().boundsInRoot
+                    val headline = compose.onNodeWithText(title, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+                    val supporting = compose.onNodeWithText(detail, substring = true, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+                    Assert.assertEquals(title, row.center.y, (headline.top + supporting.bottom) / 2f, 3f)
+                }
             }
             if(name=="cache"){
                 compose.waitUntil(10000){compose.onAllNodesWithText("图片与媒体").fetchSemanticsNodes().isNotEmpty()}
@@ -580,6 +866,82 @@ class UiParityTest {
         compose.onNodeWithText("本机浏览历史").performClick();Assert.assertEquals("LocalHistory",route)
         compose.onNodeWithText("未登录 / 访客").performClick();Assert.assertTrue(profile)
         capture("drawer-light")
+    }
+    @Test fun drawerEntryAndEveryDestinationHonorConfirmedClickHaptics() {
+        activity.setup()
+        val model = ReaderViewModel(activity.get().application)
+        var enabled by mutableStateOf(true)
+        val events = mutableListOf<HapticFeedbackType>()
+        val feedback = object : HapticFeedback {
+            override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+                events.add(hapticFeedbackType)
+            }
+        }
+        compose.setContent {
+            val settings = JSONObject().put("haptics", enabled)
+            CompositionLocalProvider(LocalHapticFeedback provides feedback) {
+                ReviewTheme(settings) { ReaderApp(model, ReaderState(authenticating = false, settings = settings)) }
+            }
+        }
+        for (title in listOf("历史", "通知", "本机浏览历史", "未登录 / 访客")) {
+            compose.onNodeWithContentDescription("打开侧边栏").performClick()
+            val item = compose.onNodeWithText(title)
+            val before = events.size
+            item.performTouchInput { down(center); cancel() }
+            compose.runOnIdle { Assert.assertEquals(before, events.size) }
+            item.performClick()
+            compose.runOnIdle { Assert.assertEquals(before + 1, events.size) }
+        }
+        compose.runOnIdle {
+            Assert.assertEquals(8, events.size)
+            enabled = false
+        }
+        compose.onNodeWithContentDescription("打开侧边栏").performClick()
+        compose.onNodeWithText("历史").performClick()
+        compose.runOnIdle { Assert.assertEquals(8, events.size) }
+    }
+    @Test fun replySortKeepsContentAndScrollAnchorDuringReplacement() {
+        activity.setup()
+        val model = ReaderViewModel(activity.get().application)
+        val field = ReaderViewModel::class.java.getDeclaredField("mutable").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val flow = field.get(model) as kotlinx.coroutines.flow.MutableStateFlow<ReaderState>
+        val author = User("1", "作者", "author", "", "")
+        val selected = Post("123", author, "原帖正文\n".repeat(65), "", emptyList(), null, null, "", 0, 0, 0, "", false)
+        val replies = List(12) { index -> selected.copy(id = (200 + index).toString(), text = "评论 $index") }
+        val screen = ReaderScreen(Feed("TweetDetail", "123", "帖子详情"), posts = replies,
+            selectedPost = selected, loaded = true)
+        compose.setContent {
+            val current by model.state.collectAsState()
+            ReviewTheme(current.settings) { ReaderApp(model, current) }
+        }
+        compose.runOnIdle {
+            // Keep this route fixture independent of asynchronous credential restoration.
+            val work = ReaderViewModel::class.java.getDeclaredField("work").apply { isAccessible = true }
+            (work.get(model) as? kotlinx.coroutines.Job)?.cancel()
+            flow.value = ReaderState(authenticating = false, accountId = "1", user = author,
+                screens = listOf(ReaderScreen(), screen))
+        }
+        val sort = compose.onNodeWithText("相关")
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(1)
+        val y = sort.fetchSemanticsNode().boundsInRoot.top
+        sort.performClick()
+        compose.onNodeWithText("最近").performClick()
+        compose.runOnIdle {
+            Assert.assertEquals("Recency", flow.value.screen.feed.option)
+            Assert.assertEquals(replies, flow.value.screen.posts)
+        }
+        Assert.assertEquals(y, compose.onNodeWithText("最近").fetchSemanticsNode().boundsInRoot.top, 1f)
+        compose.runOnIdle {
+            flow.value = flow.value.copy(screens = flow.value.screens.dropLast(1) +
+                flow.value.screen.copy(busy = true))
+        }
+        Assert.assertEquals(y, compose.onNodeWithText("最近").fetchSemanticsNode().boundsInRoot.top, 1f)
+        compose.runOnIdle {
+            flow.value = flow.value.copy(screens = flow.value.screens.dropLast(1) +
+                flow.value.screen.copy(busy = false, posts = replies.reversed()))
+        }
+        Assert.assertEquals(y, compose.onNodeWithText("最近").fetchSemanticsNode().boundsInRoot.top, 1f)
     }
     @Test fun requestAndFooterStatesKeepOriginalMessagesAndActions() {
         activity.setup();var screen by mutableStateOf(ReaderScreen(loaded=true));var retries=0
@@ -621,10 +983,19 @@ class UiParityTest {
     }
     @Test fun failedImageOffersOriginalReloadAction() {
         activity.setup()
-        compose.runOnUiThread {activity.get().setContent {ReviewTheme(JSONObject().put("theme_mode",1)){Surface(Modifier.size(160.dp)){NetworkImage("","测试图",Modifier.fillMaxSize())}}}}
+        compose.setContent {
+            ReviewTheme(JSONObject().put("theme_mode", 1)) {
+                Column {
+                    NetworkImage("", "测试图", Modifier.size(160.dp))
+                    NetworkImage("", "高清图覆盖层", Modifier.size(160.dp), transparentFallback = true)
+                }
+            }
+        }
         compose.waitUntil(5000){compose.onAllNodesWithText("Failed to load image").fetchSemanticsNodes().isNotEmpty()}
         compose.onNodeWithText("Failed to load image").performClick()
         compose.waitUntil(5000){compose.onAllNodesWithText("Failed to load image").fetchSemanticsNodes().isNotEmpty()}
+        compose.onAllNodesWithText("Failed to load image").assertCountEquals(1)
+        compose.onNodeWithContentDescription("测试图").assertWidthIsEqualTo(160.dp).assertHeightIsEqualTo(160.dp)
         capture("image-error-light")
     }
     @Test fun progressRetainsFlutterSizeAndAccessibilityWhenConstrained() {
@@ -704,7 +1075,11 @@ class UiParityTest {
         compose.waitForIdle()
         val view=if(dialog)requireNotNull(org.robolectric.shadows.ShadowDialog.getLatestDialog().window).decorView else activity.get().window.decorView
         val bitmap=Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
-        compose.runOnUiThread {view.draw(android.graphics.Canvas(bitmap))}
+        compose.runOnUiThread {
+            val canvas = android.graphics.Canvas(bitmap)
+            canvas.javaClass.getMethod("setHwFeaturesInSwModeEnabled", Boolean::class.javaPrimitiveType).invoke(canvas, true)
+            view.draw(canvas)
+        }
         val file=File("build/parity/$name.png");requireNotNull(file.parentFile).mkdirs();file.outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
         Assert.assertTrue(bitmap.width>0 && bitmap.height>0)
         val density=activity.get().resources.displayMetrics.density;val texts=JSONObject()

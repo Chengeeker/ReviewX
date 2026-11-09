@@ -135,7 +135,6 @@ internal fun LiquidNavigationGpu(
     val crop = rememberGraphicsLayer()
     val blurred = rememberGraphicsLayer()
     val body = rememberGraphicsLayer()
-    val underPill = rememberGraphicsLayer()
     val pillBlur = rememberGraphicsLayer()
     val combined = rememberGraphicsLayer()
     val water = rememberGraphicsLayer()
@@ -220,14 +219,13 @@ internal fun LiquidNavigationGpu(
             blurred.record(this, layoutDirection, dimensions) { drawLayer(crop) }
             body.record(this, layoutDirection, dimensions) { drawLayer(blurred) }
             if (rest > .001f) {
-                underPill.record(this, layoutDirection, dimensions) {
+                pillBlur.record(this, layoutDirection, dimensions) {
                     drawLayer(crop)
                     drawLayer(body)
                 }
-                pillBlur.record(this, layoutDirection, dimensions) { drawLayer(underPill) }
                 pillBlur.alpha = rest
             }
-            combined.record(this, layoutDirection, dimensions) {
+            fun DrawScope.drawBar() {
                 drawLayer(body)
                 if (rest > .001f) clipPath(mask) {
                     drawLayer(pillBlur)
@@ -235,8 +233,9 @@ internal fun LiquidNavigationGpu(
                 }
                 drawLabels()
             }
-            drawLayer(combined)
             if (strength > .001f) {
+                combined.record(this, layoutDirection, dimensions) { drawBar() }
+                drawLayer(combined)
                 optics.second.configure(size, pill, dpr, dark, lens = true, pressed = strength, dragging = true)
                 water.renderEffect = optics.second.effect()
                 water.alpha = strength
@@ -245,7 +244,7 @@ internal fun LiquidNavigationGpu(
                     drawLayer(combined)
                 }
                 drawLayer(water)
-            }
+            } else drawBar()
         }
     })
 }

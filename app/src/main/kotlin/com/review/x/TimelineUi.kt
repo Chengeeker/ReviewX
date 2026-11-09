@@ -8,19 +8,25 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.*
@@ -31,7 +37,7 @@ import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
-import coil.compose.SubcomposeAsyncImage
+import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import android.graphics.drawable.BitmapDrawable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,9 +48,47 @@ import java.util.Locale
 
 val Post.url:String get()="https://x.com/${author.handle}/status/$id"
 @Composable fun NetworkImage(url:String,description:String?,modifier:Modifier=Modifier,scale:ContentScale=ContentScale.Crop,transparentFallback:Boolean=false,onDimensions:((Int,Int)->Unit)?=null,onImageReady:((ImageBitmap)->Unit)?=null,showProgress:Boolean=false) {
-    val context=LocalContext.current;var retry by remember(url){mutableIntStateOf(0)}
-    key(url,retry){SubcomposeAsyncImage(model=ImageRequest.Builder(context).data(url.takeIf { safeMediaUrl(it) || it=="https://picsum.photos/id/1015/1200/500" }).setHeader("User-Agent",ReaderRepository.USER_AGENT).setHeader("Referer","https://x.com/").crossfade(false).build(),onSuccess={success->onDimensions?.invoke(success.result.drawable.intrinsicWidth,success.result.drawable.intrinsicHeight);(success.result.drawable as? BitmapDrawable)?.bitmap?.let {onImageReady?.invoke(it.asImageBitmap())}},contentDescription=description,modifier=modifier,contentScale=scale,
-        loading={ if(showProgress&&!transparentFallback)Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center) { FlutterProgress(strokeWidth=2.dp) } },error={if(!transparentFallback)Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){Text("Failed to load image",Modifier.hapticClickable{retry++})}})}
+    val context = LocalContext.current
+    val request = remember(context, url) {
+        ImageRequest.Builder(context)
+            .data(url.takeIf { safeMediaUrl(it) || it == "https://picsum.photos/id/1015/1200/500" })
+            .setHeader("User-Agent", ReaderRepository.USER_AGENT)
+            .setHeader("Referer", "https://x.com/")
+            .crossfade(false)
+            .build()
+    }
+    var retry by remember(url) { mutableIntStateOf(0) }
+    key(url, retry) {
+        var loading by remember { mutableStateOf(false) }
+        var failed by remember { mutableStateOf(false) }
+        Box(modifier, contentAlignment = Alignment.Center, propagateMinConstraints = true) {
+            AsyncImage(
+                model = request,
+                contentDescription = description,
+                contentScale = scale,
+                onLoading = { loading = showProgress && !transparentFallback },
+                onSuccess = {
+                    loading = false
+                    failed = false
+                    val drawable = it.result.drawable
+                    onDimensions?.invoke(drawable.intrinsicWidth, drawable.intrinsicHeight)
+                    if (onImageReady != null && drawable is BitmapDrawable) {
+                        onImageReady(drawable.bitmap.asImageBitmap())
+                    }
+                },
+                onError = {
+                    loading = false
+                    failed = !transparentFallback
+                },
+            )
+            if (loading || failed) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    if (loading) FlutterProgress(strokeWidth = 2.dp)
+                    else Text("Failed to load image", Modifier.hapticClickable { retry++ })
+                }
+            }
+        }
+    }
 }
 @Composable fun Avatar(user:User?,size:Int=40,onImageReady:((ImageBitmap)->Unit)?=null,onClick:(()->Unit)?=null) {
     Box(Modifier.size(size.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHighest).then(if(onClick!=null)Modifier.hapticClickable(onClick=onClick) else Modifier),contentAlignment=Alignment.Center) {
@@ -52,31 +96,60 @@ val Post.url:String get()="https://x.com/${author.handle}/status/$id"
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
+@Composable internal fun TimelinePullRefresh(
+    refreshing: Boolean,
+    enabled: Boolean,
+    onRefresh: () -> Unit,
+    content: @Composable (Modifier) -> Unit,
+) {
+    val pull = rememberPullToRefreshState()
+    val header = LocalHeaderInset.current
+    val stretch by animateFloatAsState(if (refreshing) 0f else 1f, tween(150), label = "refresh stretch")
+    Box(Modifier.fillMaxSize().clipToBounds().pullToRefresh(refreshing, pull, enabled = enabled, onRefresh = onRefresh)) {
+        content(Modifier.graphicsLayer {
+            transformOrigin = TransformOrigin(.5f, 0f)
+            scaleY = 1f + .025f * pull.distanceFraction.coerceIn(0f, 1.5f) * stretch
+        })
+        PullToRefreshDefaults.Indicator(
+            state = pull,
+            isRefreshing = refreshing,
+            modifier = Modifier.align(Alignment.TopCenter).offset(y = header),
+            containerColor = MaterialTheme.colorScheme.surface,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
 @Composable fun TimelineScreen(model:ReaderViewModel,state:ReaderState,list:LazyListState,bottom:Int,active:Boolean=true) {
     val screen=state.screen;val actions=LocalActions.current
     val userList=screen.feed.kind in listOf("Followers","Following") || screen.feed.kind=="SearchTimeline"&&screen.feed.option=="People"
-    if(screen.feed.kind=="TweetDetail"&&screen.selectedPost==null){DetailLoading(screen.error){model.load()};return}
-    val known=remember(screen.posts,screen.selectedPost){screen.posts.associateBy {it.id}+listOfNotNull(screen.selectedPost).associateBy {it.id}}
-    LaunchedEffect(list,screen.key,screen.cursor,screen.busy,active) {
-        if(!active)return@LaunchedEffect
-        snapshotFlow { list.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }.collect { index -> if(screen.loaded && !screen.busy && screen.cursor!=null && index>=list.layoutInfo.totalItemsCount-5)model.load(true) }
+    val detail = screen.feed.kind == "TweetDetail"
+    if(detail&&screen.selectedPost==null){DetailLoading(screen.error){model.load()};return}
+    val known=remember(detail,screen.posts,screen.selectedPost){
+        if (detail) screen.posts.associateBy {it.id}+listOfNotNull(screen.selectedPost).associateBy {it.id}
+        else emptyMap()
     }
-    val pullState = rememberPullToRefreshState()
-    val refreshing = screen.busy && screen.loaded
-    PullToRefreshBox(
-        isRefreshing = refreshing, onRefresh = { if (active) model.load() },
-        modifier = Modifier.fillMaxSize(), state = pullState,
-        indicator = {},
-    ) {
-        LazyColumn(state=list,contentPadding=PaddingValues(top=LocalHeaderInset.current,bottom=bottom.dp),modifier=Modifier.fillMaxSize()) {
-            if (screen.busy || screen.error != null || screen.auxiliaryError != null)
+    LaunchedEffect(list,screen.key,screen.cursor,screen.restoredSnapshot,screen.busy,screen.error,active) {
+        if(!active)return@LaunchedEffect
+        snapshotFlow {
+            (list.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1) to
+                (list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > 0)
+        }.collect { (index, hasScrolled) ->
+            if(screen.shouldPrefetch(index,list.layoutInfo.totalItemsCount,hasScrolled))model.load(true)
+        }
+    }
+    val refreshing = screen.busy && screen.pullRefreshing
+    key(screen.key) {
+    TimelinePullRefresh(refreshing, enabled = active && (!screen.busy || refreshing), onRefresh = { model.load(fromPull = true) }) { stretch ->
+        LazyColumn(state=list,contentPadding=PaddingValues(top=LocalHeaderInset.current,bottom=bottom.dp),modifier=Modifier.fillMaxSize().then(stretch)) {
+            if (!refreshing && (screen.busy || screen.error != null || screen.auxiliaryError != null))
                 item(key="request-status"){RequestStatus(screen.busy,screen.error?:screen.auxiliaryError){model.load()}}
             if(screen.feed.kind=="NotificationsTimeline")item{if(screen.readUncertain)FlutterListItem(headlineContent={},supportingContent={Text("已读结果待核对，请在 X 查看")})else Spacer(Modifier.height(4.dp))}
             screen.profile?.let { user -> item(key="profile") { ProfileHeader(user,state,model) };item(key="tabs") { ProfileTabs(screen,model) } }
             if(screen.feed.kind=="Likes" && screen.profile!=null && screen.profile.id!=state.accountId) {item {Text("X 不公开其他用户的喜欢列表，仅可查看自己的喜欢",Modifier.fillMaxWidth().padding(24.dp),textAlign=androidx.compose.ui.text.style.TextAlign.Center)};return@LazyColumn}
             if(screen.feed.kind=="Explore") {
                 item {Text(if(screen.feed.option=="false")"当前趋势"else "为你推荐的趋势",Modifier.padding(start=16.dp,top=16.dp,end=16.dp,bottom=4.dp),style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)}
-                items(screen.trends,key={"trend:${it.name}"}) { trend -> Column(Modifier.fillMaxWidth().hapticClickable {model.search(trend.name)}.padding(horizontal=16.dp,vertical=14.dp)) {
+                items(screen.trends,key={"trend:${it.name}"},contentType={"trend"}) { trend -> Column(Modifier.fillMaxWidth().hapticClickable {model.search(trend.name)}.padding(horizontal=16.dp,vertical=14.dp)) {
                     Text(trend.description.ifBlank{"趋势"},fontSize=13.sp,color=MaterialTheme.colorScheme.onSurfaceVariant);Spacer(Modifier.height(4.dp))
                     Text(trend.name,style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
                     if(trend.meta.isNotBlank()){Spacer(Modifier.height(4.dp));Text(trend.meta,color=MaterialTheme.colorScheme.onSurfaceVariant)}
@@ -84,8 +157,8 @@ val Post.url:String get()="https://x.com/${author.handle}/status/$id"
                 if(!screen.busy&&screen.trends.isEmpty()&&screen.auxiliaryError==null)item {Box(Modifier.fillMaxWidth().padding(24.dp),contentAlignment=Alignment.Center){Text("当前没有可显示的趋势")}}
                 if(screen.feed.option!="false") {item {FlutterDivider();Text("推荐关注",Modifier.padding(16.dp),style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)};if(!screen.busy&&screen.users.isEmpty()&&screen.auxiliaryError==null)item {Text("X 暂未返回推荐用户",Modifier.padding(16.dp))}}
             }
-            items(screen.users,key={"user:${it.id}"}) {UserRow(it,state,model)}
-            items(screen.notifications,key={"notification:"+it.id}) { n ->
+            items(screen.users,key={"user:${it.id}"},contentType={"user"}) {UserRow(it,state,model)}
+            items(screen.notifications,key={"notification:"+it.id},contentType={"notification"}) { n ->
                 FlutterCard(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=6.dp)) {Column {
                     FlutterListItem(headlineContent={Text(n.message.ifBlank {"X 通知"})},supportingContent=if(n.timestamp>0)({Text(java.time.Instant.ofEpochMilli(n.timestamp).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))})else null,
                         leadingContent={Glyph(if(n.icon.contains("heart"))"favorite"else if(n.icon.contains("retweet"))"repeat"else "notifications_outlined")},
@@ -94,7 +167,7 @@ val Post.url:String get()="https://x.com/${author.handle}/status/$id"
                     n.posts.take(3).forEach {PostCard(model.effective(it))}
                 }}
             }
-            if(screen.feed.kind=="TweetDetail") {
+            if(detail) {
                 screen.selectedPost?.let {post->item(key="selected") {PostCard(model.effective(post),detail=true,replyParent=screen.replyParent)}}
                 item(key="reply-sort") {var menu by remember {mutableStateOf(false)}
                     Row(Modifier.fillMaxWidth().padding(horizontal=12.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically) {
@@ -105,15 +178,19 @@ val Post.url:String get()="https://x.com/${author.handle}/status/$id"
                     }
                 }
             }
-            itemsIndexed(screen.posts,key={_,post->"post:"+post.id}) {index,post->
-                val detail=screen.feed.kind=="TweetDetail"
-                val parent=if(detail)known[post.replyToId]else null
-                var depth=0;var ancestor=parent;val visited=mutableSetOf(post.id)
-                while(ancestor!=null && ancestor.id!=screen.selectedPost?.id && depth<2 && visited.add(ancestor.id)){depth++;ancestor=known[ancestor.replyToId]}
+            itemsIndexed(screen.posts,key={_,post->"post:"+post.id},contentType={_,_->"post"}) {index,post->
+                val parent=known[post.replyToId]
+                var depth=0
+                if (parent != null) {
+                    var ancestor: Post? = parent
+                    val visited = mutableSetOf(post.id)
+                    while(ancestor!=null && ancestor.id!=screen.selectedPost?.id && depth<2 && visited.add(ancestor.id)){depth++;ancestor=known[ancestor.replyToId]}
+                }
                 Box(Modifier.padding(start=(depth*12).dp)) {PostCard(model.effective(post),replyParent=parent,showParentPreview=parent?.id!=screen.selectedPost?.id,connectedAbove=!detail&&index>0&&continues(screen.posts[index-1],post),connectedBelow=!detail&&index<screen.posts.lastIndex&&continues(post,screen.posts[index+1]))}
             }
             if(screen.feed.kind!="Explore")item(key="list-footer"){OriginalListFooter(screen,userList){model.load(screen.loaded&&screen.canLoadMore)}}
         }
+    }
     }
 }
 @Composable fun UserRow(user:User,state:ReaderState,model:ReaderViewModel) {
@@ -273,10 +350,10 @@ fun postTime(raw:String,settings:org.json.JSONObject):String {
     val needed=NativeServices.needsTranslation(post.text)
     suspend fun translate(){if(busy)return;busy=true;try{translated=NativeServices.translate(post.text)}catch(e:CancellationException){throw e}catch(_:Exception){}finally{busy=false}}
     LaunchedEffect(post.text,post.translated,auto){if(auto && post.translated.isBlank() && needed && translated==null)translate()}
-    val available=post.translated.ifBlank {translated.orEmpty()};val shown=override ?: if(post.translated.isNotBlank())auto else translated!=null
+    val available=post.translated.ifBlank {translated.orEmpty()};val shown=override ?: auto
     val style=MaterialTheme.typography.bodyMedium.copy(fontSize=settings.optDouble("fontSize",16.0).toFloat().sp,lineHeight=(settings.optDouble("fontSize",16.0)*settings.optDouble("lineHeight",1.5)).toFloat().sp)
     Column {RichText(if(shown&&available.isNotBlank())available else post.text,style,maxLines,selectable)
-        if(available.isNotBlank()||needed)FlutterTextButton(onClick={if(available.isNotBlank())override=!shown else scope.launch {translate()}},enabled=!busy,contentPadding=PaddingValues(horizontal=4.dp),modifier=Modifier.heightIn(min=32.dp)) {
+        if(available.isNotBlank()||needed)FlutterTextButton(onClick={if(available.isNotBlank())override=!shown else scope.launch {translate();if(translated!=null)override=true}},enabled=!busy,contentPadding=PaddingValues(horizontal=4.dp),modifier=Modifier.heightIn(min=32.dp)) {
             if(busy)FlutterProgress(Modifier.size(14.dp),strokeWidth=2.dp)else Glyph("translate",size=18);Spacer(Modifier.width(8.dp));Text(if(busy)"正在翻译…"else if(available.isNotBlank()&&shown)"显示原文"else if(post.translated.isNotBlank())"Grok 翻译"else "由 Google 翻译")
         }
     }
@@ -287,8 +364,9 @@ fun postTime(raw:String,settings:org.json.JSONObject):String {
     if(post.sensitive && !revealed && !settings.optBoolean("showSensitive")) {FlutterOutlinedButton(onClick={revealed=true}){Glyph("visibility_outlined",size=18);Spacer(Modifier.width(8.dp));Text("显示 X 标记为敏感的媒体")};return}
     val media=post.media;val radius=settings.optDouble("imageRadius",16.0).dp;val screenHeight=LocalConfiguration.current.screenHeightDp.dp
     val bounds=remember(post.id){mutableMapOf<Int,androidx.compose.ui.layout.LayoutCoordinates>()}
+    val previews = remember(post.id, media) { mutableMapOf<Int, ImageBitmap>() }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        @Composable fun tile(index:Int,modifier:Modifier) {val item=media[index];var sourceImage by remember(item.url){mutableStateOf<ImageBitmap?>(null)};Box(modifier.onGloballyPositioned {bounds[index]=it}.clip(RoundedCornerShape(radius)).hideGallerySource(galleryScope,index).hapticClickable {actions.gallery(GalleryRequest(media,index,post.author.handle,post,sourceAnchor={bounds[it]?.galleryAnchor()},sourceRadius=radius.value,sourceScope=galleryScope,sourceImage=sourceImage))}){NetworkImage(item.url,item.description,Modifier.fillMaxSize(),onImageReady={sourceImage=it});if(item.video)Glyph("play_circle_fill",size=48,color=Color.White,modifier=Modifier.align(Alignment.Center));if(item.description.isNotBlank())Text("ALT",color=Color.White,modifier=Modifier.align(Alignment.BottomStart).padding(8.dp).background(Color.Black.copy(alpha=.54f)).padding(4.dp))}}
+        @Composable fun tile(index:Int,modifier:Modifier) {val item=media[index];var sourceImage by remember(item.url){mutableStateOf<ImageBitmap?>(null)};Box(modifier.onGloballyPositioned {bounds[index]=it}.clip(RoundedCornerShape(radius)).hideGallerySource(galleryScope,index).hapticClickable {actions.gallery(GalleryRequest(media,index,post.author.handle,post,sourceAnchor={bounds[it]?.galleryAnchor()},sourceRadius=radius.value,sourceScope=galleryScope,sourceImage=sourceImage,previewImage={previews[it]}))}){NetworkImage(item.url,item.description,Modifier.fillMaxSize(),onImageReady={sourceImage=it;previews[index]=it});if(item.video)Glyph("play_circle_fill",size=48,color=Color.White,modifier=Modifier.align(Alignment.Center));if(item.description.isNotBlank())Text("ALT",color=Color.White,modifier=Modifier.align(Alignment.BottomStart).padding(8.dp).background(Color.Black.copy(alpha=.54f)).padding(4.dp))}}
         if(media.size==1) {val first=media.first();val ratio=if(settings.optBoolean("largeImages",true)&&first.width>0&&first.height>0)(first.width.toFloat()/first.height).coerceIn(.2f,3f) else 1.4f;val width=minOf(maxWidth,minOf(screenHeight*.42f,480.dp)*ratio);tile(0,Modifier.width(width).aspectRatio(ratio))}
         else Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {for(i in media.indices step 2)Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){tile(i,Modifier.weight(1f).aspectRatio(1f));if(i+1<media.size)tile(i+1,Modifier.weight(1f).aspectRatio(1f)) else Spacer(Modifier.weight(1f))}}
     }

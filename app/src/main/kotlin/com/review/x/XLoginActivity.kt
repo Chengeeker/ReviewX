@@ -97,6 +97,8 @@ class XLoginActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.applyReaderWindow(androidx.compose.ui.graphics.Color(0xFF121212))
         XLoginDiagnostics.record(this, "activity.created", code = if (savedInstanceState == null) 0 else 1)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val callback = OnBackInvokedCallback { handleSystemBack(1) }
@@ -153,16 +155,11 @@ class XLoginActivity : Activity() {
         shell = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.rgb(18, 18, 18))
-            fitsSystemWindows = true
-            setOnApplyWindowInsetsListener { v, insets ->
-                val topInset = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    insets.getInsets(WindowInsets.Type.statusBars()).top
-                } else {
-                    @Suppress("DEPRECATION")
-                    insets.systemWindowInsetTop
-                }
-                v.setPadding(0, topInset, 0, 0)
-                insets
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(this) { view, insets ->
+                val safe = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() or
+                    androidx.core.view.WindowInsetsCompat.Type.displayCutout() or androidx.core.view.WindowInsetsCompat.Type.ime())
+                view.setPadding(safe.left, safe.top, safe.right, safe.bottom)
+                androidx.core.view.WindowInsetsCompat.CONSUMED
             }
         }
         status = TextView(this)

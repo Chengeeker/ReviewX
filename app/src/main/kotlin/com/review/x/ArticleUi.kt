@@ -51,10 +51,11 @@ import androidx.compose.ui.unit.*
 @Composable fun ArticleMedia(media:List<Media>,author:String) {
     val actions=LocalActions.current;val bounds=remember(media){mutableMapOf<Int,androidx.compose.ui.layout.LayoutCoordinates>()}
     val galleryScope=remember{Any()}
+    val previews = remember(media) { mutableMapOf<Int, androidx.compose.ui.graphics.ImageBitmap>() }
     Column {media.forEachIndexed {index,item->
         var sourceImage by remember(item.url){mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)}
-        Box(Modifier.padding(vertical=8.dp).fillMaxWidth().onGloballyPositioned {bounds[index]=it}.hideGallerySource(galleryScope,index).hapticClickable {actions.gallery(GalleryRequest(media,index,author,sourceAnchor=if(item.video)null else {i->bounds[i]?.galleryAnchor()},sourceCovers=false,sourceScope=galleryScope,sourceImage=sourceImage))}) {
-            NetworkImage(item.url,item.description,Modifier.fillMaxWidth().then(if(item.width>0&&item.height>0)Modifier.aspectRatio(item.width.toFloat()/item.height)else Modifier).clip(RoundedCornerShape(16.dp)),scale=ContentScale.Fit,onImageReady={sourceImage=it})
+        Box(Modifier.padding(vertical=8.dp).fillMaxWidth().onGloballyPositioned {bounds[index]=it}.hideGallerySource(galleryScope,index).hapticClickable {actions.gallery(GalleryRequest(media,index,author,sourceAnchor=if(item.video)null else {i->bounds[i]?.galleryAnchor()},sourceCovers=false,sourceScope=galleryScope,sourceImage=sourceImage,previewImage={previews[it]}))}) {
+            NetworkImage(item.url,item.description,Modifier.fillMaxWidth().then(if(item.width>0&&item.height>0)Modifier.aspectRatio(item.width.toFloat()/item.height)else Modifier).clip(RoundedCornerShape(16.dp)),scale=ContentScale.Fit,onImageReady={sourceImage=it;previews[index]=it})
             if(item.video)Glyph("play_circle",size=48,color=Color.White,modifier=Modifier.align(Alignment.Center))
         }
     }}

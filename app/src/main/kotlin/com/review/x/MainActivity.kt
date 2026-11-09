@@ -72,7 +72,8 @@ class MainActivity:ComponentActivity() {
 data class GalleryRequest(val media:List<Media>,val index:Int,val author:String,val post:Post?=null,
     val sourceAnchor:((Int)->GalleryAnchor?)?=null,val sourceRadius:Float=16f,val sourceCovers:Boolean=true,
     val sourceScope:Any?=null,val sourceImage:ImageBitmap?=null,
-    val flight:GalleryFlightState=GalleryFlightState(sourceScope,sourceImage,index)) {
+    val flight:GalleryFlightState=GalleryFlightState(sourceScope,sourceImage,index),
+    val previewImage:((Int)->ImageBitmap?)?=null) {
     val openingAnchor = sourceAnchor?.invoke(index)
 }
 data class ComposeRequest(val reply:Post?=null,val quote:Post?=null)
@@ -97,10 +98,18 @@ val LocalActions=staticCompositionLocalOf<UiActions> { error("Reader UI is requi
     }) }
     LaunchedEffect(state.message) { state.message?.let { snackbar.showSnackbar(it);model.message(null) } }
     var clearHistory by remember {mutableStateOf(false)}
-    val root=state.screens.size==1;val lists=remember { linkedMapOf<String,LazyListState>() };val list=lists.getOrPut(listKey(state.screen)) { LazyListState() };if(lists.size>32)lists.remove(lists.keys.first())
-    val previousPositions=remember {mutableMapOf<String,Pair<Int,Int>>()}
+    val root=state.screens.size==1;val lists=remember(state.accountId) { linkedMapOf<String,LazyListState>() };val list=lists.getOrPut(listKey(state.screen)) { LazyListState() };if(lists.size>32)lists.remove(lists.keys.first())
+    val previousPositions=remember(state.accountId) {mutableMapOf<String,Pair<Int,Int>>()}
     val saved=key(state.accountId){rememberSaveableStateHolder()};val searchUi=remember {SearchUi()}
-    LaunchedEffect(state.accountId){gallery=null;composer=null;lists.clear();previousPositions.clear();searchUi.query="";searchUi.focused=false;searchUi.users=emptyList();drawer.close()}
+    val focusManager = LocalFocusManager.current
+    LaunchedEffect(state.rootTab) {
+        if (state.rootTab != 1) {
+            searchUi.focused = false
+            searchUi.users = emptyList()
+            focusManager.clearFocus()
+        }
+    }
+    LaunchedEffect(state.accountId){gallery=null;composer=null;searchUi.query="";searchUi.focused=false;searchUi.users=emptyList();drawer.close()}
     val activeScreenKeys by rememberUpdatedState(state.screens.map{it.key}.toSet())
     val density=LocalDensity.current
     BackHandler(drawer.isOpen || !root) { if(drawer.isOpen)scope.launch { drawer.close() } else model.back() }
@@ -148,7 +157,7 @@ val LocalActions=staticCompositionLocalOf<UiActions> { error("Reader UI is requi
                     val statusInset = WindowInsets.statusBarsIgnoringVisibility.asPaddingValues().calculateTopPadding()
                     val navigationInsets = WindowInsets.navigationBarsIgnoringVisibility
                     val navInset = if (root && !floating)
-                        68.dp + navigationInsets.asPaddingValues().calculateBottomPadding() else 0.dp
+                        standardNavigationHeight() + navigationInsets.asPaddingValues().calculateBottomPadding() else 0.dp
 
                     CompositionLocalProvider(LocalBackdrop provides backdrop) {
                         Box(Modifier.fillMaxSize().background(LocalChrome.current.background)) {
@@ -160,7 +169,7 @@ val LocalActions=staticCompositionLocalOf<UiActions> { error("Reader UI is requi
                                     if(root && state.rootTab==2) SettingsStatusBar()
                                     else if(state.screen.feed.kind!="Login") AppTopBar(if(root && state.rootTab==0) "ReviewX" else if(state.screen.feed.kind=="WebDAV")"WebDAV 云端备份与恢复"else state.screen.feed.title,
                                         height=if(profile!=null)with(density){56.sp.toDp().value}.coerceIn(56f,112f).toInt()else if(root && state.rootTab==0 && state.loggedIn)48 else 56,transparent=frosted,leadingWidth=if(root&&state.rootTab==1)16 else 56,titleSpacing=if(root&&state.rootTab==1)0.dp else 16.dp,
-                                        leading={ if(root && state.rootTab==0) IconButton(onClick={ scope.launch { drawer.open() } }) { if(!state.user?.avatar.isNullOrEmpty()) Avatar(state.user,32) else Glyph("menu_rounded","打开侧边栏") } else if(!root) IconButton(onClick=model::back) { Glyph("arrow_back", "返回") } },
+                                        leading={ if(root && state.rootTab==0) IconButton(onClick=hapticClick { scope.launch { drawer.open() } }) { if(!state.user?.avatar.isNullOrEmpty()) Avatar(state.user,32) else Glyph("menu_rounded","打开侧边栏") } else if(!root) IconButton(onClick=model::back) { Glyph("arrow_back", "返回") } },
                                         titleContent=if(root && state.rootTab==1) ({ Box(Modifier.padding(end=16.dp)){SearchField(model,state,searchUi)} }) else if(profile!=null)({Column {Text(profile.name,maxLines=1,overflow=TextOverflow.Ellipsis);if("postsCount" in profile.knownCounts)Text("${profile.postsCount} 推文",style=MaterialTheme.typography.bodySmall)}})else null,
                                         titleClick=if(root)({ scope.launch { list.animateScrollToItem(0) };Unit })else null,
                                         titleDoubleClick=if(root)({ scope.launch { list.animateScrollToItem(0);model.load() };Unit })else null,
@@ -221,7 +230,7 @@ val LocalActions=staticCompositionLocalOf<UiActions> { error("Reader UI is requi
                                     if (root && state.rootTab == 1) SearchSuggestions(model, state, searchUi, height)
                                 },
                             )
-                            if(root) Box(Modifier.align(Alignment.BottomCenter).windowInsetsPadding(navigationInsets).padding(bottom=if(!state.settings.optBoolean("floating_nav",true))0.dp else if(navigationInsets.getBottom(LocalDensity.current)>0)6.dp else 14.dp)) {
+                            if(root) Box(Modifier.align(Alignment.BottomCenter).then(if(!floating) Modifier.background(LocalChrome.current.navigation) else Modifier).windowInsetsPadding(navigationInsets).padding(bottom=if(!state.settings.optBoolean("floating_nav",true))0.dp else if(navigationInsets.getBottom(LocalDensity.current)>0)6.dp else 14.dp)) {
                                 BottomNavigation(state.rootTab,{ index -> if(index==state.rootTab) scope.launch {if(list.firstVisibleItemIndex>0||list.firstVisibleItemScrollOffset>with(density){50.dp.toPx()}){previousPositions[state.screen.key]=list.firstVisibleItemIndex to list.firstVisibleItemScrollOffset;list.animateScrollToItem(0)}else{val previous=previousPositions.remove(state.screen.key);if(previous!=null)list.animateScrollToItem(previous.first,previous.second)else list.animateScrollToItem(0)}} else model.selectRoot(index) },{ index -> if(index!=state.rootTab)model.selectRoot(index);scope.launch { list.animateScrollToItem(0);model.load() } })
                             }
                         }
@@ -237,6 +246,10 @@ val LocalActions=staticCompositionLocalOf<UiActions> { error("Reader UI is requi
 }
 
 val LocalHeaderInset=staticCompositionLocalOf {0.dp}
+@Composable private fun standardNavigationHeight(): Dp {
+    val labelHeight = with(LocalDensity.current) { 16.sp.toDp() }
+    return 68.dp + (labelHeight - 16.dp).coerceAtLeast(0.dp)
+}
 @OptIn(ExperimentalFoundationApi::class)
 @Composable fun AppTopBar(title:String,height:Int=56,leading:@Composable ()->Unit={},actions:@Composable RowScope.()->Unit={},titleContent:(@Composable ()->Unit)?=null,titleClick:(()->Unit)?=null,titleDoubleClick:(()->Unit)?=null,transparent:Boolean=false,leadingWidth:Int=56,titleSpacing:Dp=0.dp) {
     val background=LocalChrome.current.appBar
@@ -333,7 +346,7 @@ private fun ExploreTabs(personalized: Boolean, select: (Boolean) -> Unit) {
         }
     }
     if(!floating) {
-    NavigationBar(modifier=Modifier.height(68.dp),containerColor=LocalChrome.current.navigation,tonalElevation=0.dp,windowInsets=WindowInsets(0)) { labels.forEachIndexed { i,label -> NavigationBarItem(selected==i,{plainTap(i)},icon={Glyph(if(selected==i)chosen[i] else icons[i])},label={Text(label,fontSize=12.sp,fontWeight=flutterWeight(if(selected==i)700 else 500))},colors=NavigationBarItemDefaults.colors(selectedIconColor=MaterialTheme.colorScheme.onPrimaryContainer,selectedTextColor=MaterialTheme.colorScheme.primary,indicatorColor=MaterialTheme.colorScheme.primaryContainer,unselectedIconColor=MaterialTheme.colorScheme.onSurfaceVariant,unselectedTextColor=MaterialTheme.colorScheme.onSurfaceVariant)) } }}
+    NavigationBar(modifier=Modifier.height(standardNavigationHeight()),containerColor=LocalChrome.current.navigation,tonalElevation=0.dp,windowInsets=WindowInsets(0)) { labels.forEachIndexed { i,label -> NavigationBarItem(selected==i,{plainTap(i)},icon={Glyph(if(selected==i)chosen[i] else icons[i])},label={Text(label,fontSize=12.sp,fontWeight=flutterWeight(if(selected==i)700 else 500))},colors=NavigationBarItemDefaults.colors(selectedIconColor=MaterialTheme.colorScheme.onPrimaryContainer,selectedTextColor=MaterialTheme.colorScheme.primary,indicatorColor=MaterialTheme.colorScheme.primaryContainer,unselectedIconColor=MaterialTheme.colorScheme.onSurfaceVariant,unselectedTextColor=MaterialTheme.colorScheme.onSurfaceVariant)) } }}
     else BoxWithConstraints(Modifier.fillMaxWidth(),contentAlignment=Alignment.Center) {
         val width=minOf(440.dp,maxWidth-40.dp)*2/3
         if(liquid) LiquidNavigation(selected,select,double,width)
@@ -398,7 +411,8 @@ private fun ExploreTabs(personalized: Boolean, select: (Boolean) -> Unit) {
     }
 }
 
-private fun listKey(screen:ReaderScreen)=screen.key+":"+screen.feed.kind+":"+screen.feed.option
+private fun listKey(screen:ReaderScreen)=screen.key+":"+screen.feed.kind+
+    if(screen.feed.kind=="TweetDetail") "" else ":"+screen.feed.option
 @Composable fun HistoryTimelines(model:ReaderViewModel,state:ReaderState,lists:MutableMap<String,LazyListState>,active:Boolean) {
     val index=if(state.screen.feed.kind=="Likes")1 else 0
     val pager=rememberPagerState(initialPage=index,pageCount={2});val cache=remember(state.screen.key){mutableMapOf<Int,ReaderScreen>()};cache[index]=state.screen

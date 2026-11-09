@@ -4,7 +4,7 @@ ReviewX 是一款面向 X 的原生 Android 客户端，使用 Kotlin 和 Jetpac
 
 ## 构建
 
-需要 JDK 17 和 Android SDK 36。在仓库根目录配置 Android SDK 路径后，可运行：
+需要 JDK 21 和 Android SDK 36。在仓库根目录配置 Android SDK 路径后，可运行：
 
 ```powershell
 .\gradlew.bat :app:testReleaseUnitTest :app:lintRelease

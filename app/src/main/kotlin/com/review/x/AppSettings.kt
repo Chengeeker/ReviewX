@@ -49,7 +49,7 @@ class AppSettings(context: Context) {
     }
     companion object {
         private val stores = mutableMapOf<String,MutableStateFlow<JSONObject>>()
-        val appearanceKeys = setOf("theme_mode", "use_dynamic_color", "key_theme_color_index", "key_is_pure_black_dark", "haptics", "floating_nav", "use_liquid_glass_effect", "custom_font_weight", "font_weight_delta")
+        val appearanceKeys = setOf("theme_mode", "use_dynamic_color", "key_theme_color_index", "key_is_pure_black_dark", "haptics", "floating_nav", "use_liquid_glass_effect", "translucentNavigationGlass", "custom_font_weight", "font_weight_delta")
         val cacheThresholds = listOf(0, 50, 100, 200, 500, 1024, 2048)
         fun localBackupKey(key: String): Boolean = key in appearanceKeys || key in setOf("reading_settings", "network_config", "refresh_rate", "notification_enabled", "notification_likes", "notification_reposts", "notification_followers", "notification_replies", "notification_mentions", "notification_other", "auto_clear_cache_threshold_mb") ||
             Regex("^(history_|search_history_|notification_seen_)\\d+$").matches(key) || Regex("^reviewx_xcache_v1_\\d+_(profile|timeline_for_you|timeline_following)$").matches(key)
@@ -66,7 +66,7 @@ class AppSettings(context: Context) {
                 }
             }
             listOf("imageStorageFolder", "videoStorageFolder").forEach { if (input.str(it) !in listOf("default", "me", "author")) defaults.put(it, defaults.str("storageFolder")) }
-            mapOf("fontSize" to 12.0..24.0, "appTextScale" to 0.8..1.4, "lineHeight" to 1.1..2.0, "imageRadius" to 0.0..28.0).forEach { (key, range) -> defaults.put(key, defaults.optDouble(key).coerceIn(range)) }
+            mapOf("fontSize" to 12.0..24.0, "appTextScale" to 0.8..1.5, "lineHeight" to 1.1..2.0, "imageRadius" to 0.0..28.0).forEach { (key, range) -> defaults.put(key, defaults.optDouble(key).coerceIn(range)) }
             return defaults
         }
     }

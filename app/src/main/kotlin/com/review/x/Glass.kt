@@ -39,7 +39,8 @@ class Backdrop(val layer:GraphicsLayer) {
 }
 val LocalBackdrop=staticCompositionLocalOf<Backdrop?> {null}
 @Composable fun rememberBackdrop():Backdrop {val layer=rememberGraphicsLayer();return remember(layer){Backdrop(layer)}}
-fun Modifier.recordBackdrop(source:Backdrop,background:Backdrop?=null,padding:androidx.compose.ui.unit.Dp=androidx.compose.ui.unit.Dp(0f),notify:Boolean=true)=then(if (notify) Modifier.graphicsLayer() else Modifier).onGloballyPositioned {
+// Keep scrolling content invalidations inside this layer. Glass consumers draw the retained backdrop layer.
+fun Modifier.recordBackdrop(source:Backdrop,background:Backdrop?=null,padding:androidx.compose.ui.unit.Dp=androidx.compose.ui.unit.Dp(0f),notify:Boolean=true)=graphicsLayer().onGloballyPositioned {
     source.coordinates = it
     source.origin = it.positionInWindow()
 }.drawWithContent {

@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.*
 @Composable internal fun OriginalDrawer(state:ReaderState,onProfile:()->Unit,onRoute:(String,String)->Unit) {
     val colors=MaterialTheme.colorScheme
     Column(Modifier.fillMaxHeight()) {
-        Column(Modifier.padding(start=20.dp,top=20.dp,end=16.dp,bottom=12.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick=onProfile).padding(4.dp)) {
+        Column(Modifier.padding(start=20.dp,top=20.dp,end=16.dp,bottom=12.dp).clip(RoundedCornerShape(12.dp)).hapticClickable(onClick=onProfile).padding(4.dp)) {
             Box(Modifier.size(64.dp).clip(CircleShape).background(colors.secondaryContainer),contentAlignment=Alignment.Center){
                 if(!state.user?.avatar.isNullOrEmpty())NetworkImage(state.user!!.avatar,state.user.name,Modifier.fillMaxSize())else Glyph("person_rounded",size=36,color=colors.onSecondaryContainer)
             }
@@ -51,7 +51,7 @@ import androidx.compose.ui.unit.*
         FlutterDivider(height=1.dp)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical=6.dp)) {
             listOf(Triple("bookmarks_outlined","历史","Bookmarks"),Triple("notifications_outlined","通知","NotificationsTimeline"),Triple("history_rounded","本机浏览历史","LocalHistory")).forEach{(icon,title,kind)->
-                Row(Modifier.fillMaxWidth().heightIn(min=48.dp).clip(RoundedCornerShape(16.dp)).clickable{onRoute(kind,title)}.padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically){
+                Row(Modifier.fillMaxWidth().heightIn(min=48.dp).clip(RoundedCornerShape(16.dp)).hapticClickable{onRoute(kind,title)}.padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically){
                     Box(Modifier.width(24.dp)){Glyph(icon,size=22,color=colors.onSurfaceVariant)};Spacer(Modifier.width(12.dp));Text(title,fontSize=15.sp,fontWeight=FontWeight.Medium)
                 }
             }

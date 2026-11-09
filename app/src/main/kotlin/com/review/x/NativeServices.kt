@@ -19,7 +19,11 @@ import java.util.concurrent.TimeUnit
 object NativeServices {
     fun open(context:Context,url:String) {
         require(safeLink(url)) { "不支持的链接" }
-        CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(context,Uri.parse(url))
+        try {
+            CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(context,Uri.parse(url))
+        } catch (_: ActivityNotFoundException) {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        }
     }
     fun share(context:Context,text:String,title:String="分享") {
         context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,text),title))
@@ -75,6 +79,12 @@ object NativeServices {
         withContext(Dispatchers.Main) { context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType(mime).putExtra(Intent.EXTRA_STREAM,uri).apply { clipData=ClipData.newRawUri("媒体",uri);addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) },"分享媒体")) }
     }
     private fun roots(context:Context)=listOf(context.cacheDir,context.codeCacheDir)+context.externalCacheDirs.filterNotNull()
+    suspend fun enforceCacheLimit(context: Context, threshold: Int = AppSettings(context).int("auto_clear_cache_threshold_mb", 200)): Long =
+        withContext(Dispatchers.IO) {
+            if (threshold == 0 || threshold !in AppSettings.cacheThresholds) return@withContext 0L
+            if (cache(context).getValue("total") < threshold * 1024L * 1024) return@withContext 0L
+            clearCache(context)
+        }
     fun cache(context:Context):Map<String,Long> {
         val sizes=mutableMapOf("total" to 0L,"images" to 0L,"network" to 0L,"system" to 0L)
         roots(context).forEach { root -> if(root.exists()) root.walkTopDown().onEnter { it.canonicalPath.startsWith(root.canonicalPath+File.separator)||it==root }.filter { it.isFile }.forEach { file ->

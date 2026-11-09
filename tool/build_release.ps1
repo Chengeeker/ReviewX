@@ -12,7 +12,7 @@ if ([string]::IsNullOrWhiteSpace($keyAlias)) {
   throw 'Set REVIEW_X_KEY_ALIAS to the alias in your local keystore.'
 }
 if ([string]::IsNullOrWhiteSpace($JavaHome)) {
-  throw 'Set JAVA_HOME to a local JDK 17 installation.'
+  throw 'Set JAVA_HOME to a local JDK 21 installation.'
 }
 if ([string]::IsNullOrWhiteSpace($BcProvider) -or !(Test-Path -LiteralPath $BcProvider -PathType Leaf)) {
   throw 'Set REVIEW_X_BC_PROVIDER to a local Bouncy Castle provider JAR.'
@@ -94,7 +94,7 @@ public class ReviewXPipeAgent {
     if ($LASTEXITCODE -ne 0) { throw 'Compose checks or release build failed.' }
     $apk = Join-Path $projectRoot 'app/build/outputs/apk/release/app-release.apk'
     & (Join-Path $PSScriptRoot 'verify_release.ps1') -Apk $apk -JavaHome $JavaHome
-    Copy-Item -LiteralPath $apk -Destination (Join-Path $projectRoot 'ReviewX_2.0.0_arm64-v8a.apk') -Force
+    Copy-Item -LiteralPath $apk -Destination (Join-Path $projectRoot 'ReviewX_2.0.11_arm64-v8a.apk') -Force
   } finally { Pop-Location }
 } finally {
   if (Test-Path -LiteralPath $temporaryStore) { Remove-Item -LiteralPath $temporaryStore -Force }

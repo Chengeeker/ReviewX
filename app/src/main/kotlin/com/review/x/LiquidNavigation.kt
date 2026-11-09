@@ -111,7 +111,7 @@ import kotlin.math.abs
                     clipPath(localMask, if (selectedLayer) ClipOp.Intersect else ClipOp.Difference) {
                         this@drawWithContent.drawContent()
                     }
-                }
+                } else this@drawWithContent.drawContent()
             }) {labels.forEachIndexed {i,label->
             val color=if(selectedLayer)MaterialTheme.colorScheme.primary else if(light)MaterialTheme.colorScheme.onSurfaceVariant else Color.White
             Column(Modifier.weight(1f).fillMaxHeight().graphicsLayer{if(selectedLayer){scaleX=1f+.15f*lens.value;scaleY=1f+.15f*lens.value}}.semantics(mergeDescendants=true){this.selected=i==selected;role=Role.Tab;onClick {select(i);true}},horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
@@ -127,47 +127,21 @@ import kotlin.math.abs
             GlassShadow(4.4f, 1.1f, Color.Black.copy(alpha = .033f)),
             GlassShadow(1.1f, .55f, Color.Black.copy(alpha = .011f)),
         ))
-        if (Build.VERSION.SDK_INT >= 33) {
+        if (page != null) {
             val labelsLayer = rememberGraphicsLayer()
             val selectedLayer = rememberGraphicsLayer()
-            tabIcons(false, layer = labelsLayer)
-            tabIcons(true, layer = selectedLayer)
-            LiquidNavigationGpu(
-                page, labelsLayer, selectedLayer, position, lens,
-                Modifier.requiredSize(width + 40.dp, 86.dp).align(Alignment.Center),
-            )
-        } else {
-            val base = rememberBackdrop()
-            val bar = rememberBackdrop()
-            val pressure = lens.value.coerceIn(0f, 1f)
-            val expansion = (12.dp + slot * .03f) * pressure
-            val vertical = (8.dp + 24.dp * .06f) * pressure
-            val restOpacity = 1f - pressure
-            val density = LocalDensity.current
-            val pill = with(density) {
-                Rect((4.dp + slot * position.value - expansion).toPx(), (4.dp - vertical).toPx(),
-                    (4.dp + slot * (position.value + 1) + expansion).toPx(), (52.dp + vertical).toPx())
-            }
-            val mask = remember(pill) { Path().apply { addRoundRect(RoundRect(pill, CornerRadius(pill.height / 2))) } }
-            Box(Modifier.fillMaxSize().recordBackdrop(bar,page,16.dp)) {
-                GlassSurface(GlassStyle(if(light)Color(0xF0FFFFFF)else Color(0x66000000),
-                    refractiveIndex=1.16f,saturation=1f,blur=1.5f,rimLight=if(light)1f else .12f,radius=100f),
-                    Modifier.fillMaxSize().recordBackdrop(base))
-                CompositionLocalProvider(LocalBackdrop provides base) {
-                    if(restOpacity>0f)GlassSurface(GlassStyle(Color.Transparent,blur=6f,radius=100f,frosted=true),Modifier.offset(x=4.dp+slot*position.value,y=4.dp).size(slot,48.dp).graphicsLayer{alpha=restOpacity}.clip(RoundedCornerShape(100.dp))) {Box(Modifier.fillMaxSize().background(if(light)Color(0x26000000)else Color(0x26FFFFFF)))}
+            Box(Modifier.requiredSize(width + 40.dp, 86.dp).align(Alignment.Center)) {
+                Box(Modifier.fillMaxSize().drawWithContent { labelsLayer.record { this@drawWithContent.drawContent() } }, contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(width, 56.dp)) { tabIcons(false) }
                 }
-                tabIcons(false, mask = mask);tabIcons(true, mask = mask)
+                Box(Modifier.fillMaxSize().clearAndSetSemantics {}.drawWithContent { selectedLayer.record { this@drawWithContent.drawContent() } }, contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(width, 56.dp)) { tabIcons(true) }
+                }
+                NavigationGlassMaterial(page.layer, { page.origin }, { page.version }, labelsLayer, selectedLayer,
+                    position.value, lens.value.coerceIn(0f, 1f), !light, MaterialTheme.colorScheme.background,
+                    LocalSettings.current.optBoolean("translucentNavigationGlass", false), labels.size, Modifier.fillMaxSize())
             }
-            CompositionLocalProvider(LocalBackdrop provides bar) {
-                if(pressure>.001f)GlassSurface(GlassStyle(
-                    (if(light)Color(0x18000000)else Color(0x26FFFFFF)).let{it.copy(alpha=it.alpha*pressure)},
-                    thickness=20f*pressure,refractiveIndex=1f+.18f*pressure,chromatic=.025f*pressure,
-                    light=2f*pressure,rimShade=if(light).12f*pressure else 0f,rimLight=if(light).35f*pressure else 0f,
-                    pinch=(1f-(1f-pressure)*(1f-pressure))*.7f,blur=0f,radius=100f),
-                    Modifier.offset(x=4.dp+slot*position.value-expansion,y=4.dp-vertical)
-                        .size(slot+expansion*2,48.dp+vertical*2).graphicsLayer{alpha=pressure})
-            }
-        }
+        } else tabIcons(false)
         if(light)Box(Modifier.fillMaxSize().border(1.dp,Color(0xF5FFFFFF),RoundedCornerShape(100.dp)))
     }
 }

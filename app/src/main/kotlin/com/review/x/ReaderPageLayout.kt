@@ -33,7 +33,11 @@ internal fun Window.applyReaderWindow(scaffold: Color) {
 @Suppress("DEPRECATION")
 internal fun Window.applyReviewStatusBar(dark: Boolean) {
     if (Build.VERSION.SDK_INT < 35) statusBarColor = android.graphics.Color.TRANSPARENT
-    if (Build.VERSION.SDK_INT >= 29) isStatusBarContrastEnforced = false
+    if (Build.VERSION.SDK_INT < 35) navigationBarColor = if (Build.VERSION.SDK_INT >= 26) android.graphics.Color.TRANSPARENT else android.graphics.Color.BLACK
+    if (Build.VERSION.SDK_INT >= 29) {
+        isStatusBarContrastEnforced = false
+        isNavigationBarContrastEnforced = false
+    }
     WindowCompat.getInsetsController(this, decorView).isAppearanceLightStatusBars = !dark
 }
 

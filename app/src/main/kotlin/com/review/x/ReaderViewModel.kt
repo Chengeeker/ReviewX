@@ -14,8 +14,12 @@ data class ReaderScreen(val feed: Feed = Feed(), val posts: List<Post> = emptyLi
     val users: List<User> = emptyList(), val notifications: List<SocialNotification> = emptyList(), val trends: List<Trend> = emptyList(),
     val key: String = UUID.randomUUID().toString(), val selectedPost: Post? = null,val replyParent:Post?=null,
     val auxiliaryError:String?=null,val profileError:Boolean=false, val topCursor:String?=null,val markedRead:Boolean=false,val markingRead:Boolean=false,val readUncertain:Boolean=false,
-    val restoredSnapshot: Boolean = false) {
+    val restoredSnapshot: Boolean = false, val pullRefreshing: Boolean = false) {
     val canLoadMore get() = cursor != null || restoredSnapshot
+    internal fun shouldPrefetch(lastVisible: Int, totalItems: Int, hasScrolled: Boolean): Boolean =
+        loaded && !busy && error == null && canLoadMore && totalItems > 0 && lastVisible >= 0 &&
+            (!restoredSnapshot || hasScrolled) &&
+            (lastVisible >= totalItems - 8 || lastVisible + 1 >= totalItems * .6f)
 }
 data class ReaderState(val user: User? = null, val accountId: String? = null, val authenticating: Boolean = true, val loginError: String? = null,
     val screens: List<ReaderScreen> = listOf(ReaderScreen()), val expired: Boolean = false, val theme: String = "system",
@@ -53,7 +57,11 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 val stored=withContext(Dispatchers.IO) {
                     backup.recoverInterruptedRestore(); settings.importFlutter(getApplication())
                     try { LegacyImport.credentials(getApplication(),settings) } catch (_:Exception) { message("旧登录无法自动读取，原数据已保留；请重新登录或导入备份") }
-                    AppNetwork.initialize(getApplication()); vault.read()
+                    AppNetwork.initialize(getApplication())
+                    try { NativeServices.enforceCacheLimit(getApplication()) }
+                    catch (cancelled: CancellationException) { throw cancelled }
+                    catch (error: Exception) { DiagnosticLog.record("cache.automatic.failure", error = error) }
+                    vault.read()
                 }
                 if(epoch!=generation) {return@launch}
                 val changed=session?.cookie!=stored?.cookie
@@ -158,9 +166,14 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
     fun replaceFeed(feed:Feed) {
         work?.cancel(); generation++
         val screen=mutable.value.screen
+        val sortingReplies = screen.feed.kind == "TweetDetail" && feed.kind == "TweetDetail" && feed.value == screen.feed.value
         if(screen.feed.option=="account_history")roots["history:${screen.key}:${screen.feed.kind}"]=screen.copy(busy=false)
-        updateScreen {if(feed.option=="account_history")roots["history:${screen.key}:${feed.kind}"] ?: ReaderScreen(feed=feed,key=screen.key) else ReaderScreen(feed=feed,key=screen.key,profile=screen.profile,selectedPost=screen.selectedPost,replyParent=screen.replyParent)}
-        if(!mutable.value.screen.loaded)load()
+        updateScreen {
+            if (sortingReplies) screen.copy(feed=feed,cursor=null,busy=false,error=null,pullRefreshing=false)
+            else if(feed.option=="account_history")roots["history:${screen.key}:${feed.kind}"] ?: ReaderScreen(feed=feed,key=screen.key)
+            else ReaderScreen(feed=feed,key=screen.key,profile=screen.profile,selectedPost=screen.selectedPost,replyParent=screen.replyParent)
+        }
+        if(sortingReplies || !mutable.value.screen.loaded)load()
     }
     fun openUser(user:User)=open(Feed("UserTweets",user.id,user.name),profile=user)
     fun search(query:String,product:String="Top") {
@@ -182,7 +195,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
         mutable.value=mutable.value.copy(screens=mutable.value.screens.dropLast(1))
         if(!mutable.value.screen.loaded) load()
     }
-    fun load(more:Boolean=false) {
+    fun load(more:Boolean=false, fromPull:Boolean=false) {
         val screen=mutable.value.screen
         if(screen.feed.kind=="Likes" && screen.profile!=null && screen.profile.id!=mutable.value.accountId){updateScreen {it.copy(loaded=true,busy=false,error=null)};return}
         val remote=screen.feed.kind in apiFeeds
@@ -190,7 +203,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
         val captured=session ?: return
         if(screen.busy || (more && !screen.canLoadMore)) return
         val epoch=++generation; val account=accountEpoch
-        updateScreen { it.copy(busy=true,error=null) }
+        updateScreen { it.copy(busy=true,error=null,pullRefreshing=fromPull) }
         work=viewModelScope.launch {
             try {
                 val feed=screen.feed; val cursor=if(more) screen.cursor else null
@@ -239,11 +252,11 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 if(epoch!=generation || account!=accountEpoch || session!==captured) return@launch
                 if(!more) confirmedPosts.forEach { updated.remove(it) }
                 mutable.value=mutable.value.copy(uncertain=mutable.value.uncertain-confirmedPosts-next.users.map { "user:${it.id}" }.toSet()-listOfNotNull(next.profile?.let { "user:${it.id}" }).toSet())
-                updateScreen { next.copy(cursor=next.cursor?.takeUnless { more && it==screen.cursor },loaded=true,busy=false,error=null,restoredSnapshot=false) }
+                updateScreen { next.copy(cursor=next.cursor?.takeUnless { more && it==screen.cursor },loaded=true,busy=false,error=null,restoredSnapshot=false,pullRefreshing=false) }
                 if(screen.feed.kind=="TweetDetail" && !more)next.selectedPost?.let { post->withContext(Dispatchers.IO) { settings.addHistory(captured.userId!!,post) } }
                 if (!more && confirmedPosts.isNotEmpty()) cacheHome(captured, next)
             } catch(cancelled:CancellationException) { throw cancelled }
-            catch(error:Exception) { if(epoch==generation) { updateScreen { it.copy(busy=false,error=safeError(error)) }; report(error,false) } }
+            catch(error:Exception) { if(epoch==generation) { updateScreen { it.copy(busy=false,error=safeError(error),pullRefreshing=false) }; report(error,false) } }
         }
     }
     private suspend fun cacheHome(session:Session,screen:ReaderScreen) {
@@ -328,7 +341,12 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
     fun setSetting(key:String,value:Any):Boolean = runCatching { settings.set(key,value);if(key.startsWith("notification_"))NotificationWorker.sync(getApplication(),session!=null) }.onFailure { message("设置保存失败") }.isSuccess
-    fun setReading(key:String,value:Any) { runCatching { settings.setReading(key,value) }.onFailure { message("设置保存失败") } }
+    fun setReading(key:String,value:Any) {
+        runCatching { settings.setReading(key,value) }.onFailure {
+            mutable.value=mutable.value.copy(settings=settings.snapshot())
+            message("设置保存失败")
+        }
+    }
     fun previewReading(key:String,value:Any) {
         val data=JSONObject(mutable.value.settings.toString())
         data.put("reading_settings",AppSettings.validatedReading(JSONObject(data.str("reading_settings","{}")).put(key,value)).toString())

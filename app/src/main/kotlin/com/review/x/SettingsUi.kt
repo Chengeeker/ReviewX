@@ -36,6 +36,13 @@ import org.json.JSONObject
 import kotlin.math.roundToInt
 
 val LocalCompactSettingsRows=staticCompositionLocalOf {false}
+
+private val settingsCardColor: Color
+    @Composable get() {
+        val scheme = MaterialTheme.colorScheme
+        return scheme.settingsCardColor(LocalChrome.current.background)
+    }
+
 @Composable fun SettingRow(title:String,subtitle:String?=null,icon:String?=null,onClick:(()->Unit)?=null,trailing:(@Composable ()->Unit)?=null,titleStyle:TextStyle=flutterTileTitle(),subtitleStyle:TextStyle=flutterTileSubtitle(),minHeight:Dp=if(subtitle!=null)78.dp else 62.dp,iconColor:Color=MaterialTheme.colorScheme.onSurfaceVariant) {
     Row(Modifier.fillMaxWidth().heightIn(min=minHeight).clip(RoundedCornerShape(16.dp)).then(if(onClick!=null)Modifier.hapticClickable(onClick=onClick)else Modifier).padding(horizontal=16.dp,vertical=3.dp),verticalAlignment=Alignment.CenterVertically) {
         if(icon!=null){Glyph(icon,color=iconColor);Spacer(Modifier.width(16.dp))};FlutterTileText(Modifier.weight(1f),minHeight-6.dp,titleStyle,subtitleStyle,{Text(title)},subtitle?.let{value->{Text(value)}})
@@ -43,7 +50,7 @@ val LocalCompactSettingsRows=staticCompositionLocalOf {false}
     }
 }
 @Composable fun Section(title:String,content:@Composable ColumnScope.()->Unit) {
-    Column {Text(title,Modifier.padding(start=16.dp,end=16.dp,bottom=12.dp),style=MaterialTheme.typography.titleSmall,color=MaterialTheme.colorScheme.primary);Surface(shape=RoundedCornerShape(24.dp),color=MaterialTheme.colorScheme.surfaceContainerLow){Column(content=content)}}
+    Column {Text(title,Modifier.padding(start=16.dp,end=16.dp,bottom=12.dp),style=MaterialTheme.typography.titleSmall,color=MaterialTheme.colorScheme.primary);Surface(shape=RoundedCornerShape(24.dp),color=settingsCardColor){Column(content=content)}}
 }
 @Composable fun SettingSwitch(title:String,value:Boolean,onChange:(Boolean)->Unit,subtitle:String?=null,icon:String?=null,enabled:Boolean=true) {
     val toggle = hapticClick { onChange(!value) }
@@ -54,16 +61,16 @@ val LocalCompactSettingsRows=staticCompositionLocalOf {false}
         }
     })
 }
-@Composable fun Choice(title:String,selected:Boolean,onClick:()->Unit,subtitle:String?=null,titleStyle:TextStyle=flutterTileTitle(),subtitleStyle:TextStyle=flutterTileSubtitle(),horizontalPadding:Dp=16.dp,rowHeight:Dp=if(subtitle==null)62.dp else 78.dp,verticalPadding:Dp=3.dp) {
+@Composable fun Choice(title:String,selected:Boolean,onClick:()->Unit,subtitle:String?=null,titleStyle:TextStyle=flutterTileTitle(),subtitleStyle:TextStyle=flutterTileSubtitle(),horizontalPadding:Dp=16.dp,rowHeight:Dp=if(subtitle==null)62.dp else 78.dp,verticalPadding:Dp=3.dp,centerTextBlock:Boolean=false) {
     Row(Modifier.fillMaxWidth().heightIn(min=rowHeight).selectable(selected=selected,role=androidx.compose.ui.semantics.Role.RadioButton,onClick=hapticClick(onClick)).padding(horizontal=horizontalPadding,vertical=verticalPadding),verticalAlignment=Alignment.CenterVertically) {
-        FlutterRadio(selected);Spacer(Modifier.width(16.dp));FlutterTileText(Modifier.weight(1f),rowHeight-verticalPadding*2,titleStyle,subtitleStyle,{Text(title)},subtitle?.let{value->{Text(value)}})
+        FlutterRadio(selected);Spacer(Modifier.width(16.dp));FlutterTileText(Modifier.weight(1f),rowHeight-verticalPadding*2,titleStyle,subtitleStyle,{Text(title)},subtitle?.let{value->{Text(value)}},centerTextBlock=centerTextBlock)
     }
 }
 @Composable fun SettingsHome(model:ReaderViewModel,state:ReaderState) {
     var about by remember {mutableStateOf(false)}
     fun open(kind:String,title:String){model.open(Feed(kind,title=title))}
     CompositionLocalProvider(LocalCompactSettingsRows provides true) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top=LocalHeaderInset.current).padding(start=16.dp,top=20.dp,end=16.dp,bottom=if(!state.settings.optBoolean("floating_nav",true))24.dp else if(state.settings.optBoolean("use_liquid_glass_effect"))76.dp+WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 76.dp+(if(WindowInsets.navigationBars.getBottom(LocalDensity.current)>0)6.dp else 14.dp)+WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),verticalArrangement=Arrangement.spacedBy(32.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState(), overscrollEffect = null).padding(top=LocalHeaderInset.current).padding(start=16.dp,top=20.dp,end=16.dp,bottom=if(!state.settings.optBoolean("floating_nav",true))24.dp else if(state.settings.optBoolean("use_liquid_glass_effect"))76.dp+WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 76.dp+(if(WindowInsets.navigationBars.getBottom(LocalDensity.current)>0)6.dp else 14.dp)+WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),verticalArrangement=Arrangement.spacedBy(32.dp)) {
         Section("偏好与功能") {SettingRow("个性化",icon="palette_outlined",onClick={open("Theme","个性化")});SettingRow("帖子与阅读样式",icon="article_outlined",onClick={open("Reading","帖子与阅读样式")});SettingRow("网络设置",icon="language_outlined",onClick={open("Network","网络设置")});SettingRow("订阅消息提醒",icon="notifications_active_outlined",onClick={open("NotificationSettings","订阅消息提醒")})}
         Section("存储与备份") {SettingRow("存储设置",icon="folder_open_outlined",onClick={open("Storage","存储设置")});SettingRow("缓存管理","查看与清理应用缓存","cleaning_services_outlined",{open("Cache","缓存管理")});SettingRow("WebDAV备份",icon="cloud_sync_outlined",onClick={open("WebDAV","WebDAV备份")})}
         Section("账号与应用") {SettingRow(if(state.loggedIn)state.user?.name ?: "X 账号" else "登录 X 账号",state.accountId?.let {"UID：$it"},"person_outline_rounded",{if(state.loggedIn)open("Account","账号管理")else open("Login","账号登录")});SettingRow("导出诊断日志","遇到问题时分享给开发者","bug_report_outlined",{open("Diagnostics","诊断日志")});SettingRow("关于 ReviewX",icon="info_outline_rounded",onClick={about=true})}
@@ -88,18 +95,23 @@ val LocalCompactSettingsRows=staticCompositionLocalOf {false}
     }
 }
 @Composable fun ThemeSettings(model:ReaderViewModel,state:ReaderState) {
-    val settings=state.settings;var weights by remember {mutableStateOf(false)}
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top=LocalHeaderInset.current).padding(start=16.dp,top=12.dp,end=16.dp,bottom=24.dp).navigationBarsPadding(),verticalArrangement=Arrangement.spacedBy(32.dp)) {
-        Section("明暗模式"){listOf("跟随系统","浅色模式","深色模式").forEachIndexed {i,title->Choice(title,settings.optInt("theme_mode")==i,{model.setSetting("theme_mode",i)})};SettingSwitch("纯黑深色模式 (OLED 省电)",settings.optBoolean("key_is_pure_black_dark"),{model.setSetting("key_is_pure_black_dark",it)},icon="contrast_rounded")}
-        Section("色彩方案"){SettingSwitch("动态取色",settings.optBoolean("use_dynamic_color"),{model.setSetting("use_dynamic_color",it)},icon="auto_awesome_outlined");if(!settings.optBoolean("use_dynamic_color")){Text("预置主题配色搭配",Modifier.padding(start=16.dp,top=12.dp,end=16.dp,bottom=10.dp),style=MaterialTheme.typography.bodyMedium,color=MaterialTheme.colorScheme.onSurfaceVariant);FlowRow(Modifier.align(Alignment.CenterHorizontally).padding(start=16.dp,end=16.dp,bottom=12.dp),horizontalArrangement=Arrangement.spacedBy(12.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {val colors=listOf(0xFFFA2F3A,0xFFFF8200,0xFF1976D2,0xFF2E7D32,0xFF7B1FA2,0xFFE91E63,0xFF00897B,0xFF455A64);listOf("经典红","活力橙","极光蓝","翡翠绿","优雅紫","樱花粉","青碧色","经典黑灰").forEachIndexed {i,title->FlutterColorChip(title,Color(colors[i]),settings.optInt("key_theme_color_index")==i){model.setSetting("key_theme_color_index",i)}}}}}
-        Section("字体粗细"){SettingRow("自定义应用字体粗细","当前：${weightName(settings.optInt("font_weight_delta"))}","format_bold_rounded",{weights=true})}
-        Section("字体大小"){Row(Modifier.padding(start=16.dp),verticalAlignment=Alignment.CenterVertically){Glyph("format_size_rounded");Box(Modifier.weight(1f)){ReadingSlider("应用字体大小","appTextScale",.8f,1.4f,12,model,percent=true)}}}
-        Section("导航布局风格"){SettingSwitch("悬浮胶囊底栏 (MD3 Expressive)",settings.optBoolean("floating_nav",true),{model.setSetting("floating_nav",it)},icon="dock_rounded")}
-        Section("界面效果"){SettingSwitch("使用液态玻璃效果",settings.optBoolean("use_liquid_glass_effect"),{model.setSetting("use_liquid_glass_effect",it)},"应用于悬浮底栏和图片画廊按钮","blur_on_rounded")}
-        Section("屏幕显示"){SettingRow("屏幕帧率设置",icon="speed_rounded",onClick={model.open(Feed("Display",title="屏幕刷新率"))})}
-        Section("触感与震动"){SettingSwitch("触感与震动反馈",settings.optBoolean("haptics",true),{model.setSetting("haptics",it)},icon="vibration_rounded")}
+    val settings=state.settings
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top=LocalHeaderInset.current).padding(start=16.dp,top=12.dp,end=16.dp,bottom=24.dp).navigationBarsPadding(),verticalArrangement=Arrangement.spacedBy(16.dp)) {
+        AppearanceModes(settings.optInt("theme_mode"), { model.setSetting("theme_mode", it) },
+            settings.optBoolean("key_is_pure_black_dark"), { model.setSetting("key_is_pure_black_dark", it) })
+        AppearancePalette(settings.optBoolean("use_dynamic_color"), { model.setSetting("use_dynamic_color", it) },
+            settings.optInt("key_theme_color_index"), { model.setSetting("key_theme_color_index", it) })
+        FontWeightSetting(settings.optBoolean("custom_font_weight"), settings.optInt("font_weight_delta"), "Review X",
+            hapticsEnabled = settings.optBoolean("haptics", true), onReset = { model.setSetting("custom_font_weight", false) },
+            onCommit = { model.setSetting("font_weight_delta", it); model.setSetting("custom_font_weight", true) })
+        FontSizeSetting(LocalReading.current.optDouble("appTextScale", 1.0).toFloat()) { model.setReading("appTextScale", it.toDouble()) }
+        AppearanceSection("底部导航"){SettingSwitch("悬浮胶囊底栏 (MD3 Expressive)",settings.optBoolean("floating_nav",true),{model.setSetting("floating_nav",it)},icon="dock_rounded")}
+        AppearanceSection("显示效果"){SettingSwitch("使用液态玻璃效果",settings.optBoolean("use_liquid_glass_effect"),{model.setSetting("use_liquid_glass_effect",it)},"应用于悬浮底栏和图片画廊按钮","blur_on_rounded")
+            if(settings.optBoolean("use_liquid_glass_effect") && settings.optBoolean("floating_nav",true)) NavigationGlassChoice(settings.optBoolean("translucentNavigationGlass", false), hapticsEnabled = settings.optBoolean("haptics", true)) { model.setSetting("translucentNavigationGlass", it) }
+        }
+        AppearanceSection("屏幕显示"){SettingRow("屏幕帧率设置",icon="speed_rounded",onClick={model.open(Feed("Display",title="屏幕刷新率"))})}
+        AppearanceSection("触感与震动"){SettingSwitch("触感与震动反馈",settings.optBoolean("haptics",true),{model.setSetting("haptics",it)},icon="vibration_rounded")}
     }
-    if(weights)FlutterAlertDialog(onDismissRequest={weights=false},contentPadding=PaddingValues(vertical=12.dp),title={Text("选择字体粗细")},text={Column{listOf(-100,0,100,200,300).forEach {delta->Choice(weightName(delta),settings.optInt("font_weight_delta")==delta,{model.setSetting("custom_font_weight",true);model.setSetting("font_weight_delta",delta);weights=false},titleStyle=flutterTileTitle().copy(fontWeight=flutterWeight(if(settings.optInt("font_weight_delta")==delta)700 else 600),color=if(settings.optInt("font_weight_delta")==delta)MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface),horizontalPadding=20.dp,rowHeight=60.dp)}}},confirmButton={FlutterTextButton(onClick={weights=false}){Text("取消")}})
 }
 fun weightName(delta:Int)=when(delta){-100->"偏细";100->"中等";200->"偏粗";300->"加粗";else->"默认"}
 @Composable fun ReadingSlider(title:String,key:String,min:Float,max:Float,divisions:Int,model:ReaderViewModel,percent:Boolean=false) {
@@ -161,7 +173,7 @@ fun qualityName(key:String)=when(key){"high"->"最高画质 (1080p/原画)";"dat
 @Composable fun StorageSettings(model:ReaderViewModel,state:ReaderState) {
     val reading=LocalReading.current;var selected by remember{mutableStateOf<String?>(null)}
     fun path(video:Boolean,mode:String):String=(if(video)"Movies" else "Pictures")+"/ReviewX/"+when(mode){"me"->(state.user?.handle ?: state.accountId ?: "MyProfile")+"/";"author"->"帖子作者账号/";else->""}
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top=LocalHeaderInset.current).padding(horizontal=16.dp,vertical=12.dp).navigationBarsPadding()){Surface(shape=RoundedCornerShape(24.dp),color=MaterialTheme.colorScheme.surfaceContainerLow){Column{listOf(false,true).forEach{video->val key=if(video)"videoStorageFolder" else "imageStorageFolder";SettingRow(if(video)"视频存储路径" else "图片存储路径",path(video,reading.str(key)),if(video)"video_library_outlined" else "image_outlined",{selected=key},titleStyle=flutterTileTitle().copy(fontSize=16.sp,lineHeight=21.6.sp,fontWeight=FontWeight.SemiBold),subtitleStyle=flutterTileSubtitle().copy(fontSize=14.sp,lineHeight=19.6.sp),iconColor=MaterialTheme.colorScheme.primary)}}}}
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top=LocalHeaderInset.current).padding(horizontal=16.dp,vertical=12.dp).navigationBarsPadding()){Surface(shape=RoundedCornerShape(24.dp),color=settingsCardColor){Column{listOf(false,true).forEach{video->val key=if(video)"videoStorageFolder" else "imageStorageFolder";SettingRow(if(video)"视频存储路径" else "图片存储路径",path(video,reading.str(key)),if(video)"video_library_outlined" else "image_outlined",{selected=key},titleStyle=flutterTileTitle().copy(fontSize=16.sp,lineHeight=21.6.sp,fontWeight=FontWeight.SemiBold),subtitleStyle=flutterTileSubtitle().copy(fontSize=14.sp,lineHeight=19.6.sp),iconColor=MaterialTheme.colorScheme.primary)}}}}
     selected?.let{key->FlutterBottomSheet(onDismissRequest={selected=null}) {Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(16.dp)) {
         Row(verticalAlignment=Alignment.CenterVertically){Text(if(key.startsWith("video"))"视频存储路径"else "图片存储路径",Modifier.weight(1f),fontSize=16.sp,fontWeight=FontWeight.Bold);IconButton(onClick={selected=null}){Glyph("close_rounded","关闭")}}
         Spacer(Modifier.height(6.dp));Text("保存"+(if(key.startsWith("video"))"视频"else "图片")+"时，文件将自动归类到系统相册对应文件夹。",fontSize=14.sp,color=MaterialTheme.colorScheme.onSurfaceVariant);Spacer(Modifier.height(12.dp))
@@ -170,7 +182,7 @@ fun qualityName(key:String)=when(key){"high"->"最高画质 (1080p/原画)";"dat
 
 }
 @Composable fun AppSectionCard(content:@Composable ColumnScope.()->Unit) {
-    Surface(Modifier.fillMaxWidth().padding(horizontal=10.dp,vertical=5.dp),shape=RoundedCornerShape(24.dp),color=MaterialTheme.colorScheme.surfaceContainerLow){Column(content=content)}
+    Surface(Modifier.fillMaxWidth().padding(horizontal=10.dp,vertical=5.dp),shape=RoundedCornerShape(24.dp),color=settingsCardColor){Column(content=content)}
 }
 fun formatBytes(bytes:Long)=when {bytes>=1073741824->"%.2f GB".format(java.util.Locale.ROOT,bytes/1073741824.0);bytes>=1048576->"%.1f MB".format(java.util.Locale.ROOT,bytes/1048576.0);bytes>=1024->"%.1f KB".format(java.util.Locale.ROOT,bytes/1024.0);else->bytes.toString()+" B"}
 fun formatThreshold(mb:Int)=if(mb==0)"关闭自动清理"else if(mb>=1024)(mb/1024).toString()+" GB"else mb.toString()+" MB"
@@ -187,12 +199,12 @@ fun formatThreshold(mb:Int)=if(mb==0)"关闭自动清理"else if(mb>=1024)(mb/10
         }}
         Spacer(Modifier.height(16.dp));AppSectionCard {Button(enabled=!busy&&!loading&&error==null,onClick={if(stats?.get("total")==0L)model.message("当前没有可清理的缓存")else confirm=true},modifier=Modifier.padding(16.dp).fillMaxWidth().height(48.dp),shape=RoundedCornerShape(12.dp),contentPadding=PaddingValues(start=16.dp,end=24.dp)){if(busy)FlutterProgress(Modifier.size(18.dp),strokeWidth=2.dp,color=MaterialTheme.colorScheme.onPrimary)else Glyph("delete_sweep_rounded",size=18);Spacer(Modifier.width(8.dp));Text(if(busy)"正在清理..."else "清理所有缓存")}}
         Spacer(Modifier.height(24.dp));Text("自动清理规则",Modifier.padding(horizontal=26.dp),style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold);Spacer(Modifier.height(12.dp))
-        AppSectionCard {SettingRow("自动清理缓存阈值","超过上限时逐步淘汰较少使用的图片。更改后在应用完全重启时生效","auto_delete_outlined",onClick=if(busy||loading)null else ({threshold=true}),trailing={Text(formatThreshold(model.settings.int("auto_clear_cache_threshold_mb",200)),fontSize=14.sp,color=MaterialTheme.colorScheme.primary,fontWeight=FontWeight.SemiBold)})}
+        AppSectionCard {SettingRow("自动清理缓存阈值","启动和修改阈值时检查缓存，达到上限自动清理","auto_delete_outlined",onClick=if(busy||loading)null else ({threshold=true}),trailing={Text(formatThreshold(model.settings.int("auto_clear_cache_threshold_mb",200)),fontSize=14.sp,color=MaterialTheme.colorScheme.primary,fontWeight=FontWeight.SemiBold)})}
         Spacer(Modifier.height(24.dp));AppSectionCard {Text("清理仅针对 Android 应用缓存目录，并清空 应用图片内存缓存；账号凭据、设置、本地时间线快照和已保存到相册的媒体不会受影响。缓存分类按文件路径估算；正在播放或保存的临时媒体可能需要重新加载。",Modifier.padding(16.dp),color=MaterialTheme.colorScheme.onSurfaceVariant,lineHeight=20.3.sp)}
         Spacer(Modifier.height(16.dp));FlutterTextButton(enabled=!busy&&!loading,onClick={scope.launch {refresh()}},modifier=Modifier.align(Alignment.CenterHorizontally),contentPadding=PaddingValues(start=12.dp,end=16.dp,top=8.dp,bottom=8.dp)){Glyph("refresh_rounded",size=18);Spacer(Modifier.width(8.dp));Text("刷新缓存占用")}
     }
     if(confirm)FlutterAlertDialog(onDismissRequest={confirm=false},title={Text("清理所有缓存？")},text={Text("将清理应用缓存目录中的临时文件，共 "+formatBytes(stats?.get("total")?:0)+"。账号、设置和本地时间线快照不会被清理。")},confirmButton={Button(onClick={confirm=false;busy=true;scope.launch{try{val released=stats?.get("total")?:0;NativeServices.clearCache(context);refresh();model.message("缓存清理完成，释放 "+formatBytes(released))}catch(e:CancellationException){throw e}catch(_:Exception){model.message("缓存清理失败，请稍后重试")}finally{busy=false}}}){Text("立即清理")}},dismissButton={FlutterTextButton(onClick={confirm=false}){Text("取消")}})
-    if(threshold)FlutterAlertDialog(onDismissRequest={threshold=false},contentPadding=PaddingValues(vertical=8.dp),title={Text("选择自动清理阈值")},text={Column(Modifier.verticalScroll(rememberScrollState())){AppSettings.cacheThresholds.forEach{value->Choice(formatThreshold(value),model.settings.int("auto_clear_cache_threshold_mb",200)==value,onClick={threshold=false;model.setSetting("auto_clear_cache_threshold_mb",value)},titleStyle=flutterTileTitle().copy(fontSize=13.sp,lineHeight=17.55.sp),rowHeight=54.dp)}}},confirmButton={FlutterTextButton(onClick={threshold=false}){Text("取消")}})
+    if(threshold)FlutterAlertDialog(onDismissRequest={threshold=false},contentPadding=PaddingValues(vertical=8.dp),title={Text("选择自动清理阈值")},text={Column(Modifier.verticalScroll(rememberScrollState())){AppSettings.cacheThresholds.forEach{value->Choice(formatThreshold(value),model.settings.int("auto_clear_cache_threshold_mb",200)==value,onClick={threshold=false;if(model.setSetting("auto_clear_cache_threshold_mb",value))scope.launch{busy=true;try{NativeServices.enforceCacheLimit(context,value);refresh()}catch(e:CancellationException){throw e}catch(_:Exception){model.message("自动清理检查失败，请稍后重试")}finally{busy=false}}},titleStyle=flutterTileTitle().copy(fontSize=13.sp,lineHeight=17.55.sp),rowHeight=54.dp)}}},confirmButton={FlutterTextButton(onClick={threshold=false}){Text("取消")}})
 }
 @Composable fun WebDavSettings(model:ReaderViewModel) {
     var url by remember{mutableStateOf("")};var user by remember{mutableStateOf("")};var password by remember{mutableStateOf("")};var directory by remember{mutableStateOf("ReviewX")};var full by rememberSaveable{mutableStateOf(false)};var visible by remember{mutableStateOf(false)};var busy by remember{mutableStateOf(true)};var confirm by remember{mutableStateOf(false)};val scope=rememberCoroutineScope()
@@ -201,10 +213,17 @@ fun formatThreshold(mb:Int)=if(mb==0)"关闭自动清理"else if(mb>=1024)(mb/10
     fun validate():Boolean{fieldErrors=webDavFormErrors(url,user,password);return fieldErrors.isEmpty()}
     fun run(action:String){if(busy||!validate())return;operation=action;busy=true;scope.launch{try{val config=JSONObject().put("url",url.trim()).put("user",user.trim()).put("password",password).put("directory",directory.trim());require(user.isNotBlank()&&password.isNotEmpty()){ "请输入用户名和密码或授权 Token" };withContext(Dispatchers.IO){model.backup.saveConfig(config)};when(action){"test"->model.message(model.backup.test(config));"upload"->{model.backup.upload(config,full);model.message("备份成功")};"restore"->{val raw=model.backup.download(config);withContext(Dispatchers.IO){model.backup.restore(raw,true)};model.message("恢复成功，请完全关闭应用后重新打开")}}}catch(e:CancellationException){throw e}catch(e:Exception){model.message(model.safeError(e))}finally{busy=false}}}
     val scheme=MaterialTheme.colorScheme
-    @Composable fun backupCard(content:@Composable ColumnScope.()->Unit){Surface(shape=RoundedCornerShape(24.dp),color=if(scheme.surface==Color.Black)scheme.surfaceContainer else scheme.surfaceContainerLow){Column(content=content)}}
+    @Composable fun backupCard(content:@Composable ColumnScope.()->Unit){Surface(shape=RoundedCornerShape(24.dp),color=settingsCardColor){Column(content=content)}}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top=LocalHeaderInset.current).padding(start=16.dp,top=14.dp,end=16.dp,bottom=14.dp).navigationBarsPadding(),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         Row(Modifier.fillMaxWidth().background(scheme.primaryContainer.copy(alpha=.4f),RoundedCornerShape(16.dp)).border(1.dp,scheme.primary.copy(alpha=.2f),RoundedCornerShape(16.dp)).padding(14.dp)) {Glyph("cloud_sync_rounded",color=scheme.primary);Spacer(Modifier.width(12.dp));Column {Text("备份内容",fontSize=16.sp,fontWeight=FontWeight.Bold,color=scheme.primary);Spacer(Modifier.height(4.dp));Text("备份应用设置和历史，不包含图片和视频缓存。",fontSize=14.sp,lineHeight=19.6.sp,color=scheme.onSurfaceVariant)}}
-        backupCard {Choice("全量安全备份",!full,{if(!busy)full=false},"不含会话及 WebDAV 密码",titleStyle=flutterTileTitle().copy(fontSize=16.sp,lineHeight=21.6.sp),subtitleStyle=flutterTileSubtitle().copy(fontSize=14.sp,lineHeight=19.6.sp),verticalPadding=2.dp);Choice("全量备份",full,{if(!busy)full=true},"含会话及 WebDAV 密码\n含明文凭据，请妥善保管",titleStyle=flutterTileTitle().copy(fontSize=16.sp,lineHeight=21.6.sp),subtitleStyle=flutterTileSubtitle().copy(fontSize=14.sp,lineHeight=19.6.sp),verticalPadding=2.dp)}
+        backupCard {
+            val titleStyle = flutterTileTitle().copy(fontSize = 16.sp, lineHeight = 21.6.sp)
+            val subtitleStyle = flutterTileSubtitle().copy(fontSize = 14.sp, lineHeight = 19.6.sp)
+            Choice("全量安全备份", !full, { if (!busy) full = false }, "不含会话及 WebDAV 密码",
+                titleStyle = titleStyle, subtitleStyle = subtitleStyle, verticalPadding = 2.dp, centerTextBlock = true)
+            Choice("全量备份", full, { if (!busy) full = true }, "含会话及 WebDAV 密码\n含明文凭据，请妥善保管",
+                titleStyle = titleStyle, subtitleStyle = subtitleStyle, verticalPadding = 2.dp, centerTextBlock = true)
+        }
         backupCard {Column(Modifier.padding(16.dp)) {
             Text("WebDAV 服务器配置",fontSize=16.sp,fontWeight=FontWeight.SemiBold);Spacer(Modifier.height(16.dp))
             FlutterDenseField(url,{url=it},"服务器 URL","link_rounded",!busy,placeholder="例如: https://dav.jianguoyun.com/dav/",error=fieldErrors["url"]);Spacer(Modifier.height(12.dp))
@@ -223,10 +242,12 @@ fun formatThreshold(mb:Int)=if(mb==0)"关闭自动清理"else if(mb>=1024)(mb/10
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun AccountSettings(model:ReaderViewModel,state:ReaderState) {
     var logout by remember{mutableStateOf(false)};var cookie by remember{mutableStateOf<String?>(null)};val scope=rememberCoroutineScope();val context=LocalContext.current
+    val scheme = MaterialTheme.colorScheme
+    val avatarBackground = if (scheme.surface == Color.Black) scheme.surfaceVariant else scheme.surfaceContainerHighest
     LaunchedEffect(state.accountId){cookie=null}
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-        Surface(shape=RoundedCornerShape(24.dp),color=MaterialTheme.colorScheme.surfaceContainerLow){Row(Modifier.fillMaxWidth().heightIn(min=if(state.accountId==null)62.dp else 78.dp).padding(horizontal=16.dp,vertical=11.dp),verticalAlignment=Alignment.CenterVertically){if(state.user?.avatar.isNullOrEmpty())Box(Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest,CircleShape),contentAlignment=Alignment.Center){Glyph("person_outline",color=MaterialTheme.colorScheme.onSurfaceVariant)}else Avatar(state.user,40);Spacer(Modifier.width(16.dp));Column{Text(state.user?.name?:"X 账号",style=flutterTileTitle());state.accountId?.let{Spacer(Modifier.height(2.dp));Text("UID：$it",style=flutterTileSubtitle())}}}}
-        Spacer(Modifier.height(24.dp));Surface(shape=RoundedCornerShape(24.dp),color=MaterialTheme.colorScheme.surfaceContainerLow){Column {
+        Surface(shape=RoundedCornerShape(24.dp),color=settingsCardColor){Row(Modifier.fillMaxWidth().heightIn(min=if(state.accountId==null)62.dp else 78.dp).padding(horizontal=16.dp,vertical=11.dp),verticalAlignment=Alignment.CenterVertically){if(state.user?.avatar.isNullOrEmpty())Box(Modifier.size(40.dp).background(avatarBackground,CircleShape),contentAlignment=Alignment.Center){Glyph("person_outline",color=scheme.onSurfaceVariant)}else Avatar(state.user,40);Spacer(Modifier.width(16.dp));Column{Text(state.user?.name?:"X 账号",style=flutterTileTitle());state.accountId?.let{Spacer(Modifier.height(2.dp));Text("UID：$it",style=flutterTileSubtitle())}}}}
+        Spacer(Modifier.height(24.dp));Surface(shape=RoundedCornerShape(24.dp),color=settingsCardColor){Column {
             SettingRow("导出 Cookie",icon="copy_all_rounded",onClick={scope.launch{try{cookie=model.cookie()}catch(e:Exception){model.message(model.safeError(e))}}})
             SettingRow("验证登录状态",if(state.authenticating)"正在验证账号…"else null,"verified_user_outlined",onClick=if(state.authenticating)null else ({model.refreshIdentity(true)}))
             CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.error){SettingRow("退出登录",icon="logout_rounded",onClick=if(state.authenticating)null else ({logout=true}),trailing={},titleStyle=flutterTileTitle().copy(color=MaterialTheme.colorScheme.error),iconColor=MaterialTheme.colorScheme.error)}

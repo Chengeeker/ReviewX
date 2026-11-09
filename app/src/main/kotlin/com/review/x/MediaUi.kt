@@ -86,8 +86,10 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable fun MediaGallery(request:GalleryRequest,model:ReaderViewModel,onClose:()->Unit) {
+    val picturesOnly = remember(request) { request.media.none { it.video } }
     val pager=rememberPagerState(initialPage=request.index,pageCount={request.media.size});val scope=rememberCoroutineScope();val context=LocalContext.current
     var videoControlsHeight by remember {mutableIntStateOf(0)}
+    var videoFullscreen by remember { mutableStateOf(false) }
     var chrome by rememberSaveable {mutableStateOf(true)};var zoomed by remember {mutableStateOf(false)};var saving by remember {mutableStateOf(false)};var videoMessage by remember {mutableStateOf<Pair<Long,String>?>(null)};var info by remember {mutableStateOf(false)}
     val flight=remember {Animatable(if(request.media[request.index].video)1f else 0f)};var closing by remember {mutableStateOf(false)};var returning by remember {mutableStateOf(false)};var closeJob by remember {mutableStateOf<Job?>(null)}
     val pagePlanes = remember(request) { mutableMapOf<Int, () -> GalleryPlane?>() }
@@ -97,6 +99,7 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
     var overlayCoordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
     var pendingRetap by remember { mutableStateOf<CompletableDeferred<Unit>?>(null) }
     val haptics by rememberUpdatedState(LocalHapticFeedback.current)
+    val liquidGlass = LocalSettings.current.optBoolean("use_liquid_glass_effect")
     val hapticView = LocalView.current
     val pageFeedback = remember { GalleryPageFeedback() }
     fun tickPage(previous: Int, next: Int, fromStripDrag: Boolean) {
@@ -190,7 +193,7 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
         DisposableEffect(window) { window?.let {it.setWindowAnimations(0);it.setDimAmount(0f);it.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));it.applyReviewStatusBar(dark=true);WindowCompat.getInsetsController(it,it.decorView).isAppearanceLightNavigationBars=false};onDispose {window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)} }
         LaunchedEffect(chrome){window?.let{val control=WindowCompat.getInsetsController(it,it.decorView);control.systemBarsBehavior=WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE;if(chrome)control.show(WindowInsetsCompat.Type.systemBars())else control.hide(WindowInsetsCompat.Type.systemBars())}}
         BackHandler(onBack=::close)
-        CompositionLocalProvider(LocalBackdrop provides backdrop) {
+        CompositionLocalProvider(LocalBackdrop provides backdrop, LocalHapticFeedback provides haptics) {
         BoxWithConstraints(Modifier.fillMaxSize().pointerInput(request) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
@@ -208,6 +211,23 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
                 }
             }
         }.onGloballyPositioned { overlayCoordinates = it }.background(Color.Black.copy(alpha = flight.value))) {
+            var preparedPage by remember(request) { mutableIntStateOf(request.index) }
+            LaunchedEffect(pager.settledPage, constraints.maxWidth, constraints.maxHeight) {
+                val page = pager.settledPage
+                val direction = if (page < preparedPage) -1 else 1
+                preparedPage = page
+                val next = request.media.getOrNull(page + direction) ?: return@LaunchedEffect
+                if (next.video || !safeMediaUrl(next.url)) return@LaunchedEffect
+                val imageRequest = coil.request.ImageRequest.Builder(context)
+                    .data(next.viewerImage(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat()))
+                    .size(constraints.maxWidth, constraints.maxHeight)
+                    .scale(coil.size.Scale.FIT)
+                    .setHeader("User-Agent", ReaderRepository.USER_AGENT)
+                    .setHeader("Referer", "https://x.com/")
+                    .build()
+                val loading = coil.Coil.imageLoader(context).enqueue(imageRequest)
+                try { awaitCancellation() } finally { loading.dispose() }
+            }
             val source = sourceInOverlay()
             val bitmap = image()
             val drawFlight = source != null && bitmap != null && (flight.value < 1f || closing)
@@ -227,25 +247,28 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
                 if(!moving){driver="settling";settleJob=scope.launch {try {coroutineScope {launch{pager.animateScrollToPage(page,animationSpec=tween(120,easing=CubicBezierEasing(.215f,.61f,.355f,1f)))};launch{thumbs.animateScrollToPage(page,animationSpec=tween(120,easing=CubicBezierEasing(.215f,.61f,.355f,1f)))}}}finally{if(driver=="settling"){driver="main";fixedStripBottom=null}}}}}}}
             HorizontalPager(pager,Modifier.fillMaxSize().graphicsLayer {alpha=if(drawFlight)0f else flight.value}.recordBackdrop(backdrop),userScrollEnabled=!zoomed&&!closing,beyondViewportPageCount=0) {index->val item=request.media[index]
                 if(item.video) {
-                    if(index==pager.currentPage) VideoPlayer(item,request,saving=saving,message=videoMessage?.second,onMessage=::videoNotice,active=!closing&&!pager.isScrollInProgress&&!thumbs.isScrollInProgress,showChrome=chrome,onChrome={chrome=it},onBack=::close,onControlsHeight={videoControlsHeight=it},onSave={download(it)},onPrevious=if(index>0)({scope.launch{pager.animateScrollToPage(index-1)}})else null,onNext=if(index+1<request.media.size)({scope.launch{pager.animateScrollToPage(index+1)}})else null)
+                    if(index==pager.currentPage) VideoPlayer(item,request,saving=saving,message=videoMessage?.second,onMessage=::videoNotice,active=!closing&&!pager.isScrollInProgress&&!thumbs.isScrollInProgress,showChrome=chrome,onChrome={chrome=it},onBack=::close,onControlsHeight={videoControlsHeight=it},onFullscreen={videoFullscreen=it},onSave={download(it)},onPrevious=if(index>0)({scope.launch{pager.animateScrollToPage(index-1)}})else null,onNext=if(index+1<request.media.size)({scope.launch{pager.animateScrollToPage(index+1)}})else null)
                     else NetworkImage(item.url,item.description,Modifier.fillMaxSize(),ContentScale.Fit)
                 } else ZoomImage(item,active=index==pager.currentPage,onZoom={if(index==pager.currentPage)zoomed=it},onTap={position,width->
                     if (!closing && !pager.isScrollInProgress && index == pager.currentPage) {
                         if(position.x>=width/3&&position.x<width*2/3)chrome=!chrome else close()
                     }
-                },pageIndex=index,pagePlanes=pagePlanes)
+                },pageIndex=index,pagePlanes=pagePlanes,preview=request.previewImage?.invoke(index) ?: request.sourceImage?.takeIf { index == request.index })
             }
             if (drawFlight) GalleryFlight(
                 source, bitmap, flight.value, Size(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat()),
                 request.sourceRadius, request.sourceCovers, returning, closingPlane,
             )
-            AnimatedVisibility(visible=chrome&&flight.value==1f&&!request.media[pager.currentPage].video,modifier=Modifier.align(Alignment.TopCenter),enter=slideInVertically(tween(180,easing=CubicBezierEasing(.215f,.61f,.355f,1f))){-it}+fadeIn(tween(160)),exit=slideOutVertically(tween(180,easing=CubicBezierEasing(.215f,.61f,.355f,1f))){-it}+fadeOut(tween(160))) {Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal=16.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+            if (!closing && flight.value == 1f) {
+            AnimatedVisibility(visible=chrome&&!request.media[pager.currentPage].video,modifier=Modifier.align(Alignment.TopCenter),enter=if(liquidGlass)EnterTransition.None else slideInVertically(tween(180,easing=CubicBezierEasing(.215f,.61f,.355f,1f))){-it}+fadeIn(tween(160)),exit=if(liquidGlass)ExitTransition.None else slideOutVertically(tween(180,easing=CubicBezierEasing(.215f,.61f,.355f,1f))){-it}+fadeOut(tween(160))) {Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal=16.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
                 GalleryButton("arrow_back_rounded","返回",::close)
-                Text("${pager.currentPage+1} / ${request.media.size}",Modifier.clip(RoundedCornerShape(16.dp)).background(Color.Black.copy(alpha=.45f)).padding(horizontal=14.dp,vertical=6.dp),color=Color.White,fontSize=13.sp,fontWeight=androidx.compose.ui.text.font.FontWeight.Medium)
+                Text("${pager.currentPage+1} / ${request.media.size}",Modifier.clip(RoundedCornerShape(16.dp)).background(Color.Black.copy(alpha=.45f)).padding(horizontal=14.dp,vertical=6.dp),color=Color.White,fontSize=13.sp,fontWeight=androidx.compose.ui.text.font.FontWeight.Bold)
                 Row{if(request.media[pager.currentPage].description.isNotBlank())GalleryButton("info_outline","图片说明",{info=true});if(saving)FlutterProgress(Modifier.padding(12.dp).size(20.dp),color=Color.White,strokeWidth=2.dp)else GalleryButton("download_rounded","保存到相册",{download(request.media[pager.currentPage])})}
             }
             }
-            if(chrome && flight.value==1f && request.media.size>1)HorizontalPager(thumbs,Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start=12.dp,end=12.dp,bottom=fixedStripBottom?:stripBottom).height(64.dp),pageSize=PageSize.Fixed((maxWidth-24.dp)*.16f),contentPadding=PaddingValues(horizontal=((maxWidth-24.dp)*.84f/2).coerceAtLeast(0.dp)),beyondViewportPageCount=2,flingBehavior=thumbnailFling) {index->Box(Modifier.fillMaxSize().padding(horizontal=3.dp,vertical=2.dp).border(2.dp,if(index==pager.currentPage)Color.White else Color.Transparent,RoundedCornerShape(8.dp)).padding(2.dp).clip(RoundedCornerShape(6.dp)).clickable {
+            }
+            val stripInset = if (picturesOnly) 0.dp else 12.dp
+            if(chrome && !closing && !videoFullscreen && flight.value==1f && request.media.size>1)HorizontalPager(thumbs,Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start=stripInset,end=stripInset,bottom=fixedStripBottom?:stripBottom).height(64.dp),pageSize=PageSize.Fixed((maxWidth-stripInset*2)*.16f),contentPadding=PaddingValues(horizontal=((maxWidth-stripInset*2)*.84f/2).coerceAtLeast(0.dp)),beyondViewportPageCount=2,flingBehavior=thumbnailFling) {index->Box(Modifier.fillMaxSize().padding(horizontal=3.dp,vertical=2.dp).border(2.dp,if(index==pager.currentPage)Color.White else Color.Transparent,RoundedCornerShape(8.dp)).padding(2.dp).clip(RoundedCornerShape(6.dp)).clickable {
                 val previous = pager.currentPage
                 if (index != previous && !closing) {
                     tickPage(previous, index, fromStripDrag = false)
@@ -262,6 +285,10 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
 }
 @Composable fun GalleryButton(icon:String,title:String,onClick:()->Unit) {
     val glass=LocalSettings.current.optBoolean("use_liquid_glass_effect")
+    if (!glass) {
+        PlainGalleryControl(title, true, hapticClick(onClick)) { Glyph(icon, null, size=24, color=Color.White) }
+        return
+    }
     val interactions=remember {androidx.compose.foundation.interaction.MutableInteractionSource()};val pressed by interactions.collectIsPressedAsState()
     val stretch by animateFloatAsState(if(glass&&pressed)1.06f else 1f,spring(dampingRatio=.8f))
     var drag by remember {mutableStateOf(Offset.Zero)}
@@ -272,16 +299,17 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
         scaleX=stretch*geometry[0];scaleY=stretch*geometry[1];transformOrigin=TransformOrigin(geometry[2],geometry[3]);translationX=dragX*.15f;translationY=dragY*.15f
     },contentAlignment=Alignment.Center) {
         if(glass)GlassSurface(GlassStyle(Color(0x66000000),thickness=32f,refractiveIndex=1.24f,chromatic=.025f,radius=100f),Modifier.size(48.dp))
-        else GlassSurface(GlassStyle(Color.Transparent,blur=2.5f,basicGallery=true),Modifier.size(44.dp).shadow(7.dp,CircleShape).clip(CircleShape)) {Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFFE0E0E0).copy(alpha=.30f),Color(0xFF9E9E9E).copy(alpha=.20f),Color(0xFF424242).copy(alpha=.36f)))).border(1.dp,Color.White.copy(alpha=.34f),CircleShape))}
+
         IconButton(onClick=hapticClick(onClick),interactionSource=interactions,modifier=Modifier.fillMaxSize()){Glyph(icon,title,size=22,color=Color.White)}
     }
 }
-@Composable private fun ZoomImage(item:Media,active:Boolean,onZoom:(Boolean)->Unit,onTap:(Offset,Float)->Unit,pageIndex:Int,pagePlanes:MutableMap<Int,()->GalleryPlane?>) {
+@Composable private fun ZoomImage(item:Media,active:Boolean,onZoom:(Boolean)->Unit,onTap:(Offset,Float)->Unit,pageIndex:Int,pagePlanes:MutableMap<Int,()->GalleryPlane?>,preview:ImageBitmap?) {
     val tap by rememberUpdatedState(onTap);val density=LocalDensity.current.density
+    val haptics by rememberUpdatedState(LocalHapticFeedback.current)
     var tapMoved by remember(item.url) { mutableStateOf(false) }
     var centroid by remember {mutableStateOf(Offset.Zero)}
     var zoomJob by remember {mutableStateOf<Job?>(null)};var intrinsic by remember(item.url){mutableStateOf(androidx.compose.ui.unit.IntSize(item.width,item.height))}
-    var scale by remember(item.url){mutableFloatStateOf(1f)};var offset by remember(item.url){mutableStateOf(Offset.Zero)};var viewport by remember{mutableStateOf(androidx.compose.ui.unit.IntSize.Zero)};var coordinates by remember{mutableStateOf<LayoutCoordinates?>(null)};var flightImage by remember(item.url){mutableStateOf<Pair<ImageBitmap,Boolean>?>(null)};val scope=rememberCoroutineScope()
+    var scale by remember(item.url){mutableFloatStateOf(1f)};var offset by remember(item.url){mutableStateOf(Offset.Zero)};var viewport by remember{mutableStateOf(androidx.compose.ui.unit.IntSize.Zero)};var coordinates by remember{mutableStateOf<LayoutCoordinates?>(null)};var flightImage by remember(item.url){mutableStateOf<Pair<ImageBitmap,Boolean>?>(preview?.let { it to false })};val scope=rememberCoroutineScope()
     fun clamp(value:Offset,zoom:Float):Offset {val ratio=if(intrinsic.width>0&&intrinsic.height>0)intrinsic.width.toFloat()/intrinsic.height else viewport.width.toFloat()/viewport.height.coerceAtLeast(1);val imageWidth=min(viewport.width.toFloat(),viewport.height*ratio);val imageHeight=min(viewport.height.toFloat(),viewport.width/ratio);return Offset(value.x.coerceIn(-((imageWidth*zoom-viewport.width)/2).coerceAtLeast(0f),((imageWidth*zoom-viewport.width)/2).coerceAtLeast(0f)),value.y.coerceIn(-((imageHeight*zoom-viewport.height)/2).coerceAtLeast(0f),((imageHeight*zoom-viewport.height)/2).coerceAtLeast(0f)))}
     val transform=rememberTransformableState {zoom,pan,_->zoomJob?.cancel();val next=(scale*zoom).coerceIn(1f,8f);val focus=centroid-Offset(viewport.width/2f,viewport.height/2f);offset=clamp(focus+(offset-focus)*(next/scale)+pan,next);scale=next}
     LaunchedEffect(scale){onZoom(scale>1.01f)}
@@ -328,8 +356,10 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
                 }}
             }
         }
-    }.pointerInput(item.url){detectTapGestures(onTap={if (!tapMoved) tap(it,size.width.toFloat())},onDoubleTap={point->if (!tapMoved) {zoomJob?.cancel();val start=scale;val target=if(start<=1.05f){if(intrinsic.width>0&&intrinsic.height.toFloat()/intrinsic.width>2f)3.5f else 2.5f}else if(start<=3.6f)6f else 1f;val initial=offset;val end=if(target==1f)Offset.Zero else clamp((Offset(size.width/2f,size.height/2f)-point)*(target-1),target);zoomJob=scope.launch{animate(0f,1f,animationSpec=tween(260,easing=CubicBezierEasing(.215f,.61f,.355f,1f))){fraction,_->scale=start+(target-start)*fraction;offset=initial+(end-initial)*fraction}}}})}) {
-        NetworkImage(item.url,item.description,Modifier.fillMaxSize().graphicsLayer{scaleX=scale;scaleY=scale;translationX=offset.x;translationY=offset.y},ContentScale.Fit,onImageReady={bitmap->if(flightImage?.second!=true)flightImage=bitmap to false},showProgress=true)
+    }.pointerInput(item.url){detectTapGestures(onTap={if (!tapMoved) tap(it,size.width.toFloat())},onDoubleTap={point->if (!tapMoved) {haptics.performHapticFeedback(HapticFeedbackType.VirtualKey);zoomJob?.cancel();val start=scale;val target=if(start<=1.05f){if(intrinsic.width>0&&intrinsic.height.toFloat()/intrinsic.width>2f)3.5f else 2.5f}else if(start<=3.6f)6f else 1f;val initial=offset;val end=if(target==1f)Offset.Zero else clamp((Offset(size.width/2f,size.height/2f)-point)*(target-1),target);zoomJob=scope.launch{animate(0f,1f,animationSpec=tween(260,easing=CubicBezierEasing(.215f,.61f,.355f,1f))){fraction,_->scale=start+(target-start)*fraction;offset=initial+(end-initial)*fraction}}}})}) {
+        val imageModifier = Modifier.fillMaxSize().graphicsLayer { scaleX=scale;scaleY=scale;translationX=offset.x;translationY=offset.y }
+        if (preview != null) Image(preview,item.description,imageModifier,contentScale=ContentScale.Fit)
+        else NetworkImage(item.url,item.description,imageModifier,ContentScale.Fit,onImageReady={bitmap->if(flightImage?.second!=true)flightImage=bitmap to false},showProgress=true)
         NetworkImage(item.viewerImage(viewport.width.toFloat(),viewport.height.toFloat()),item.description,Modifier.fillMaxSize().graphicsLayer{scaleX=scale;scaleY=scale;translationX=offset.x;translationY=offset.y},ContentScale.Fit,transparentFallback=true,onDimensions={w,h->intrinsic=IntSize(w,h)},onImageReady={bitmap->flightImage=bitmap to true})
     }
 }
@@ -341,7 +371,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
 }
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable fun VideoPlayer(media:Media,request:GalleryRequest,saving:Boolean,message:String?,onMessage:(String)->Unit,active:Boolean,showChrome:Boolean,onChrome:(Boolean)->Unit,onBack:()->Unit,onControlsHeight:(Int)->Unit,onSave:(Media)->Unit,onPrevious:(()->Unit)?,onNext:(()->Unit)?) {
+@Composable fun VideoPlayer(media:Media,request:GalleryRequest,saving:Boolean,message:String?,onMessage:(String)->Unit,active:Boolean,showChrome:Boolean,onChrome:(Boolean)->Unit,onBack:()->Unit,onControlsHeight:(Int)->Unit,onSave:(Media)->Unit,onPrevious:(()->Unit)?,onNext:(()->Unit)?,onFullscreen:(Boolean)->Unit={}) {
     val chromeVisible by rememberUpdatedState(showChrome);val chromeAction by rememberUpdatedState(onChrome)
     val haptics by rememberUpdatedState(LocalHapticFeedback.current)
     val context=LocalContext.current;val activity=context as? Activity;val window=(LocalView.current.parent as? DialogWindowProvider)?.window ?: activity?.window
@@ -358,7 +388,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     val player=remember(media.url){ExoPlayer.Builder(context).setMediaSourceFactory(DefaultMediaSourceFactory(OkHttpDataSource.Factory(AppNetwork.http).setUserAgent(ReaderRepository.USER_AGENT).setDefaultRequestProperties(mapOf("Referer" to "https://x.com/")))).build().apply{setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),true);setHandleAudioBecomingNoisy(true)}}
     DisposableEffect(player,lifecycle){val listener=object:Player.Listener{override fun onIsPlayingChanged(value:Boolean){playing=value};override fun onPlaybackStateChanged(state:Int){buffering=state==Player.STATE_BUFFERING};override fun onPlayerError(error:PlaybackException){failure=true;buffering=false;DiagnosticLog.record("video.failure",error=error)}};player.addListener(listener)
         val observer=LifecycleEventObserver{_,event->foreground=event==Lifecycle.Event.ON_RESUME || lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED);if(!foreground){autoPlay=false;player.pause();window?.attributes=window?.attributes?.apply{screenBrightness=initialBrightness}}};lifecycle.addObserver(observer)
-        onDispose{lifecycle.removeObserver(observer);player.removeListener(listener);player.release();window?.attributes=window?.attributes?.apply{screenBrightness=initialBrightness};window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);activity?.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED}
+        onDispose{onFullscreen(false);lifecycle.removeObserver(observer);player.removeListener(listener);player.release();window?.attributes=window?.attributes?.apply{screenBrightness=initialBrightness};window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);activity?.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED}
     }
     LaunchedEffect(selected){val seek=player.currentPosition;val shouldPlay=player.isPlaying||autoPlay;selected?.let{player.setMediaItem(MediaItem.fromUri(it.url));player.prepare();player.seekTo(seek);failure=false;player.playWhenReady=shouldPlay&&active&&foreground}}
     LaunchedEffect(active,foreground){if(!active||!foreground){player.pause();window?.attributes=window?.attributes?.apply{screenBrightness=initialBrightness}}else if(autoPlay)player.play()}
@@ -367,6 +397,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     LaunchedEffect(playing){if(playing)window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)else window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)}
     LaunchedEffect(showChrome,playing,menu,held,gestureActive,active,foreground){if(showChrome&&playing&&menu==null&&!held&&!gestureActive&&active&&foreground){delay(4000);onChrome(false)}}
 
+    LaunchedEffect(landscape) { onFullscreen(landscape) }
     BackHandler(landscape){landscape=false;activity?.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;onChrome(true)}
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         if(duration==0L&&active&&media.url.isNotBlank())NetworkImage(media.url,media.description,Modifier.fillMaxSize(),ContentScale.Fit)

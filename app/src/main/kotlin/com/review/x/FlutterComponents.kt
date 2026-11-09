@@ -41,7 +41,7 @@ internal fun Modifier.flutterLineHeight(height:TextUnit)=layout {measurable,cons
     }
 }
 
-@Composable internal fun FlutterTileText(modifier:Modifier=Modifier,targetHeight:Dp,titleStyle:TextStyle,subtitleStyle:TextStyle,headline:@Composable ()->Unit,supporting:(@Composable ()->Unit)?=null) {
+@Composable internal fun FlutterTileText(modifier:Modifier=Modifier,targetHeight:Dp,titleStyle:TextStyle,subtitleStyle:TextStyle,headline:@Composable ()->Unit,supporting:(@Composable ()->Unit)?=null,centerTextBlock:Boolean=false) {
     Layout(modifier=modifier,content={
         Box(Modifier.flutterLineHeight(titleStyle.lineHeight)){ProvideTextStyle(titleStyle){headline()}}
         if(supporting!=null)Box(Modifier.flutterLineHeight(subtitleStyle.lineHeight)){ProvideTextStyle(subtitleStyle){supporting()}}
@@ -56,7 +56,10 @@ internal fun Modifier.flutterLineHeight(height:TextUnit)=layout {measurable,cons
             val bottom=52.dp.roundToPx()-(subtitle[FirstBaseline].takeUnless{it==AlignmentLine.Unspecified}?:subtitle.height)
             val overlap=maxOf(top+title.height-bottom,0)/2
             if(top-overlap<padding||bottom+overlap+subtitle.height+padding>target){titleY=padding;subtitleY=padding+title.height;height=2*padding+title.height+subtitle.height}
-            else{titleY=top-overlap;subtitleY=bottom+overlap;height=target}
+            else {
+                val shift = if (centerTextBlock) (target - top - bottom - subtitle.height) / 2 else 0
+                titleY=top-overlap+shift;subtitleY=bottom+overlap+shift;height=target
+            }
         }
         layout(constraints.constrainWidth(maxOf(title.width,subtitle?.width?:0)),constraints.constrainHeight(height)){title.placeRelative(0,titleY);subtitle?.placeRelative(0,subtitleY)}
     }
