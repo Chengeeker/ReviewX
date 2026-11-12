@@ -36,7 +36,7 @@ try {
   $expected = '3eb0f6708904f8ef916c6a2572e394ba981ee25d64861344cf1921ca7ea17975'
   if (!(($signature -join "`n") -match "certificate SHA-256 digest: $expected")) { throw 'Unexpected signing certificate' }
   if (!(($signature -join "`n") -match 'Verified using v2 scheme.*true')) { throw 'APK v2 signature is required' }
-  if (!(($metadata -join "`n") -match "versionCode='136'.*versionName='2\.0\.11'")) { throw 'Unexpected ReviewX version' }
+  if (!(($metadata -join "`n") -match "versionCode='140'.*versionName='2\.0\.15'")) { throw 'Unexpected ReviewX version' }
   $signature | Where-Object { $_ -match '^Verifies|v2 scheme|certificate SHA-256 digest|Number of signers:' }
   & (Join-Path $BuildTools 'zipalign.exe') -c -P 16 4 $resolvedApk
   if ($LASTEXITCODE -ne 0) { throw 'APK alignment failed' }

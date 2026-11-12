@@ -25,3 +25,6 @@ rollback/
 *.pfx
 key.properties
 keystore.properties
+
+# Synthetic TLS fixture for WebDAV transport tests.
+!/app/src/test/resources/webdav-synthetic.p12

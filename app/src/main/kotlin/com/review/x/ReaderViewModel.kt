@@ -95,6 +95,18 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
             catch(error:Exception) { if(epoch==generation) mutable.value=mutable.value.copy(authenticating=false,restoring=false,startupError=safeError(error),loginError=safeError(error),message=safeError(error)) }
         }
     }
+    suspend fun reloadAfterBackup() {
+        val epoch=accountEpoch
+        val restored=withContext(Dispatchers.IO){vault.read()}
+        if(epoch!=accountEpoch)return
+        if(session?.cookie!=restored?.cookie) {
+            work?.cancel();generation++;accountEpoch++
+            mutations.values.toList().forEach{it.cancel()};mutations.clear();updated.clear();deleted.clear();roots.clear()
+            session=restored
+            mutable.value=mutable.value.copy(user=null,accountId=restored?.userId,authenticating=false,restoring=false,expired=false,settings=settings.snapshot())
+            refreshIdentity()
+        }
+    }
     fun login(cookie: String) {
         work?.cancel(); val epoch=++generation
         mutable.value=mutable.value.copy(authenticating=true,loginError=null)

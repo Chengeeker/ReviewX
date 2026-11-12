@@ -115,12 +115,10 @@ val LocalActions=staticCompositionLocalOf<UiActions> { error("Reader UI is requi
     BackHandler(drawer.isOpen || !root) { if(drawer.isOpen)scope.launch { drawer.close() } else model.back() }
     CompositionLocalProvider(LocalActions provides actions,LocalGalleryFlight provides gallery?.flight) {
         ModalNavigationDrawer(drawerState=drawer,gesturesEnabled=root && state.rootTab==0,drawerContent={
-            ModalDrawerSheet(Modifier.width(280.dp),drawerContainerColor=LocalChrome.current.background) {
-                OriginalDrawer(state,onProfile={scope.launch {drawer.close()};model.openOwnProfile()},onRoute={kind,title->
-                    val feed=if(!state.loggedIn&&kind!="LocalHistory")Feed("Login",title="账号登录")else Feed(kind,title=title,option=if(kind=="Bookmarks")"account_history"else "")
-                    model.open(feed);scope.launch {drawer.close()}
-                })
-            }
+            OriginalDrawer(state,onProfile={scope.launch {drawer.close()};model.openOwnProfile()},onRoute={kind,title->
+                val feed=if(!state.loggedIn&&kind!="LocalHistory")Feed("Login",title="账号登录")else Feed(kind,title=title,option=if(kind=="Bookmarks")"account_history"else "")
+                model.open(feed);scope.launch {drawer.close()}
+            })
         }) {
             Box(Modifier.fillMaxSize().clipToBounds()) {
                 val liveState = state
@@ -169,7 +167,7 @@ val LocalActions=staticCompositionLocalOf<UiActions> { error("Reader UI is requi
                                     if(root && state.rootTab==2) SettingsStatusBar()
                                     else if(state.screen.feed.kind!="Login") AppTopBar(if(root && state.rootTab==0) "ReviewX" else if(state.screen.feed.kind=="WebDAV")"WebDAV 云端备份与恢复"else state.screen.feed.title,
                                         height=if(profile!=null)with(density){56.sp.toDp().value}.coerceIn(56f,112f).toInt()else if(root && state.rootTab==0 && state.loggedIn)48 else 56,transparent=frosted,leadingWidth=if(root&&state.rootTab==1)16 else 56,titleSpacing=if(root&&state.rootTab==1)0.dp else 16.dp,
-                                        leading={ if(root && state.rootTab==0) IconButton(onClick=hapticClick { scope.launch { drawer.open() } }) { if(!state.user?.avatar.isNullOrEmpty()) Avatar(state.user,32) else Glyph("menu_rounded","打开侧边栏") } else if(!root) IconButton(onClick=model::back) { Glyph("arrow_back", "返回") } },
+                                        leading={ if(root && state.rootTab==0) IconButton(onClick=hapticClick { scope.launch { drawer.open() } }) { if(!state.user?.avatar.isNullOrEmpty()) Avatar(state.user,32) else Glyph("menu_rounded","打开侧边栏") } else if(!root) IconButton(onClick=hapticClick(model::back)) { Glyph("arrow_back", "返回") } },
                                         titleContent=if(root && state.rootTab==1) ({ Box(Modifier.padding(end=16.dp)){SearchField(model,state,searchUi)} }) else if(profile!=null)({Column {Text(profile.name,maxLines=1,overflow=TextOverflow.Ellipsis);if("postsCount" in profile.knownCounts)Text("${profile.postsCount} 推文",style=MaterialTheme.typography.bodySmall)}})else null,
                                         titleClick=if(root)({ scope.launch { list.animateScrollToItem(0) };Unit })else null,
                                         titleDoubleClick=if(root)({ scope.launch { list.animateScrollToItem(0);model.load() };Unit })else null,
@@ -305,15 +303,7 @@ private fun ExploreTabs(personalized: Boolean, select: (Boolean) -> Unit) {
 }
 @Composable fun BottomNavigation(selected:Int,onSelect:(Int)->Unit,onDouble:(Int)->Unit) {
     val feedback = androidx.compose.ui.platform.LocalHapticFeedback.current
-    fun confirm(index: Int, action: (Int) -> Unit) {
-        if (index != selected || index < 2) {
-            feedback.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.VirtualKey)
-        }
-        action(index)
-    }
-    val select: (Int) -> Unit = { confirm(it, onSelect) }
-    val double: (Int) -> Unit = { confirm(it, onDouble) }
-    val latestSelect by rememberUpdatedState(select)
+    val latestSelect by rememberUpdatedState(onSelect)
     val current by rememberUpdatedState(selected)
     val settings=LocalSettings.current;val floating=settings.optBoolean("floating_nav",true)
     val liquid = floating && settings.optBoolean("use_liquid_glass_effect")
@@ -327,14 +317,17 @@ private fun ExploreTabs(personalized: Boolean, select: (Boolean) -> Unit) {
     }
     fun plainTap(index: Int) {
         pending?.cancel()
+        if (index != selected || index < 2) {
+            feedback.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.VirtualKey)
+        }
         if (index != selected) {
             lastTap = 0L
-            select(index)
+            onSelect(index)
         } else if (index < 2) {
             val now = android.os.SystemClock.uptimeMillis()
             if (lastTap != 0L && now - lastTap < 300L) {
                 lastTap = 0L
-                double(index)
+                onDouble(index)
             } else {
                 lastTap = now
                 pending = scope.launch {
@@ -349,7 +342,7 @@ private fun ExploreTabs(personalized: Boolean, select: (Boolean) -> Unit) {
     NavigationBar(modifier=Modifier.height(standardNavigationHeight()),containerColor=LocalChrome.current.navigation,tonalElevation=0.dp,windowInsets=WindowInsets(0)) { labels.forEachIndexed { i,label -> NavigationBarItem(selected==i,{plainTap(i)},icon={Glyph(if(selected==i)chosen[i] else icons[i])},label={Text(label,fontSize=12.sp,fontWeight=flutterWeight(if(selected==i)700 else 500))},colors=NavigationBarItemDefaults.colors(selectedIconColor=MaterialTheme.colorScheme.onPrimaryContainer,selectedTextColor=MaterialTheme.colorScheme.primary,indicatorColor=MaterialTheme.colorScheme.primaryContainer,unselectedIconColor=MaterialTheme.colorScheme.onSurfaceVariant,unselectedTextColor=MaterialTheme.colorScheme.onSurfaceVariant)) } }}
     else BoxWithConstraints(Modifier.fillMaxWidth(),contentAlignment=Alignment.Center) {
         val width=minOf(440.dp,maxWidth-40.dp)*2/3
-        if(liquid) LiquidNavigation(selected,select,double,width)
+        if(liquid) LiquidNavigation(selected,onSelect,onDouble,width)
         else Box(Modifier.width(width).height(56.dp).dropShadow(RoundedCornerShape(32.dp),androidx.compose.ui.graphics.shadow.Shadow(radius=16.dp,color=Color.Black.copy(alpha=if(LocalDarkTheme.current).35f else .12f),offset=DpOffset(0.dp,4.dp))).clip(RoundedCornerShape(32.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh).padding(4.dp)) {
             val position by androidx.compose.animation.core.animateDpAsState((width-8.dp)/3*selected,tween(200,easing=CubicBezierEasing(.645f,.045f,.355f,1f)))
             Box(Modifier.offset { IntOffset(position.roundToPx(), 0) }.width((width-8.dp)/3).fillMaxHeight().clip(RoundedCornerShape(28.dp)).background(MaterialTheme.colorScheme.secondaryContainer))
@@ -379,7 +372,8 @@ private fun ExploreTabs(personalized: Boolean, select: (Boolean) -> Unit) {
     val launcher=rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { if(it.resultCode==Activity.RESULT_OK)model.restore() }
     BackHandler(state.authenticating) {}
     Column {
-    AppTopBar(if(importing)"Cookie 导入"else "账号登录",leading={IconButton(onClick={if(!state.authenticating)model.back()}){Glyph("arrow_back","返回")}},actions={FlutterTextButton(enabled=!state.authenticating,onClick={importing=!importing}){Text(if(importing)"账号登录"else "Cookie 导入")}})
+    val back = hapticClick(model::back)
+    AppTopBar(if(importing)"Cookie 导入"else "账号登录",leading={IconButton(onClick={if(!state.authenticating)back()}){Glyph("arrow_back","返回")}},actions={FlutterTextButton(enabled=!state.authenticating,onClick={importing=!importing}){Text(if(importing)"账号登录"else "Cookie 导入")}})
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start=32.dp,top=48.dp,end=32.dp,bottom=24.dp),horizontalAlignment=Alignment.CenterHorizontally) {
         state.loginError?.let {Text(it,color=MaterialTheme.colorScheme.error,textAlign=androidx.compose.ui.text.style.TextAlign.Center);Spacer(Modifier.height(16.dp))}
         if(!importing) Surface(shape=RoundedCornerShape(24.dp),color=MaterialTheme.colorScheme.surfaceContainerLow) { Column(Modifier.padding(24.dp),horizontalAlignment=Alignment.CenterHorizontally) {

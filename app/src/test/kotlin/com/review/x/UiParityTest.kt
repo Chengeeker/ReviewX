@@ -491,6 +491,58 @@ class UiParityTest {
         }
         compose.mainClock.autoAdvance = true
     }
+    @Test fun bottomNavigationReselectionFeedbackFollowsEachTapBeforeTheAction() {
+        activity.setup()
+        var mode by mutableIntStateOf(0)
+        var enabled by mutableStateOf(true)
+        val events = mutableListOf<String>()
+        val feedback = object : HapticFeedback {
+            override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+                Assert.assertEquals(HapticFeedbackType.VirtualKey, hapticFeedbackType)
+                events.add("tap")
+            }
+        }
+        compose.setContent {
+            CompositionLocalProvider(LocalHapticFeedback provides feedback) {
+                val settings = JSONObject().put("floating_nav", mode != 0)
+                    .put("use_liquid_glass_effect", mode == 2).put("haptics", enabled)
+                ReviewTheme(settings) {
+                    BottomNavigation(0, { events.add("top") }, { events.add("refresh") })
+                }
+            }
+        }
+        val home = compose.onNodeWithText("首页")
+        home.assertIsDisplayed()
+        compose.mainClock.autoAdvance = false
+        for (style in 0..2) {
+            compose.runOnIdle { mode = style; enabled = true; events.clear() }
+            compose.mainClock.advanceTimeByFrame()
+            home.performTouchInput { down(center) }
+            compose.runOnIdle { Assert.assertTrue(events.isEmpty()) }
+            home.performTouchInput { cancel() }
+            compose.runOnIdle { Assert.assertTrue(events.isEmpty()) }
+            home.performTouchInput { click() }
+            compose.runOnIdle { Assert.assertEquals(listOf("tap"), events) }
+            compose.mainClock.advanceTimeBy(400)
+            compose.runOnIdle {
+                Assert.assertEquals(listOf("tap", "top"), events)
+                events.clear()
+            }
+            home.performTouchInput { doubleClick() }
+            compose.mainClock.advanceTimeBy(400)
+            compose.runOnIdle {
+                Assert.assertEquals(listOf("tap", "tap", "refresh"), events)
+                enabled = false
+                events.clear()
+            }
+            compose.mainClock.advanceTimeByFrame()
+            home.performTouchInput { click() }
+            compose.mainClock.advanceTimeBy(400)
+            compose.runOnIdle { Assert.assertEquals(listOf("top"), events) }
+        }
+        compose.mainClock.autoAdvance = true
+    }
+
     @Test fun liquidDropHapticsFireOnceOnLongPressAndRespectCancellationAndSetting() {
         activity.setup()
         var enabled by mutableStateOf(true)
@@ -850,9 +902,25 @@ class UiParityTest {
         capture("about-dark",dialog=true)
         compose.onNodeWithText("我知道了").performClick();compose.onNodeWithText("GitHub 开源地址").assertDoesNotExist()
     }
-    @Test fun drawerMatchesFlutterGeometryAndRoutes() {
+    @Test fun drawerFitsMenuContentAndKeepsFlutterSpacingAndRoutes() {
         activity.setup();var route="";var profile=false
-        compose.runOnUiThread {activity.get().setContent {ReviewTheme(JSONObject().put("theme_mode",1)){Surface(Modifier.width(280.dp)){OriginalDrawer(ReaderState(authenticating=false),{profile=true},{kind,_->route=kind})}}}}
+        var viewport by mutableStateOf(411.dp)
+        var scale by mutableDoubleStateOf(1.0)
+        var user by mutableStateOf<User?>(null)
+        compose.setContent {
+            val settings = JSONObject().put("theme_mode", 1)
+                .put("reading_settings", JSONObject().put("appTextScale", scale).toString())
+            ReviewTheme(settings) {
+                Surface(Modifier.width(viewport)) {
+                    ModalNavigationDrawer(
+                        drawerState = rememberDrawerState(DrawerValue.Open),
+                        drawerContent = {
+                            OriginalDrawer(ReaderState(user = user, authenticating = false), { profile = true }, { kind, _ -> route = kind })
+                        },
+                    ) { Box(Modifier.fillMaxSize()) }
+                }
+            }
+        }
         val reference=JSONObject(File("../reference/layout/metrics.json").readText()).getJSONObject("drawer-light").getJSONObject("texts")
         val density=activity.get().resources.displayMetrics.density
         fun bounds(text:String)=compose.onNodeWithText(text,useUnmergedTree=true).fetchSemanticsNode().boundsInRoot
@@ -866,6 +934,26 @@ class UiParityTest {
         compose.onNodeWithText("本机浏览历史").performClick();Assert.assertEquals("LocalHistory",route)
         compose.onNodeWithText("未登录 / 访客").performClick();Assert.assertTrue(profile)
         capture("drawer-light")
+        val label = "本机浏览历史"
+        val row = compose.onNode(hasClickAction() and hasText(label))
+        fun rowWidth() = row.fetchSemanticsNode().boundsInRoot.width / density
+        fun textLayout(): androidx.compose.ui.text.TextLayoutResult {
+            val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            compose.onNodeWithText(label, useUnmergedTree = true)
+                .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            return layouts.single()
+        }
+        val compactWidth = rowWidth()
+        Assert.assertEquals(20f, compactWidth - bounds(label).right / density, 1f)
+        Assert.assertTrue(compactWidth < 200f)
+        compose.runOnIdle { user = User("1", "超长的账号显示名称".repeat(8), "long_handle", "", "") }
+        Assert.assertEquals(compactWidth, rowWidth(), 1f)
+        compose.runOnIdle { scale = 1.5 }
+        Assert.assertTrue(rowWidth() > compactWidth)
+        Assert.assertEquals(1, textLayout().lineCount)
+        compose.runOnIdle { viewport = 240.dp }
+        Assert.assertEquals(192f, rowWidth(), 1f)
+        Assert.assertFalse(textLayout().hasVisualOverflow)
     }
     @Test fun drawerEntryAndEveryDestinationHonorConfirmedClickHaptics() {
         activity.setup()
@@ -900,6 +988,100 @@ class UiParityTest {
         compose.onNodeWithText("历史").performClick()
         compose.runOnIdle { Assert.assertEquals(8, events.size) }
     }
+    @Test fun drawerDestinationBackButtonsGiveOneHapticAndHonorSetting() {
+        activity.setup()
+        val model = ReaderViewModel(activity.get().application)
+        val field = ReaderViewModel::class.java.getDeclaredField("mutable").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val flow = field.get(model) as kotlinx.coroutines.flow.MutableStateFlow<ReaderState>
+        var enabled by mutableStateOf(true)
+        val events = mutableListOf<HapticFeedbackType>()
+        val feedback = object : HapticFeedback {
+            override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+                events.add(hapticFeedbackType)
+            }
+        }
+        compose.setContent {
+            val current by model.state.collectAsState()
+            val settings = JSONObject().put("haptics", enabled)
+            CompositionLocalProvider(LocalHapticFeedback provides feedback) {
+                ReviewTheme(settings) { ReaderApp(model, current) }
+            }
+        }
+        compose.runOnIdle {
+            val work = ReaderViewModel::class.java.getDeclaredField("work").apply { isAccessible = true }
+            (work.get(model) as? kotlinx.coroutines.Job)?.cancel()
+            flow.value = ReaderState(authenticating = false, accountId = "1")
+        }
+        for ((title, kind) in listOf("历史" to "Bookmarks", "通知" to "NotificationsTimeline", "本机浏览历史" to "LocalHistory")) {
+            compose.onNodeWithContentDescription("打开侧边栏").performClick()
+            compose.onNodeWithText(title).performClick()
+            val back = compose.onNodeWithContentDescription("返回")
+            compose.runOnIdle {
+                Assert.assertEquals(kind, model.state.value.screen.feed.kind)
+                events.clear()
+            }
+            back.performTouchInput { down(center); cancel() }
+            compose.runOnIdle {
+                Assert.assertEquals(2, model.state.value.screens.size)
+                Assert.assertTrue(events.isEmpty())
+            }
+            back.performTouchInput { click() }
+            compose.runOnIdle {
+                Assert.assertEquals(1, model.state.value.screens.size)
+                Assert.assertEquals(listOf(HapticFeedbackType.VirtualKey), events)
+            }
+        }
+        compose.runOnIdle {
+            events.clear()
+            model.open(Feed("Login", title = "账号登录"))
+        }
+        val loginBack = compose.onNodeWithContentDescription("返回")
+        loginBack.performTouchInput { click() }
+        compose.runOnIdle {
+            Assert.assertEquals(1, model.state.value.screens.size)
+            Assert.assertEquals(listOf(HapticFeedbackType.VirtualKey), events)
+            enabled = false
+            events.clear()
+            model.open(Feed("Login", title = "账号登录"))
+        }
+        loginBack.performTouchInput { click() }
+        compose.runOnIdle {
+            Assert.assertEquals(1, model.state.value.screens.size)
+            Assert.assertTrue(events.isEmpty())
+        }
+    }
+
+    @Test fun composerBackUsesTheAppHapticSettingAcrossTheDialog() {
+        activity.setup()
+        val model = ReaderViewModel(activity.get().application)
+        var enabled by mutableStateOf(true)
+        val events = mutableListOf<String>()
+        val feedback = object : HapticFeedback {
+            override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+                Assert.assertEquals(HapticFeedbackType.VirtualKey, hapticFeedbackType)
+                events.add("haptic")
+            }
+        }
+        compose.setContent {
+            CompositionLocalProvider(LocalHapticFeedback provides feedback) {
+                ReviewTheme(JSONObject().put("haptics", enabled)) {
+                    CompositionLocalProvider(LocalActions provides UiActions(model, {}, {}, {})) {
+                        ComposerScreen(ComposeRequest(), model) { events.add("close") }
+                    }
+                }
+            }
+        }
+        val back = compose.onNodeWithContentDescription("返回")
+        back.performTouchInput { click() }
+        compose.runOnIdle {
+            Assert.assertEquals(listOf("haptic", "close"), events)
+            enabled = false
+        }
+        back.performTouchInput { click() }
+        compose.runOnIdle { Assert.assertEquals(listOf("haptic", "close", "close"), events) }
+    }
+
     @Test fun replySortKeepsContentAndScrollAnchorDuringReplacement() {
         activity.setup()
         val model = ReaderViewModel(activity.get().application)

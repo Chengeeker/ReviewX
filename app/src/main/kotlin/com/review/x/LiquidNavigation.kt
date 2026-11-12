@@ -31,6 +31,10 @@ import kotlin.math.abs
     val light=!LocalDarkTheme.current
     val haptics by rememberUpdatedState(LocalHapticFeedback.current)
     val select by rememberUpdatedState(onSelect);val double by rememberUpdatedState(onDouble);val current by rememberUpdatedState(selected)
+    fun activate(index: Int) {
+        if (index != current || index < 2) haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
+        select(index)
+    }
     var touching by remember { mutableStateOf(false) }
     var dragging by remember { mutableStateOf(false) }
     var longPressed by remember { mutableStateOf(false) }
@@ -86,17 +90,30 @@ import kotlin.math.abs
                 }
                 if(!cancelled && !released.pressed) {
                     if(moved && abs(tracker.calculateVelocity().x)>1000*density)destination=destination.coerceIn((startIndex-1).coerceAtLeast(0),(startIndex+1).coerceAtMost(2))
-                    if(moved||held){pending?.cancel();if(destination!=startIndex)select(destination)}
+                    if(moved||held){pending?.cancel();if(destination!=startIndex)activate(destination)}
                     else if (destination != current) {
                         pending?.cancel()
                         lastTab = -1
-                        select(destination)
+                        activate(destination)
                     } else if (destination == 2) {
                         pending?.cancel()
                         lastTab = -1
                     }
-                    else if(lastTab==destination && down.uptimeMillis-lastTapTime<=viewConfiguration.doubleTapTimeoutMillis){pending?.cancel();lastTab=-1;double(destination)}
-                    else {lastTab=destination;lastTapTime=down.uptimeMillis;pending?.cancel();pending=launch {delay(viewConfiguration.doubleTapTimeoutMillis);if (destination != current) return@launch;select(destination)}}
+                    else {
+                        haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                        pending?.cancel()
+                        if (lastTab == destination && down.uptimeMillis - lastTapTime <= viewConfiguration.doubleTapTimeoutMillis) {
+                            lastTab = -1
+                            double(destination)
+                        } else {
+                            lastTab = destination
+                            lastTapTime = down.uptimeMillis
+                            pending = launch {
+                                delay(viewConfiguration.doubleTapTimeoutMillis)
+                                if (destination == current) select(destination)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -114,7 +131,7 @@ import kotlin.math.abs
                 } else this@drawWithContent.drawContent()
             }) {labels.forEachIndexed {i,label->
             val color=if(selectedLayer)MaterialTheme.colorScheme.primary else if(light)MaterialTheme.colorScheme.onSurfaceVariant else Color.White
-            Column(Modifier.weight(1f).fillMaxHeight().graphicsLayer{if(selectedLayer){scaleX=1f+.15f*lens.value;scaleY=1f+.15f*lens.value}}.semantics(mergeDescendants=true){this.selected=i==selected;role=Role.Tab;onClick {select(i);true}},horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
+            Column(Modifier.weight(1f).fillMaxHeight().graphicsLayer{if(selectedLayer){scaleX=1f+.15f*lens.value;scaleY=1f+.15f*lens.value}}.semantics(mergeDescendants=true){this.selected=i==selected;role=Role.Tab;onClick {activate(i);true}},horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.Center) {
                 Glyph(if(selectedLayer)active[i]else icons[i],size=24,color=color)
                 Spacer(Modifier.height(4.dp))
                 Text(label, Modifier.flutterLineHeight(16.sp), fontSize = 11.sp, lineHeight = 16.sp,

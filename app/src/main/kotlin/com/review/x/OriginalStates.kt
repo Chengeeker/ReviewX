@@ -7,10 +7,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import kotlin.math.roundToInt
 
 @Composable internal fun RequestStatus(loading:Boolean,error:String?,onRetry:()->Unit) {
     if(!loading&&error==null)return
@@ -38,21 +42,59 @@ import androidx.compose.ui.unit.*
     }
 }
 
+private val drawerDestinations = listOf(
+    Triple("bookmarks_outlined", "历史", "Bookmarks"),
+    Triple("notifications_outlined", "通知", "NotificationsTimeline"),
+    Triple("history_rounded", "本机浏览历史", "LocalHistory"),
+)
+private val drawerRowPadding = 20.dp
+private val drawerIconWidth = 24.dp
+private val drawerIconGap = 12.dp
+
 @Composable internal fun OriginalDrawer(state:ReaderState,onProfile:()->Unit,onRoute:(String,String)->Unit) {
-    val colors=MaterialTheme.colorScheme
-    Column(Modifier.fillMaxHeight()) {
-        Column(Modifier.padding(start=20.dp,top=20.dp,end=16.dp,bottom=12.dp).clip(RoundedCornerShape(12.dp)).hapticClickable(onClick=onProfile).padding(4.dp)) {
-            Box(Modifier.size(64.dp).clip(CircleShape).background(colors.secondaryContainer),contentAlignment=Alignment.Center){
-                if(!state.user?.avatar.isNullOrEmpty())NetworkImage(state.user!!.avatar,state.user.name,Modifier.fillMaxSize())else Glyph("person_rounded",size=36,color=colors.onSecondaryContainer)
-            }
-            Spacer(Modifier.height(14.dp));Text(state.user?.name?:if(state.loggedIn)"X 已登录"else "未登录 / 访客",maxLines=1,overflow=TextOverflow.Ellipsis,fontSize=16.5.sp,lineHeight=25.sp,fontWeight=FontWeight.Bold)
-            state.user?.let{Text("@${it.handle}",Modifier.padding(top=2.dp),maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)}
+    val appDensity = LocalDensity.current
+    val drawerDensity = remember(appDensity) {
+        object : Density by appDensity {
+            // Use the app's scaled SP conversion for text layout as well as DP sizing.
+            override fun TextUnit.toPx(): Float = with(appDensity) { this@toPx.toDp().toPx() }
+            override fun TextUnit.roundToPx(): Int = toPx().roundToInt()
         }
-        FlutterDivider(height=1.dp)
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical=6.dp)) {
-            listOf(Triple("bookmarks_outlined","历史","Bookmarks"),Triple("notifications_outlined","通知","NotificationsTimeline"),Triple("history_rounded","本机浏览历史","LocalHistory")).forEach{(icon,title,kind)->
-                Row(Modifier.fillMaxWidth().heightIn(min=48.dp).clip(RoundedCornerShape(16.dp)).hapticClickable{onRoute(kind,title)}.padding(horizontal=20.dp),verticalAlignment=Alignment.CenterVertically){
-                    Box(Modifier.width(24.dp)){Glyph(icon,size=22,color=colors.onSurfaceVariant)};Spacer(Modifier.width(12.dp));Text(title,fontSize=15.sp,fontWeight=FontWeight.Medium)
+    }
+    CompositionLocalProvider(LocalDensity provides drawerDensity) {
+        val rowStyle = LocalTextStyle.current.copy(fontSize = 15.sp, fontWeight = FontWeight.Medium)
+        val measurer = rememberTextMeasurer()
+        val labelWidth = remember(measurer, rowStyle) {
+            drawerDestinations.maxOf { (_, title, _) ->
+                measurer.measure(title, style = rowStyle, maxLines = 1).size.width
+            }
+        }
+        val density = LocalDensity.current
+        val direction = LocalLayoutDirection.current
+        val insets = DrawerDefaults.windowInsets
+        val contentWidth = with(density) {
+            (labelWidth + 2 * drawerRowPadding.roundToPx() + drawerIconWidth.roundToPx() + drawerIconGap.roundToPx() +
+                insets.getLeft(this, direction) + insets.getRight(this, direction)).toDp()
+        }
+        val colors=MaterialTheme.colorScheme
+        BoxWithConstraints {
+            val width = minOf(contentWidth, 240.dp, maxWidth * 0.8f)
+            ModalDrawerSheet(Modifier.width(width), drawerContainerColor = LocalChrome.current.background, windowInsets = insets) {
+                Column(Modifier.padding(start=20.dp,top=20.dp,end=16.dp,bottom=12.dp).clip(RoundedCornerShape(12.dp)).hapticClickable(onClick=onProfile).padding(4.dp)) {
+                    Box(Modifier.size(64.dp).clip(CircleShape).background(colors.secondaryContainer),contentAlignment=Alignment.Center){
+                        if(!state.user?.avatar.isNullOrEmpty())NetworkImage(state.user!!.avatar,state.user.name,Modifier.fillMaxSize())else Glyph("person_rounded",size=36,color=colors.onSecondaryContainer)
+                    }
+                    Spacer(Modifier.height(14.dp));Text(state.user?.name?:if(state.loggedIn)"X 已登录"else "未登录 / 访客",maxLines=1,overflow=TextOverflow.Ellipsis,fontSize=16.5.sp,lineHeight=25.sp,fontWeight=FontWeight.Bold)
+                    state.user?.let{Text("@${it.handle}",Modifier.padding(top=2.dp),maxLines=1,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)}
+                }
+                FlutterDivider(height=1.dp)
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(vertical=6.dp)) {
+                    drawerDestinations.forEach { (icon, title, kind) ->
+                        Row(Modifier.fillMaxWidth().heightIn(min=48.dp).clip(RoundedCornerShape(16.dp)).hapticClickable{onRoute(kind,title)}.padding(horizontal=drawerRowPadding),verticalAlignment=Alignment.CenterVertically){
+                            Box(Modifier.width(drawerIconWidth)){Glyph(icon,size=22,color=colors.onSurfaceVariant)}
+                            Spacer(Modifier.width(drawerIconGap))
+                            Text(title, style = rowStyle)
+                        }
+                    }
                 }
             }
         }

@@ -208,13 +208,42 @@ fun formatThreshold(mb:Int)=if(mb==0)"关闭自动清理"else if(mb>=1024)(mb/10
 }
 @Composable fun WebDavSettings(model:ReaderViewModel) {
     var url by remember{mutableStateOf("")};var user by remember{mutableStateOf("")};var password by remember{mutableStateOf("")};var directory by remember{mutableStateOf("ReviewX")};var full by rememberSaveable{mutableStateOf(false)};var visible by remember{mutableStateOf(false)};var busy by remember{mutableStateOf(true)};var confirm by remember{mutableStateOf(false)};val scope=rememberCoroutineScope()
-    LaunchedEffect(Unit){try{val config=withContext(Dispatchers.IO){model.backup.config()};url=config.str("url");user=config.str("user");password=config.str("password");directory=config.str("directory",if(config.has("url"))"" else "ReviewX")}catch(e:Exception){model.message("读取 WebDAV 配置失败")}finally{busy=false}}
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
+    var result by remember { mutableStateOf<String?>(null) }
+    var resultTitle by remember { mutableStateOf("连接测试结果") }
+    LaunchedEffect(Unit){try{val config=withContext(Dispatchers.IO){model.backup.config()};url=config.str("url");user=config.str("user");password=config.str("password");directory=config.str("directory",if(config.has("url"))"" else "ReviewX")}catch(e:CancellationException){throw e}catch(e:Exception){result="读取 WebDAV 配置失败，原加密资料保留"}finally{busy=false}}
     var operation by remember {mutableStateOf("")};var fieldErrors by remember{mutableStateOf<Map<String,String>>(emptyMap())}
-    fun validate():Boolean{fieldErrors=webDavFormErrors(url,user,password);return fieldErrors.isEmpty()}
-    fun run(action:String){if(busy||!validate())return;operation=action;busy=true;scope.launch{try{val config=JSONObject().put("url",url.trim()).put("user",user.trim()).put("password",password).put("directory",directory.trim());require(user.isNotBlank()&&password.isNotEmpty()){ "请输入用户名和密码或授权 Token" };withContext(Dispatchers.IO){model.backup.saveConfig(config)};when(action){"test"->model.message(model.backup.test(config));"upload"->{model.backup.upload(config,full);model.message("备份成功")};"restore"->{val raw=model.backup.download(config);withContext(Dispatchers.IO){model.backup.restore(raw,true)};model.message("恢复成功，请完全关闭应用后重新打开")}}}catch(e:CancellationException){throw e}catch(e:Exception){model.message(model.safeError(e))}finally{busy=false}}}
+    fun validate():Boolean {
+        focus.clearFocus()
+        fieldErrors=webDavFormErrors(url,user,password)
+        val directoryValid = runCatching { BackupService.endpoint(JSONObject().put("url",url).put("directory",directory)) }.isSuccess
+        if (fieldErrors.isNotEmpty() || !directoryValid) { result="请检查服务器地址、账号、密码和备份目录"; return false }
+        return true
+    }
+    fun run(action:String) {
+        if(busy)return
+        resultTitle=when(action){"test"->"连接测试结果";"upload"->"备份结果";else->"恢复结果"}
+        result=null
+        if(!validate())return
+        operation=action;busy=true
+        scope.launch {
+            try {
+                val config=JSONObject().put("url",url.trim()).put("user",user.trim()).put("password",password).put("directory",directory.trim())
+                if(action!="restore") withContext(Dispatchers.IO){model.backup.saveConfig(config)}
+                when(action) {
+                    "test"->result=model.backup.test(config)
+                    "upload"->{model.backup.upload(config,full);result="备份成功"}
+                    else->{val raw=model.backup.download(config);val restored=withContext(Dispatchers.IO){model.backup.restore(raw,true)};model.reloadAfterBackup();result=restored
+                        val current=withContext(Dispatchers.IO){model.backup.config()};url=current.str("url");user=current.str("user");password=current.str("password");directory=current.str("directory")}
+                }
+            } catch(e:CancellationException){throw e}
+            catch(e:Exception){result=webDavError(e)}
+            finally{busy=false}
+        }
+    }
     val scheme=MaterialTheme.colorScheme
     @Composable fun backupCard(content:@Composable ColumnScope.()->Unit){Surface(shape=RoundedCornerShape(24.dp),color=settingsCardColor){Column(content=content)}}
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top=LocalHeaderInset.current).padding(start=16.dp,top=14.dp,end=16.dp,bottom=14.dp).navigationBarsPadding(),verticalArrangement=Arrangement.spacedBy(16.dp)) {
+    Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(top=LocalHeaderInset.current).padding(start=16.dp,top=14.dp,end=16.dp,bottom=14.dp).navigationBarsPadding(),verticalArrangement=Arrangement.spacedBy(16.dp)) {
         Row(Modifier.fillMaxWidth().background(scheme.primaryContainer.copy(alpha=.4f),RoundedCornerShape(16.dp)).border(1.dp,scheme.primary.copy(alpha=.2f),RoundedCornerShape(16.dp)).padding(14.dp)) {Glyph("cloud_sync_rounded",color=scheme.primary);Spacer(Modifier.width(12.dp));Column {Text("备份内容",fontSize=16.sp,fontWeight=FontWeight.Bold,color=scheme.primary);Spacer(Modifier.height(4.dp));Text("备份应用设置和历史，不包含图片和视频缓存。",fontSize=14.sp,lineHeight=19.6.sp,color=scheme.onSurfaceVariant)}}
         backupCard {
             val titleStyle = flutterTileTitle().copy(fontSize = 16.sp, lineHeight = 21.6.sp)
@@ -234,10 +263,15 @@ fun formatThreshold(mb:Int)=if(mb==0)"关闭自动清理"else if(mb>=1024)(mb/10
         }}
         backupCard {Column(Modifier.padding(16.dp)) {Text("云端备份与还原操作",fontSize=16.sp,fontWeight=FontWeight.SemiBold);Spacer(Modifier.height(16.dp));Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {
             Button(enabled=!busy,onClick={run("upload")},modifier=Modifier.weight(1f),contentPadding=PaddingValues(vertical=12.dp)){if(busy&&operation=="upload")FlutterProgress(Modifier.size(16.dp),strokeWidth=2.dp,color=scheme.onPrimary)else Glyph("cloud_upload_rounded",size=18);Spacer(Modifier.width(8.dp));Text(if(busy&&operation=="upload")"正在上传..."else "立即备份到云端")}
-            FilledTonalButton(enabled=!busy,onClick={if(validate())confirm=true},modifier=Modifier.weight(1f),contentPadding=PaddingValues(vertical=12.dp)){if(busy&&operation=="restore")FlutterProgress(Modifier.size(16.dp),strokeWidth=2.dp)else Glyph("cloud_download_rounded",size=18);Spacer(Modifier.width(8.dp));Text(if(busy&&operation=="restore")"正在拉取..."else "从云端恢复备份")}
+            FilledTonalButton(enabled=!busy,onClick={resultTitle="恢复结果";result=null;if(validate())confirm=true},modifier=Modifier.weight(1f),contentPadding=PaddingValues(vertical=12.dp)){if(busy&&operation=="restore")FlutterProgress(Modifier.size(16.dp),strokeWidth=2.dp)else Glyph("cloud_download_rounded",size=18);Spacer(Modifier.width(8.dp));Text(if(busy&&operation=="restore")"正在拉取..."else "从云端恢复备份")}
         }}}
     }
-    if(confirm)FlutterAlertDialog(onDismissRequest={confirm=false},title={Text("从 WebDAV 恢复备份？")},text={Text("恢复会覆盖备份中的设置和历史。全量备份还会替换 X 会话及 WebDAV 密码。恢复后请重启应用。")},confirmButton={FlutterTextButton(onClick={confirm=false;run("restore")}){Text("确定恢复")}},dismissButton={FlutterTextButton(onClick={confirm=false}){Text("取消")}})
+    if(!busy) result?.let { message ->
+        FlutterAlertDialog(onDismissRequest={result=null},title={Text(resultTitle)},
+            text={Text(message,Modifier.verticalScroll(rememberScrollState()))},
+            confirmButton={FlutterTextButton(onClick={result=null}){Text("知道了")}})
+    }
+    if(confirm)FlutterAlertDialog(onDismissRequest={confirm=false},title={Text("从 WebDAV 恢复备份？")},text={Text("恢复会覆盖备份中的设置和历史。全量备份会恢复 WebDAV 密码，登录凭据验证通过后才替换当前会话；旧密钥不可用时先保留并校验原密文。")},confirmButton={FlutterTextButton(onClick={confirm=false;run("restore")}){Text("确定恢复")}},dismissButton={FlutterTextButton(onClick={confirm=false}){Text("取消")}})
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun AccountSettings(model:ReaderViewModel,state:ReaderState) {

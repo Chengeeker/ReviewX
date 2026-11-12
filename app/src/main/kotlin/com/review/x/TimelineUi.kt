@@ -376,13 +376,14 @@ fun postTime(raw:String,settings:org.json.JSONObject):String {
     val scope=rememberCoroutineScope();val context=LocalContext.current;val actions=LocalActions.current
     val measuredText=remember(text){composerText(text)}
     val focusRequester=remember {androidx.compose.ui.focus.FocusRequester()}
+    val back = hapticClick(onClose)
     Dialog(onDismissRequest={if(!busy)onClose()},properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=false)) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         val dark = LocalDarkTheme.current
         SideEffect { window?.applyReviewStatusBar(dark) }
         BackHandler {if(!busy)onClose()}
         Surface(Modifier.fillMaxSize(),color=LocalChrome.current.background) {Column {
-            AppTopBar(if(request.reply!=null)"回复" else if(request.quote!=null)"引用帖子" else "发布帖子",leading={IconButton(onClick={if(!busy)onClose()}){Glyph("arrow_back","返回")}},actions={FlutterTextButton(enabled=!busy&&!uncertain&&published==null,onClick={busy=true;error=null;scope.launch {try{published=model.publish(text,request.reply,request.quote)}catch(e:CancellationException){throw e}catch(e:Exception){error=model.safeError(e);uncertain=e is ApiFailure && e.uncertain}finally{busy=false}}}){Text(if(busy)"提交中…" else "发布")}})
+            AppTopBar(if(request.reply!=null)"回复" else if(request.quote!=null)"引用帖子" else "发布帖子",leading={IconButton(onClick={if(!busy)back()}){Glyph("arrow_back","返回")}},actions={FlutterTextButton(enabled=!busy&&!uncertain&&published==null,onClick={busy=true;error=null;scope.launch {try{published=model.publish(text,request.reply,request.quote)}catch(e:CancellationException){throw e}catch(e:Exception){error=model.safeError(e);uncertain=e is ApiFailure && e.uncertain}finally{busy=false}}}){Text(if(busy)"提交中…" else "发布")}})
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).imePadding().padding(20.dp)) {
                 request.reply?.let {Text("回复 @${it.author.handle}")};request.quote?.let {FlutterCard(Modifier.fillMaxWidth().padding(horizontal=10.dp,vertical=5.dp)){Text("@${it.author.handle}\n${it.text}",Modifier.padding(12.dp),maxLines=5,overflow=TextOverflow.Ellipsis)}}
                 LaunchedEffect(Unit){focusRequester.requestFocus()}
