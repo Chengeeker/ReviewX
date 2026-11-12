@@ -114,7 +114,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
             try {
                 val (validated,user)=repository.validate(cookie)
                 if(epoch!=generation) {return@launch}
-                withContext(Dispatchers.IO) { vault.save(validated); settings.set("flutter_credentials_imported",true); snapshots.profile(user.id,user) }
+                withContext(Dispatchers.IO) { vault.writeSecret(validated.cookie, recoverUnreadable = true); settings.set("flutter_credentials_imported",true); snapshots.profile(user.id,user) }
                 accountEpoch++; session=validated; updated.clear();deleted.clear(); roots.clear()
                 mutable.value=ReaderState(user=user,accountId=user.id,authenticating=false,settings=settings.snapshot())
                 work=null; load(); NotificationWorker.sync(getApplication(),true)

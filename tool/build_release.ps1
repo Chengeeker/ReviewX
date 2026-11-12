@@ -94,7 +94,7 @@ public class ReviewXPipeAgent {
     if ($LASTEXITCODE -ne 0) { throw 'Compose checks or release build failed.' }
     $apk = Join-Path $projectRoot 'app/build/outputs/apk/release/app-release.apk'
     & (Join-Path $PSScriptRoot 'verify_release.ps1') -Apk $apk -JavaHome $JavaHome
-    Copy-Item -LiteralPath $apk -Destination (Join-Path $projectRoot 'ReviewX_2.0.15_arm64-v8a.apk') -Force
+    Copy-Item -LiteralPath $apk -Destination (Join-Path $projectRoot 'ReviewX_2.0.16_arm64-v8a.apk') -Force
   } finally { Pop-Location }
 } finally {
   if (Test-Path -LiteralPath $temporaryStore) { Remove-Item -LiteralPath $temporaryStore -Force }
