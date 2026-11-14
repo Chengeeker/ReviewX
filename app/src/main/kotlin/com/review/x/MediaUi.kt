@@ -382,7 +382,8 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     var position by remember{mutableLongStateOf(0L)};var duration by remember{mutableLongStateOf(0L)};var playing by remember{mutableStateOf(false)};var buffering by remember{mutableStateOf(true)};var failure by remember{mutableStateOf(false)}
     var delete by remember {mutableStateOf(false)};var buffered by remember {mutableLongStateOf(0L)}
     var landscape by rememberSaveable{mutableStateOf(false)};var menu by remember{mutableStateOf<String?>(null)};var hud by remember{mutableStateOf<String?>(null)};var seekDraft by remember{mutableStateOf<Float?>(null)}
-    val videoTopInset=if(showChrome)WindowInsets.statusBars.asPaddingValues().calculateTopPadding()+48.dp else 0.dp
+    // Keep the video viewport fixed when chrome toggles so aspect ratio does not jump.
+    val videoTopInset=WindowInsets.statusBars.asPaddingValues().calculateTopPadding()+48.dp
     var gestureActive by remember {mutableStateOf(false)}
     var foreground by remember{mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))};var autoPlay by remember{mutableStateOf(true)};var held by remember{mutableStateOf(false)}
     val scope=rememberCoroutineScope();val initialBrightness=remember(window){window?.attributes?.screenBrightness?:-1f};var brightness by remember{mutableFloatStateOf(if(initialBrightness<0).5f else initialBrightness)}

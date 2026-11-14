@@ -912,8 +912,8 @@ class UiParityTest {
         compose.onNodeWithText("我知道了").performClick();compose.onNodeWithText("GitHub 开源地址").assertDoesNotExist();Assert.assertEquals(listOf(HapticFeedbackType.VirtualKey),hapticEvents)
     }
     @Test fun videoControlsStayOnOneRowBelowOpaqueHeader() {
-        activity.setup();val model=ReaderViewModel(activity.get().application);val media=Media("","",true);val request=GalleryRequest(listOf(media),0,"作者")
-        compose.setContent {ReviewTheme(JSONObject().put("theme_mode",2)){CompositionLocalProvider(LocalActions provides UiActions(model,{},{},{})){VideoPlayer(media,request,false,null,{},active=false,showChrome=true,onChrome={},onBack={},onControlsHeight={},onSave={},onPrevious=null,onNext=null)}}}
+        activity.setup();val model=ReaderViewModel(activity.get().application);val media=Media("","",true);val request=GalleryRequest(listOf(media),0,"作者");var showChrome by mutableStateOf(true)
+        compose.setContent {ReviewTheme(JSONObject().put("theme_mode",2)){CompositionLocalProvider(LocalActions provides UiActions(model,{},{},{})){VideoPlayer(media,request,false,null,{},active=false,showChrome=showChrome,onChrome={},onBack={},onControlsHeight={},onSave={},onPrevious=null,onNext=null)}}}
         compose.waitForIdle()
         val header=compose.onNodeWithTag("video-header").fetchSemanticsNode().boundsInRoot
         val surface=compose.onNodeWithTag("video-surface").fetchSemanticsNode().boundsInRoot
@@ -923,6 +923,12 @@ class UiParityTest {
         Assert.assertEquals(header.bottom,surface.top,1f)
         Assert.assertEquals(transport.center.y,speed.center.y,1f)
         Assert.assertEquals(transport.center.y,fullscreen.center.y,1f)
+        compose.runOnUiThread {showChrome=false};compose.waitForIdle()
+        val hiddenSurface=compose.onNodeWithTag("video-surface").fetchSemanticsNode().boundsInRoot
+        Assert.assertEquals(surface.top,hiddenSurface.top,1f);Assert.assertEquals(surface.bottom,hiddenSurface.bottom,1f)
+        compose.runOnUiThread {showChrome=true};compose.waitForIdle()
+        val restoredSurface=compose.onNodeWithTag("video-surface").fetchSemanticsNode().boundsInRoot
+        Assert.assertEquals(surface.top,restoredSurface.top,1f);Assert.assertEquals(surface.bottom,restoredSurface.bottom,1f)
     }
     @Test fun predictiveBackRevealsPreviousRouteAndCancellationReturnsCurrentPage() {
         activity.setup()
