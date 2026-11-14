@@ -24,7 +24,8 @@ if ([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($tempRoot)) -ne $projectR
 }
 $signingTempRoot = Join-Path $projectRoot '.signing-temp'
 $temporaryStore = Join-Path $signingTempRoot "release-$PID.p12"
-$taskPassword = [Console]::ReadLine()
+$taskPassword = $env:REVIEW_X_KEY_PASSWORD
+if ([string]::IsNullOrEmpty($taskPassword)) { $taskPassword = [Console]::ReadLine() }
 if ([string]::IsNullOrEmpty($taskPassword)) { throw 'Supply signing password through standard input.' }
 $signingEnvironmentNames = @(
   'REVIEW_X_STORE_FILE', 'REVIEW_X_STORE_PASSWORD',
@@ -38,6 +39,7 @@ $oldJava = $env:JAVA_HOME
 $oldTemp = $env:TEMP
 $oldTmp = $env:TMP
 $oldGradle = $env:GRADLE_OPTS
+$oldGradleUserHome = $env:GRADLE_USER_HOME
 $oldJavaOptions = $env:JAVA_TOOL_OPTIONS
 $pipeTemporaryFiles = @('ReviewXPipeProbe.java', 'ReviewXPipeProbe.class', 'ReviewXPipeAgent.java', 'ReviewXPipeAgent.class', 'pipe-agent.mf', 'pipe-agent.jar')
 try {
@@ -46,6 +48,9 @@ try {
   $env:TEMP = $tempRoot
   $env:TMP = $tempRoot
   $env:GRADLE_OPTS = '-Dorg.gradle.daemon=false'
+  $gradleHomePath = if ([string]::IsNullOrWhiteSpace($env:GRADLE_USER_HOME)) { Join-Path $env:USERPROFILE '.gradle' } else { $env:GRADLE_USER_HOME }
+  $gradleHomeTarget = (Get-Item -LiteralPath $gradleHomePath -Force).Target
+  if ($gradleHomeTarget) { $env:GRADLE_USER_HOME = [IO.Path]::GetFullPath([string]$gradleHomeTarget) }
   # Some Windows builds accept a Unix-domain listener but reject its connection.
   # Check the real JDK pipe first; only that failing build process uses TCP pipes.
   @'
@@ -94,7 +99,7 @@ public class ReviewXPipeAgent {
     if ($LASTEXITCODE -ne 0) { throw 'Compose checks or release build failed.' }
     $apk = Join-Path $projectRoot 'app/build/outputs/apk/release/app-release.apk'
     & (Join-Path $PSScriptRoot 'verify_release.ps1') -Apk $apk -JavaHome $JavaHome
-    Copy-Item -LiteralPath $apk -Destination (Join-Path $projectRoot 'ReviewX_2.0.16_arm64-v8a.apk') -Force
+    Copy-Item -LiteralPath $apk -Destination (Join-Path $projectRoot 'ReviewX_2.1.1_arm64-v8a.apk') -Force
   } finally { Pop-Location }
 } finally {
   if (Test-Path -LiteralPath $temporaryStore) { Remove-Item -LiteralPath $temporaryStore -Force }
@@ -103,6 +108,7 @@ public class ReviewXPipeAgent {
   $env:TEMP = $oldTemp
   $env:TMP = $oldTmp
   $env:GRADLE_OPTS = $oldGradle
+  $env:GRADLE_USER_HOME = $oldGradleUserHome
   $env:JAVA_TOOL_OPTIONS = $oldJavaOptions
   foreach ($name in $pipeTemporaryFiles) {
     Remove-Item -LiteralPath (Join-Path $tempRoot $name) -Force -ErrorAction SilentlyContinue

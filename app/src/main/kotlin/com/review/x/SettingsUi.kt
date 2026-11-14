@@ -110,6 +110,7 @@ private val settingsCardColor: Color
             if(settings.optBoolean("use_liquid_glass_effect") && settings.optBoolean("floating_nav",true)) NavigationGlassChoice(settings.optBoolean("translucentNavigationGlass", false), hapticsEnabled = settings.optBoolean("haptics", true)) { model.setSetting("translucentNavigationGlass", it) }
         }
         AppearanceSection("屏幕显示"){SettingRow("屏幕帧率设置",icon="speed_rounded",onClick={model.open(Feed("Display",title="屏幕刷新率"))})}
+        if(Build.VERSION.SDK_INT>=34)AppearanceSection("手势与动效"){SettingSwitch("可预测性返回",settings.optBoolean("predictive_back"),{model.setSetting("predictive_back",it)},"应用内页面随系统返回手势预览上一页","swipe_rounded")}
         AppearanceSection("触感与震动"){SettingSwitch("触感与震动反馈",settings.optBoolean("haptics",true),{model.setSetting("haptics",it)},icon="vibration_rounded")}
     }
 }
@@ -322,18 +323,17 @@ fun formatThreshold(mb:Int)=if(mb==0)"关闭自动清理"else if(mb>=1024)(mb/10
 }
 @Composable fun AboutDialog(close:()->Unit) {
     val actions=LocalActions.current
+    val confirmClick=hapticClick(close)
     FlutterAlertDialog(onDismissRequest=close,shape=RoundedCornerShape(20.dp),contentPadding=PaddingValues(start=20.dp,top=24.dp,end=20.dp,bottom=16.dp),centerActions=true,text={Column(Modifier.verticalScroll(rememberScrollState()),horizontalAlignment=Alignment.CenterHorizontally) {
         Image(painterResource(R.mipmap.ic_launcher),"ReviewX",Modifier.size(72.dp).clip(RoundedCornerShape(16.dp)));Spacer(Modifier.height(14.dp));Row(verticalAlignment=Alignment.CenterVertically){Text("ReviewX",fontSize=21.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.width(8.dp));Text("v${BuildConfig.VERSION_NAME}",Modifier.clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.primaryContainer).padding(horizontal=8.dp,vertical=3.dp),fontSize=12.sp,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.onPrimaryContainer)}
-        Spacer(Modifier.height(6.dp));Text("面向 X/Twitter 的 Material 3 客户端",fontSize=13.sp);Spacer(Modifier.height(16.dp));FlutterDivider(height=1.dp);Spacer(Modifier.height(14.dp))
-        listOf("dynamic_feed_outlined" to "浏览推荐与关注时间线、探索趋势、帖子详情和用户主页","search_rounded" to "探索趋势并搜索帖子、用户、图片和视频，也可查看通知","photo_library_outlined" to "查看媒体、管理书签和喜欢，并发布文字帖子、回复和引用").forEach{(icon,text)->Row(Modifier.padding(bottom=8.dp)){Glyph(icon,size=16,color=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(8.dp));Text(text,Modifier.weight(1f),fontSize=12.5.sp,lineHeight=16.875.sp)}}
-        Spacer(Modifier.height(6.dp));FlutterDivider(height=1.dp);Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(6.dp));Text("界面采用 LucentUI（Material 3 + 液态玻璃）",fontSize=13.sp);Spacer(Modifier.height(16.dp));FlutterDivider(height=1.dp);Spacer(Modifier.height(14.dp))
         val colors=MaterialTheme.colorScheme
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(colors.surfaceContainerHighest.copy(alpha=.5f)).border(1.dp,colors.outlineVariant.copy(alpha=.4f),RoundedCornerShape(12.dp)).clickable{actions.link("https://github.com/Chengeeker/ReviewX")}.padding(horizontal=12.dp,vertical=8.dp),verticalAlignment=Alignment.CenterVertically){
             Text("\uf5dd",Modifier.size(20.dp).clearAndSetSemantics{},style=TextStyle(fontFamily=androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(R.font.cupertino_icons)),fontSize=with(LocalDensity.current){20.dp.toSp()},color=colors.primary));Spacer(Modifier.width(10.dp))
-            Column(Modifier.weight(1f)){Text("GitHub 开源地址",fontSize=13.sp,fontWeight=FontWeight.Bold);Text("github.com/Chengeeker/ReviewX",fontSize=11.sp,color=colors.onSurfaceVariant)};Glyph("open_in_new_rounded",size=16,color=colors.primary)
+            Column(Modifier.weight(1f)){Text("GitHub 开源地址",fontSize=13.sp,fontWeight=FontWeight.Bold)};Glyph("open_in_new_rounded",size=16,color=colors.primary)
         }
 
-    }},confirmButton={Button(onClick=close,shape=RoundedCornerShape(12.dp),contentPadding=PaddingValues(horizontal=24.dp,vertical=10.dp)){Text("我知道了")}})
+    }},confirmButton={Button(onClick=confirmClick,shape=RoundedCornerShape(12.dp),contentPadding=PaddingValues(horizontal=24.dp,vertical=10.dp)){Text("我知道了")}})
 }
 @Composable fun LicensesScreen() {val context=LocalContext.current;val names=remember{context.assets.list("licenses").orEmpty().toList()};LazyColumn{items(names){name->var expanded by remember{mutableStateOf(false)};SettingRow(name,onClick={expanded=!expanded});if(expanded)SelectionContainer{Text(remember(name){context.assets.open("licenses/$name").bufferedReader().use{it.readText()}},Modifier.padding(16.dp),fontSize=12.sp)}}}}
 

@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -849,6 +850,11 @@ class UiParityTest {
                 .performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult){it(layouts)}
             Assert.assertEquals(title,primary,layouts.single().layoutInput.style.color)
         }
+        compose.onNodeWithText("触感与震动",useUnmergedTree=true).performScrollTo()
+        compose.onNodeWithText("可预测性返回",useUnmergedTree=true).assertExists()
+        val backTop=compose.onNodeWithText("可预测性返回",useUnmergedTree=true).fetchSemanticsNode().boundsInRoot.top
+        val hapticsTop=compose.onNodeWithText("触感与震动",useUnmergedTree=true).fetchSemanticsNode().boundsInRoot.top
+        Assert.assertTrue(backTop<hapticsTop)
     }
     @Test fun videoMenuTextIsWhiteEvenInLightAppTheme() {
         activity.setup()
@@ -894,13 +900,55 @@ class UiParityTest {
         }
     }
     @Test fun aboutDialogRetainsOriginalLinkAndDismissal() {
-        activity.setup();val model=ReaderViewModel(activity.get().application);var open by mutableStateOf(true)
-        compose.runOnUiThread {activity.get().setContent {ReviewTheme(JSONObject().put("theme_mode",2)){CompositionLocalProvider(LocalActions provides UiActions(model,{},{},{})){if(open)AboutDialog{open=false}}}}}
-        compose.onNodeWithText("GitHub 开源地址").assertIsDisplayed();compose.onNodeWithText("github.com/Chengeeker/ReviewX").assertIsDisplayed()
+        activity.setup();val model=ReaderViewModel(activity.get().application);var open by mutableStateOf(true);var target="";val hapticEvents=mutableListOf<HapticFeedbackType>()
+        val feedback=object:HapticFeedback{override fun performHapticFeedback(hapticFeedbackType:HapticFeedbackType){hapticEvents.add(hapticFeedbackType)}}
+        compose.runOnUiThread {activity.get().setContent {CompositionLocalProvider(LocalHapticFeedback provides feedback){ReviewTheme(JSONObject().put("theme_mode",2).put("haptics",true)){CompositionLocalProvider(LocalActions provides UiActions(model,{},{},{target=it})){if(open)AboutDialog{open=false}}}}}}
+        compose.onNodeWithText("GitHub 开源地址").assertIsDisplayed();compose.onNodeWithText("github.com/Chengeeker/ReviewX").assertDoesNotExist()
+        compose.onNodeWithText("界面采用 LucentUI（Material 3 + 液态玻璃）").assertIsDisplayed()
         val layouts=mutableListOf<androidx.compose.ui.text.TextLayoutResult>();compose.onNodeWithText("GitHub 开源地址",useUnmergedTree=true).performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult){it(layouts)}
         Assert.assertEquals(13f,layouts.single().layoutInput.style.fontSize.value,.001f)
         capture("about-dark",dialog=true)
-        compose.onNodeWithText("我知道了").performClick();compose.onNodeWithText("GitHub 开源地址").assertDoesNotExist()
+        compose.onNodeWithText("GitHub 开源地址").performClick();Assert.assertEquals("https://github.com/Chengeeker/ReviewX",target);Assert.assertTrue(hapticEvents.isEmpty())
+        compose.onNodeWithText("我知道了").performClick();compose.onNodeWithText("GitHub 开源地址").assertDoesNotExist();Assert.assertEquals(listOf(HapticFeedbackType.VirtualKey),hapticEvents)
+    }
+    @Test fun videoControlsStayOnOneRowBelowOpaqueHeader() {
+        activity.setup();val model=ReaderViewModel(activity.get().application);val media=Media("","",true);val request=GalleryRequest(listOf(media),0,"作者")
+        compose.setContent {ReviewTheme(JSONObject().put("theme_mode",2)){CompositionLocalProvider(LocalActions provides UiActions(model,{},{},{})){VideoPlayer(media,request,false,null,{},active=false,showChrome=true,onChrome={},onBack={},onControlsHeight={},onSave={},onPrevious=null,onNext=null)}}}
+        compose.waitForIdle()
+        val header=compose.onNodeWithTag("video-header").fetchSemanticsNode().boundsInRoot
+        val surface=compose.onNodeWithTag("video-surface").fetchSemanticsNode().boundsInRoot
+        val transport=compose.onNodeWithTag("video-transport-row").fetchSemanticsNode().boundsInRoot
+        val speed=compose.onNodeWithText("1.0X").fetchSemanticsNode().boundsInRoot
+        val fullscreen=compose.onNodeWithContentDescription("横屏").fetchSemanticsNode().boundsInRoot
+        Assert.assertEquals(header.bottom,surface.top,1f)
+        Assert.assertEquals(transport.center.y,speed.center.y,1f)
+        Assert.assertEquals(transport.center.y,fullscreen.center.y,1f)
+    }
+    @Test fun predictiveBackRevealsPreviousRouteAndCancellationReturnsCurrentPage() {
+        activity.setup()
+        val root=ReaderScreen(Feed("Settings",title="设置"),loaded=true)
+        val child=ReaderScreen(Feed("About",title="关于"),loaded=true)
+        val state=ReaderState(authenticating=false,screens=listOf(root,child))
+        val routes=state.screens.mapIndexed { index, _ -> ReaderRoute(if(index==0)"root"else state.screens[index].key,state.copy(screens=state.screens.take(index+1))) }
+        val progress=mutableStateMapOf<String,Float>()
+        var rootComposed=false
+        compose.setContent {
+            ReaderPageStack(routes,progress) { route ->
+                if(route.screens.size==1)rootComposed=true
+                Box(Modifier.fillMaxSize().background(if(route.screens.size==1)androidx.compose.ui.graphics.Color.Red else androidx.compose.ui.graphics.Color.Blue).then(if(route.screens.size==1)Modifier else Modifier.testTag("current")))
+            }
+        }
+        compose.waitForIdle()
+        val current=compose.onNodeWithTag("current")
+        val width=compose.onRoot().fetchSemanticsNode().boundsInRoot.width
+        Assert.assertEquals(0f,current.fetchSemanticsNode().boundsInRoot.left,1f)
+        compose.runOnIdle { progress[child.key]=.5f }
+        compose.waitForIdle()
+        Assert.assertTrue(rootComposed)
+        Assert.assertEquals(width/2,current.fetchSemanticsNode().boundsInRoot.left,2f)
+        compose.runOnIdle { progress.remove(child.key) }
+        compose.waitForIdle()
+        Assert.assertEquals(0f,current.fetchSemanticsNode().boundsInRoot.left,2f)
     }
     @Test fun drawerFitsMenuContentAndKeepsFlutterSpacingAndRoutes() {
         activity.setup();var route="";var profile=false

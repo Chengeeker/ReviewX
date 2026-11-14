@@ -382,6 +382,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     var position by remember{mutableLongStateOf(0L)};var duration by remember{mutableLongStateOf(0L)};var playing by remember{mutableStateOf(false)};var buffering by remember{mutableStateOf(true)};var failure by remember{mutableStateOf(false)}
     var delete by remember {mutableStateOf(false)};var buffered by remember {mutableLongStateOf(0L)}
     var landscape by rememberSaveable{mutableStateOf(false)};var menu by remember{mutableStateOf<String?>(null)};var hud by remember{mutableStateOf<String?>(null)};var seekDraft by remember{mutableStateOf<Float?>(null)}
+    val videoTopInset=if(showChrome)WindowInsets.statusBars.asPaddingValues().calculateTopPadding()+48.dp else 0.dp
     var gestureActive by remember {mutableStateOf(false)}
     var foreground by remember{mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))};var autoPlay by remember{mutableStateOf(true)};var held by remember{mutableStateOf(false)}
     val scope=rememberCoroutineScope();val initialBrightness=remember(window){window?.attributes?.screenBrightness?:-1f};var brightness by remember{mutableFloatStateOf(if(initialBrightness<0).5f else initialBrightness)}
@@ -400,10 +401,10 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     LaunchedEffect(landscape) { onFullscreen(landscape) }
     BackHandler(landscape){landscape=false;activity?.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;onChrome(true)}
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        if(duration==0L&&active&&media.url.isNotBlank())NetworkImage(media.url,media.description,Modifier.fillMaxSize(),ContentScale.Fit)
-        AndroidView(factory={PlayerView(it).apply{this.player=player;useController=false;setShutterBackgroundColor(android.graphics.Color.TRANSPARENT);setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER);keepScreenOn=false}},modifier=Modifier.fillMaxSize())
+        if(duration==0L&&active&&media.url.isNotBlank())NetworkImage(media.url,media.description,Modifier.fillMaxSize().padding(top=videoTopInset),ContentScale.Fit)
+        AndroidView(factory={PlayerView(it).apply{this.player=player;useController=false;setShutterBackgroundColor(android.graphics.Color.TRANSPARENT);setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER);keepScreenOn=false}},modifier=Modifier.fillMaxSize().padding(top=videoTopInset).testTag("video-surface"))
         var dragAxis by remember{mutableStateOf("")};var origin by remember{mutableStateOf(Offset.Zero)};var drag by remember{mutableStateOf(Offset.Zero)};var startPosition by remember{mutableLongStateOf(0)};var startBrightness by remember{mutableFloatStateOf(.5f)};var startGain by remember{mutableFloatStateOf(1f)}
-        Box(Modifier.fillMaxSize().pointerInput(active,foreground){detectTapGestures(
+        Box(Modifier.fillMaxSize().padding(top=videoTopInset).pointerInput(active,foreground){detectTapGestures(
             onTap={chromeAction(!chromeVisible)},
             onDoubleTap={point->if(active&&foreground&&player.duration>0){if(point.x in size.width*.35f..size.width*.65f){if(player.isPlaying){player.pause();autoPlay=false;chromeAction(true)}else{player.play();autoPlay=true}}else{val delta=if(point.x<size.width*.35f)-10000 else 10000;player.seekTo((player.currentPosition+delta).coerceIn(0,player.duration));hud=if(delta>0)"+10s"else "-10s"}}},
             onPress={tryAwaitRelease();held=false},onLongPress={point->if(active&&foreground&&player.isPlaying&&(point.x<size.width*.45f||point.x>size.width*.55f)){held=true;haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)}})
@@ -432,7 +433,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
         message?.let {Text(it,Modifier.align(Alignment.TopCenter).fillMaxWidth().statusBarsPadding().padding(top=64.dp,start=16.dp,end=16.dp).background(Color.Black.copy(alpha=.87f),RoundedCornerShape(16.dp)).padding(12.dp),textAlign=androidx.compose.ui.text.style.TextAlign.Center,maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,color=Color.White)}
         if(held)Box(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top=56.dp)){FlutterLabelChip("2.0X 倍速快进中")}
         if(showChrome){
-            Row(Modifier.align(Alignment.TopCenter).fillMaxWidth().statusBarsPadding().background(Color.Black.copy(alpha=.54f)),verticalAlignment=Alignment.CenterVertically) {
+            Row(Modifier.align(Alignment.TopCenter).fillMaxWidth().testTag("video-header").background(Color.Black).statusBarsPadding(),verticalAlignment=Alignment.CenterVertically) {
                 VideoButton("arrow_back","返回",{if(landscape){landscape=false;activity?.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_PORTRAIT}else onBack()})
                 Text(request.post?.author?.name?:request.author,Modifier.weight(1f),maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,color=Color.White)
                 Text("${request.media.indexOf(media)+1}/${request.media.size}",color=Color.White.copy(alpha=.7f))
@@ -456,13 +457,18 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
                     Box(Modifier.fillMaxHeight().fillMaxWidth(if(duration>0)(buffered.toFloat()/duration).coerceIn(0f,1f)else 0f).background(Color.White.copy(alpha=.38f)))
                     Box(Modifier.fillMaxHeight().fillMaxWidth(if(duration>0)((seekDraft?:position.toFloat())/duration).coerceIn(0f,1f)else 0f).background(Color.White))
                 }
-                FlowRow(verticalArrangement=Arrangement.Center,horizontalArrangement=Arrangement.SpaceBetween,modifier=Modifier.fillMaxWidth()) {
-                    VideoButton(if(playing)"pause"else "play_arrow",if(playing)"暂停"else "播放",{if(player.isPlaying){player.pause();autoPlay=false}else{if(player.playbackState==Player.STATE_ENDED)player.seekTo(0);player.play();autoPlay=true}},enabled=duration>0)
-                    VideoButton(if(muted)"volume_off_rounded"else "volume_up_rounded",if(muted)"取消静音"else "静音",{muted=!muted;if(!muted&&gain==0f)gain=1f},enabled=duration>0)
-                    Box(Modifier.width(with(LocalDensity.current){80.sp.toDp()}).height(48.dp),contentAlignment=Alignment.Center){Text(if(duration>0)"${videoTime(position)} / ${videoTime(duration)}"else "--:-- / --:--",fontSize=12.sp,maxLines=1,color=Color.White.copy(alpha=.7f))}
-                    FlutterTextButton(onClick={menu="speed"},modifier=Modifier.width(with(LocalDensity.current){56.sp.toDp()}).height(48.dp),contentPadding=PaddingValues(horizontal=6.dp)){Text("${speed}X",color=Color.White)}
-                    FlutterTextButton(onClick={menu="quality"},enabled=media.variants.size>1,modifier=Modifier.width(with(LocalDensity.current){56.sp.toDp()}).height(48.dp),contentPadding=PaddingValues(horizontal=6.dp)){Text(selected?.let{val h=videoHeight(it.url);if(h>0)"${h}p"else "高清"}?:"高清",color=Color.White.copy(alpha=.7f))}
-                    VideoButton(if(landscape)"fullscreen_exit"else "fullscreen",if(landscape)"竖屏"else "横屏",{landscape=!landscape;activity?.requestedOrientation=if(landscape)ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;onChrome(true)})
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val compact=maxWidth<336.dp
+                    val labelWidth=if(compact)44.dp else 56.dp
+                    val timeWidth=if(compact)(maxWidth-144.dp-labelWidth*2).coerceAtLeast(40.dp)else 80.dp
+                    Row(Modifier.fillMaxWidth().testTag("video-transport-row"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                        VideoButton(if(playing)"pause"else "play_arrow",if(playing)"暂停"else "播放",{if(player.isPlaying){player.pause();autoPlay=false}else{if(player.playbackState==Player.STATE_ENDED)player.seekTo(0);player.play();autoPlay=true}},enabled=duration>0)
+                        VideoButton(if(muted)"volume_off_rounded"else "volume_up_rounded",if(muted)"取消静音"else "静音",{muted=!muted;if(!muted&&gain==0f)gain=1f},enabled=duration>0)
+                        Box(Modifier.width(timeWidth).height(48.dp),contentAlignment=Alignment.Center){Text(if(duration>0)"${videoTime(position)} / ${videoTime(duration)}"else "--:-- / --:--",fontSize=if(compact)10.sp else 12.sp,maxLines=1,softWrap=false,color=Color.White.copy(alpha=.7f))}
+                        FlutterTextButton(onClick={menu="speed"},modifier=Modifier.width(labelWidth).height(48.dp),contentPadding=PaddingValues(horizontal=0.dp)){Text("${speed}X",maxLines=1,softWrap=false,color=Color.White)}
+                        FlutterTextButton(onClick={menu="quality"},enabled=media.variants.size>1,modifier=Modifier.width(labelWidth).height(48.dp),contentPadding=PaddingValues(horizontal=0.dp)){Text(selected?.let{val h=videoHeight(it.url);if(h>0)"${h}p"else "高清"}?:"高清",maxLines=1,softWrap=false,color=Color.White.copy(alpha=.7f))}
+                        VideoButton(if(landscape)"fullscreen_exit"else "fullscreen",if(landscape)"竖屏"else "横屏",{landscape=!landscape;activity?.requestedOrientation=if(landscape)ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;onChrome(true)})
+                    }
                 }
             }
         }

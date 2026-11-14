@@ -302,7 +302,7 @@ fun continues(parent:Post,reply:Post)=parent.repostedBy==null && reply.repostedB
                 if(!ended)FlutterTextButton(onClick={runCatching {NativeServices.open(context,post.url)}.onFailure {model.message("无法打开浏览器")}}){Text("在 X 投票")}
             }
         }
-        if(post.media.isNotEmpty())MediaGrid(post)
+        if(post.media.isNotEmpty())MediaGrid(post,detail)
         if(post.quote!=null && !quoted) {Row(Modifier.padding(top=8.dp,bottom=6.dp),verticalAlignment=Alignment.CenterVertically){Glyph("format_quote",size=16);Spacer(Modifier.width(6.dp));Text("引用 @${post.quote.author.handle} 的帖子",style=MaterialTheme.typography.labelMedium)};PostCard(model.effective(post.quote),quoted=true)}
         if(!quoted)Row(Modifier.padding(top=2.dp)) {
             ActionCell("回复","chat_bubble_outline",compact(post.replies),enabled=!detail,onClick={model.openPost(post)})
@@ -358,19 +358,21 @@ fun postTime(raw:String,settings:org.json.JSONObject):String {
         }
     }
 }
-@Composable fun MediaGrid(post:Post) {
+@Composable fun MediaGrid(post:Post,detail:Boolean=false) {
     var revealed by rememberSaveable(post.id) {mutableStateOf(false)};val settings=LocalReading.current;val actions=LocalActions.current
     val galleryScope=remember(post.id){Any()}
     if(post.sensitive && !revealed && !settings.optBoolean("showSensitive")) {FlutterOutlinedButton(onClick={revealed=true}){Glyph("visibility_outlined",size=18);Spacer(Modifier.width(8.dp));Text("显示 X 标记为敏感的媒体")};return}
-    val media=post.media;val radius=settings.optDouble("imageRadius",16.0).dp;val screenHeight=LocalConfiguration.current.screenHeightDp.dp
+    val media=post.media.take(mediaGridVisibleCount(post.media.size,detail));val columns=mediaGridColumns(media.size);val spacing=if(settings.optBoolean("largeImages",true))7.dp else 5.dp;val radius=settings.optDouble("imageRadius",16.0).dp;val screenHeight=LocalConfiguration.current.screenHeightDp.dp
     val bounds=remember(post.id){mutableMapOf<Int,androidx.compose.ui.layout.LayoutCoordinates>()}
     val previews = remember(post.id, media) { mutableMapOf<Int, ImageBitmap>() }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
-        @Composable fun tile(index:Int,modifier:Modifier) {val item=media[index];var sourceImage by remember(item.url){mutableStateOf<ImageBitmap?>(null)};Box(modifier.onGloballyPositioned {bounds[index]=it}.clip(RoundedCornerShape(radius)).hideGallerySource(galleryScope,index).hapticClickable {actions.gallery(GalleryRequest(media,index,post.author.handle,post,sourceAnchor={bounds[it]?.galleryAnchor()},sourceRadius=radius.value,sourceScope=galleryScope,sourceImage=sourceImage,previewImage={previews[it]}))}){NetworkImage(item.url,item.description,Modifier.fillMaxSize(),onImageReady={sourceImage=it;previews[index]=it});if(item.video)Glyph("play_circle_fill",size=48,color=Color.White,modifier=Modifier.align(Alignment.Center));if(item.description.isNotBlank())Text("ALT",color=Color.White,modifier=Modifier.align(Alignment.BottomStart).padding(8.dp).background(Color.Black.copy(alpha=.54f)).padding(4.dp))}}
+        @Composable fun tile(index:Int,modifier:Modifier) {val item=media[index];var sourceImage by remember(item.url){mutableStateOf<ImageBitmap?>(null)};Box(modifier.onGloballyPositioned {bounds[index]=it}.clip(RoundedCornerShape(if(columns==1)radius else 12.dp)).hideGallerySource(galleryScope,index).hapticClickable {actions.gallery(GalleryRequest(post.media,index,post.author.handle,post,sourceAnchor={bounds[it]?.galleryAnchor()},sourceRadius=if(columns==1)radius.value else 12f,sourceScope=galleryScope,sourceImage=sourceImage,previewImage={previews[it]}))}){NetworkImage(item.url,item.description,Modifier.fillMaxSize(),onImageReady={sourceImage=it;previews[index]=it});if(item.video)Glyph("play_circle_fill",size=48,color=Color.White,modifier=Modifier.align(Alignment.Center));if(item.description.isNotBlank())Text("ALT",color=Color.White,modifier=Modifier.align(Alignment.BottomStart).padding(8.dp).background(Color.Black.copy(alpha=.54f)).padding(4.dp));if(!detail&&index==8&&post.media.size>9)Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha=.45f)),contentAlignment=Alignment.Center){Text("+${post.media.size-9}",color=Color.White,fontSize=24.sp,fontWeight=FontWeight.SemiBold)}}}
         if(media.size==1) {val first=media.first();val ratio=if(settings.optBoolean("largeImages",true)&&first.width>0&&first.height>0)(first.width.toFloat()/first.height).coerceIn(.2f,3f) else 1.4f;val width=minOf(maxWidth,minOf(screenHeight*.42f,480.dp)*ratio);tile(0,Modifier.width(width).aspectRatio(ratio))}
-        else Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {for(i in media.indices step 2)Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){tile(i,Modifier.weight(1f).aspectRatio(1f));if(i+1<media.size)tile(i+1,Modifier.weight(1f).aspectRatio(1f)) else Spacer(Modifier.weight(1f))}}
+        else Column(verticalArrangement=Arrangement.spacedBy(spacing)) {media.chunked(columns).forEachIndexed {row,items->Row(horizontalArrangement=Arrangement.spacedBy(spacing)){items.forEachIndexed {column,_->tile(row*columns+column,Modifier.weight(1f).aspectRatio(1f))};repeat(columns-items.size){Spacer(Modifier.weight(1f))}}}}
     }
 }
+internal fun mediaGridColumns(count:Int)=when(count){1->1;2,4->2;else->3}
+internal fun mediaGridVisibleCount(count:Int,detail:Boolean)=if(detail)count else count.coerceAtMost(9)
 @Composable fun ComposerScreen(request:ComposeRequest,model:ReaderViewModel,onClose:()->Unit) {
     var text by rememberSaveable {mutableStateOf("")};var busy by remember {mutableStateOf(false)};var uncertain by rememberSaveable {mutableStateOf(false)};var error by remember {mutableStateOf<String?>(null)};var published by rememberSaveable {mutableStateOf<String?>(null)}
     val scope=rememberCoroutineScope();val context=LocalContext.current;val actions=LocalActions.current

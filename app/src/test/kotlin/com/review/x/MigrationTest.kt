@@ -125,8 +125,13 @@ class MigrationTest {
         assertEquals(0.0,reading.getDouble("imageRadius"),0.0);assertEquals("author",reading.getString("imageStorageFolder"));assertFalse(reading.getBoolean("defaultMutedVideo"));assertEquals("balanced",reading.getString("videoQuality"))
     }
     @Test fun backupWhitelistExcludesCredentialsAndArbitraryKeys() {
-        listOf("history_123","notification_seen_12","reviewx_xcache_v1_12_timeline_for_you","reading_settings").forEach{assertTrue(AppSettings.localBackupKey(it))}
+        listOf("history_123","notification_seen_12","reviewx_xcache_v1_12_timeline_for_you","reading_settings","predictive_back").forEach{assertTrue(AppSettings.localBackupKey(it))}
         listOf("twitter_session_v1","webdav_config","history_other","reviewx_xcache_v1_12_session","flutter_credentials_imported").forEach{assertFalse(AppSettings.localBackupKey(it))}
+    }
+    @Test fun mediaGridMatchesReviewLayoutAndDetailKeepsAllImages() {
+        assertEquals(1,mediaGridColumns(1));assertEquals(2,mediaGridColumns(2));assertEquals(3,mediaGridColumns(3))
+        assertEquals(2,mediaGridColumns(4));assertEquals(3,mediaGridColumns(5));assertEquals(3,mediaGridColumns(9))
+        assertEquals(9,mediaGridVisibleCount(10,false));assertEquals(10,mediaGridVisibleCount(10,true))
     }
     @Test fun fullBackupSessionIdentityIsValidatedBeforeSaving() {
         assertEquals("12",LegacyImport.validatedSession(JSONObject("""{"cookie":"auth_token=fixture; ct0=fixture","userId":"12"}""")).userId)

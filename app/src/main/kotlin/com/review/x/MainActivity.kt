@@ -112,7 +112,23 @@ val LocalActions=staticCompositionLocalOf<UiActions> { error("Reader UI is requi
     LaunchedEffect(state.accountId){gallery=null;composer=null;searchUi.query="";searchUi.focused=false;searchUi.users=emptyList();drawer.close()}
     val activeScreenKeys by rememberUpdatedState(state.screens.map{it.key}.toSet())
     val density=LocalDensity.current
-    BackHandler(drawer.isOpen || !root) { if(drawer.isOpen)scope.launch { drawer.close() } else model.back() }
+    val backProgress = remember { mutableStateMapOf<String, Float>() }
+    val routes = state.screens.mapIndexed { index, screen ->
+        ReaderRoute(if (index == 0) "root" else screen.key, state.copy(screens = state.screens.take(index + 1)))
+    }
+    val canPredictBack = Build.VERSION.SDK_INT >= 34 && android.animation.ValueAnimator.areAnimatorsEnabled() &&
+        !root && !drawer.isOpen && gallery == null && composer == null && state.settings.optBoolean("predictive_back")
+    val canPreviewBack by rememberUpdatedState(canPredictBack)
+    BackHandler(drawer.isOpen || !root && gallery == null && composer == null && !canPredictBack) {
+        if(drawer.isOpen)scope.launch { drawer.close() } else model.back()
+    }
+    androidx.activity.compose.PredictiveBackHandler(canPredictBack) { progress ->
+        val route = state.screen.key
+        try {
+            progress.collect { if (canPreviewBack && state.screen.key == route) backProgress[route] = it.progress }
+            if (canPreviewBack && state.screen.key == route) model.back()
+        } finally { backProgress.remove(route) }
+    }
     CompositionLocalProvider(LocalActions provides actions,LocalGalleryFlight provides gallery?.flight) {
         ModalNavigationDrawer(drawerState=drawer,gesturesEnabled=root && state.rootTab==0,drawerContent={
             OriginalDrawer(state,onProfile={scope.launch {drawer.close()};model.openOwnProfile()},onRoute={kind,title->
@@ -124,22 +140,7 @@ val LocalActions=staticCompositionLocalOf<UiActions> { error("Reader UI is requi
                 val liveState = state
                 val direction = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1 else 1
                 val easing = CubicBezierEasing(.215f, .61f, .355f, 1f)
-                AnimatedContent(
-                    targetState = state,
-                    contentKey = { if (it.screens.size == 1) "root" else it.screen.key },
-                    modifier = Modifier.fillMaxSize(),
-                    transitionSpec = {
-                        if (targetState.screens.size < initialState.screens.size) {
-                            (EnterTransition.None togetherWith slideOutHorizontally(
-                                tween(220, easing = CubicBezierEasing(.55f, .055f, .675f, .19f))
-                            ) { it * direction }).apply { targetContentZIndex = -1f }.using(null)
-                        } else {
-                            (slideInHorizontally(tween(320, easing = easing)) { it * direction }
-                                togetherWith ExitTransition.None).using(null)
-                        }
-                    },
-                    label = "routes",
-                ) { entry ->
+                @Composable fun Route(entry: ReaderState) {
                     val currentRoute = if (liveState.screens.size == 1) "root" else liveState.screen.key
                     val entryRoute = if (entry.screens.size == 1) "root" else entry.screen.key
                     val state = if (currentRoute == entryRoute) liveState else entry
@@ -234,6 +235,7 @@ val LocalActions=staticCompositionLocalOf<UiActions> { error("Reader UI is requi
                         }
                     }
                 }
+                ReaderPageStack(routes, backProgress) { Route(it) }
                 SnackbarHost(snackbar,Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom=if(root)68.dp else 12.dp))
             }
         }
