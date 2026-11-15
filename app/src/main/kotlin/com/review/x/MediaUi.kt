@@ -145,6 +145,11 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
     fun close() {
         if (closing) return
         closing = true
+        if (request.media[pager.currentPage].video) {
+            request.flight.active = false
+            onClose()
+            return
+        }
         if (!returning && flight.value >= .999f) {
             returning = true
             closingIndex = pager.currentPage
@@ -375,6 +380,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     val chromeVisible by rememberUpdatedState(showChrome);val chromeAction by rememberUpdatedState(onChrome)
     val haptics by rememberUpdatedState(LocalHapticFeedback.current)
     val context=LocalContext.current;val activity=context as? Activity;val window=(LocalView.current.parent as? DialogWindowProvider)?.window ?: activity?.window
+    val doubleTapSlop=remember(context){android.view.ViewConfiguration.get(context).scaledDoubleTapSlop.toFloat()}
     val reading=LocalReading.current;val actions=LocalActions.current;val model=actions.model;val lifecycle=LocalLifecycleOwner.current.lifecycle
     val accountState by model.state.collectAsStateWithLifecycle()
     var selected by remember(media.url){mutableStateOf(preferredVideo(media,reading.str("videoQuality","balanced")))}
@@ -390,7 +396,13 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     val player=remember(media.url){ExoPlayer.Builder(context).setMediaSourceFactory(DefaultMediaSourceFactory(OkHttpDataSource.Factory(AppNetwork.http).setUserAgent(ReaderRepository.USER_AGENT).setDefaultRequestProperties(mapOf("Referer" to "https://x.com/")))).build().apply{setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),true);setHandleAudioBecomingNoisy(true)}}
     DisposableEffect(player,lifecycle){val listener=object:Player.Listener{override fun onIsPlayingChanged(value:Boolean){playing=value};override fun onPlaybackStateChanged(state:Int){buffering=state==Player.STATE_BUFFERING};override fun onPlayerError(error:PlaybackException){failure=true;buffering=false;DiagnosticLog.record("video.failure",error=error)}};player.addListener(listener)
         val observer=LifecycleEventObserver{_,event->foreground=event==Lifecycle.Event.ON_RESUME || lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED);if(!foreground){autoPlay=false;player.pause();window?.attributes=window?.attributes?.apply{screenBrightness=initialBrightness}}};lifecycle.addObserver(observer)
-        onDispose{onFullscreen(false);lifecycle.removeObserver(observer);player.removeListener(listener);player.release();window?.attributes=window?.attributes?.apply{screenBrightness=initialBrightness};window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);activity?.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED}
+        onDispose{onFullscreen(false);lifecycle.removeObserver(observer);player.removeListener(listener);player.pause();window?.attributes=window?.attributes?.apply{screenBrightness=initialBrightness};window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);activity?.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            // Let the dialog detach and a frame render before the synchronous codec release.
+            val handler=android.os.Handler(android.os.Looper.getMainLooper());var released=false
+            val release=Runnable {if(!released){released=true;player.release()}}
+            handler.postDelayed(release,100)
+            android.view.Choreographer.getInstance().postFrameCallback {android.view.Choreographer.getInstance().postFrameCallback {handler.removeCallbacks(release);release.run()}}
+        }
     }
     LaunchedEffect(selected){val seek=player.currentPosition;val shouldPlay=player.isPlaying||autoPlay;selected?.let{player.setMediaItem(MediaItem.fromUri(it.url));player.prepare();player.seekTo(seek);failure=false;player.playWhenReady=shouldPlay&&active&&foreground}}
     LaunchedEffect(active,foreground){if(!active||!foreground){player.pause();window?.attributes=window?.attributes?.apply{screenBrightness=initialBrightness}}else if(autoPlay)player.play()}
@@ -402,13 +414,29 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     LaunchedEffect(landscape) { onFullscreen(landscape) }
     BackHandler(landscape){landscape=false;activity?.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;onChrome(true)}
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        if(duration==0L&&active&&media.url.isNotBlank())NetworkImage(media.url,media.description,Modifier.fillMaxSize().padding(top=videoTopInset),ContentScale.Fit)
-        AndroidView(factory={PlayerView(it).apply{this.player=player;useController=false;setShutterBackgroundColor(android.graphics.Color.TRANSPARENT);setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER);keepScreenOn=false}},modifier=Modifier.fillMaxSize().padding(top=videoTopInset).testTag("video-surface"))
+        if(duration==0L&&active&&media.url.isNotBlank())NetworkImage(media.url,media.description,Modifier.fillMaxSize().padding(vertical=videoTopInset),ContentScale.Fit)
+        AndroidView(factory={PlayerView(it).apply{this.player=player;useController=false;setShutterBackgroundColor(android.graphics.Color.TRANSPARENT);setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER);keepScreenOn=false}},modifier=Modifier.fillMaxSize().padding(vertical=videoTopInset).testTag("video-surface"))
         var dragAxis by remember{mutableStateOf("")};var origin by remember{mutableStateOf(Offset.Zero)};var drag by remember{mutableStateOf(Offset.Zero)};var startPosition by remember{mutableLongStateOf(0)};var startBrightness by remember{mutableFloatStateOf(.5f)};var startGain by remember{mutableFloatStateOf(1f)}
-        Box(Modifier.fillMaxSize().padding(top=videoTopInset).pointerInput(active,foreground){detectTapGestures(
-            onTap={chromeAction(!chromeVisible)},
-            onDoubleTap={point->if(active&&foreground&&player.duration>0){if(point.x in size.width*.35f..size.width*.65f){if(player.isPlaying){player.pause();autoPlay=false;chromeAction(true)}else{player.play();autoPlay=true}}else{val delta=if(point.x<size.width*.35f)-10000 else 10000;player.seekTo((player.currentPosition+delta).coerceIn(0,player.duration));hud=if(delta>0)"+10s"else "-10s"}}},
-            onPress={tryAwaitRelease();held=false},onLongPress={point->if(active&&foreground&&player.isPlaying&&(point.x<size.width*.45f||point.x>size.width*.55f)){held=true;haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)}})
+        Box(Modifier.fillMaxSize().padding(top=videoTopInset).testTag("video-gesture").pointerInput(active,foreground){
+            var lastTapTime:Long?=null;var lastTapPosition=Offset.Zero;var chromeBeforeTap=false
+            awaitEachGesture {
+                val down=awaitFirstDown();haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                var finished=false
+                val up=withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis){waitForUpOrCancellation().also{finished=true}}
+                if(!finished){
+                    lastTapTime=null
+                    if(active&&foreground&&player.isPlaying&&(down.position.x<size.width*.45f||down.position.x>size.width*.55f)){held=true;haptics.performHapticFeedback(HapticFeedbackType.LongPress)}
+                    waitForUpOrCancellation();held=false
+                }else if(up==null){lastTapTime=null;held=false}
+                else {
+                    val doubleTap=lastTapTime?.let{up.uptimeMillis-it in viewConfiguration.doubleTapMinTimeMillis..viewConfiguration.doubleTapTimeoutMillis && (up.position-lastTapPosition).getDistance()<=doubleTapSlop}==true
+                    if(doubleTap){
+                        lastTapTime=null;chromeAction(chromeBeforeTap)
+                        val point=up.position
+                        if(active&&foreground&&player.duration>0){if(point.x in size.width*.35f..size.width*.65f){if(player.isPlaying){player.pause();autoPlay=false;chromeAction(true)}else{player.play();autoPlay=true}}else{val delta=if(point.x<size.width*.35f)-10000 else 10000;player.seekTo((player.currentPosition+delta).coerceIn(0,player.duration));hud=if(delta>0)"+10s"else "-10s"}}
+                    }else{lastTapTime=up.uptimeMillis;lastTapPosition=up.position;chromeBeforeTap=chromeVisible;chromeAction(!chromeVisible)}
+                }
+            }
         }.pointerInput(active,foreground){detectVerticalDragGestures(
             onDragStart={point->origin=point;drag=Offset.Zero;dragAxis="";gestureActive=true;startBrightness=brightness;startGain=gain},
             onDragEnd={gestureActive=false;dragAxis="";held=false},onDragCancel={gestureActive=false;dragAxis="";held=false;hud=null}) {change,delta->if(active&&foreground){

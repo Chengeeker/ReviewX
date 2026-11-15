@@ -315,7 +315,7 @@ fun formatThreshold(mb:Int)=if(mb==0)"关闭自动清理"else if(mb>=1024)(mb/10
     val items=state.accountId?.let(model.settings::history).orEmpty()
     if(items.isEmpty())Box(Modifier.fillMaxSize(),contentAlignment=Alignment.Center){Text("暂无本机浏览历史")}
     else LazyColumn(contentPadding=PaddingValues(top=LocalHeaderInset.current)) {items(items,key={it.str("id")}){item->
-        Column(Modifier.fillMaxWidth().heightIn(min=78.dp).clickable {if(item.str("id").matches(Regex("\\d{1,30}")))model.handleLink("https://x.com/i/status/${item.str("id")}")else model.message("这条历史记录没有有效的帖子编号")}.padding(horizontal=16.dp,vertical=11.dp),verticalArrangement=Arrangement.Center) {
+        Column(Modifier.fillMaxWidth().heightIn(min=78.dp).hapticClickable {if(item.str("id").matches(Regex("\\d{1,30}")))model.handleLink("https://x.com/i/status/${item.str("id")}")else model.message("这条历史记录没有有效的帖子编号")}.padding(horizontal=16.dp,vertical=11.dp),verticalArrangement=Arrangement.Center) {
             Text(item.str("title"),maxLines=2,overflow=TextOverflow.Ellipsis,style=flutterTileTitle())
             Spacer(Modifier.height(2.dp));Text((item.str("author")+" · "+item.str("time")).substringBefore('.'),style=flutterTileSubtitle())
         }

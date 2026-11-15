@@ -921,6 +921,7 @@ class UiParityTest {
         val speed=compose.onNodeWithText("1.0X").fetchSemanticsNode().boundsInRoot
         val fullscreen=compose.onNodeWithContentDescription("横屏").fetchSemanticsNode().boundsInRoot
         Assert.assertEquals(header.bottom,surface.top,1f)
+        Assert.assertEquals(compose.onRoot().fetchSemanticsNode().boundsInRoot.center.y,surface.center.y,1f)
         Assert.assertEquals(transport.center.y,speed.center.y,1f)
         Assert.assertEquals(transport.center.y,fullscreen.center.y,1f)
         compose.runOnUiThread {showChrome=false};compose.waitForIdle()
@@ -950,6 +951,59 @@ class UiParityTest {
         compose.runOnUiThread {chrome=true;androidx.core.view.ViewCompat.dispatchApplyWindowInsets(view!!,insets(true))};compose.waitForIdle()
         val restored=compose.onNodeWithTag("video-surface").fetchSemanticsNode().boundsInRoot
         Assert.assertEquals(initial.top,restored.top,1f);Assert.assertEquals(initial.bottom,restored.bottom,1f)
+    }
+    @Test fun videoGalleryReturnsWithoutWaitingForImageFlightAndCanReopen() {
+        activity.setup();val model=ReaderViewModel(activity.get().application);val media=Media("","",true);val request=GalleryRequest(listOf(media),0,"作者")
+        var showing by mutableStateOf(true);var closed=0
+        compose.setContent {ReviewTheme(JSONObject()){CompositionLocalProvider(LocalActions provides UiActions(model,{},{},{})){if(showing)MediaGallery(request,model){closed++;showing=false}}}}
+        compose.onNodeWithContentDescription("返回").assertIsDisplayed()
+        compose.mainClock.autoAdvance=false
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.runOnIdle {Assert.assertEquals(1,closed);Assert.assertFalse(request.flight.active)}
+        compose.mainClock.autoAdvance=true;compose.waitForIdle()
+        compose.runOnIdle {showing=true};compose.waitForIdle()
+        compose.onNodeWithContentDescription("返回").assertIsDisplayed()
+        compose.mainClock.autoAdvance=false
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.runOnIdle {Assert.assertEquals(2,closed);Assert.assertFalse(request.flight.active)}
+        compose.mainClock.autoAdvance=true
+    }
+    @Test fun videoSingleTapHasOneHapticAndHonorsSetting() {
+        activity.setup();val model=ReaderViewModel(activity.get().application);val media=Media("","",true);val request=GalleryRequest(listOf(media),0,"作者")
+        var enabled by mutableStateOf(true);var chrome by mutableStateOf(false);val events=mutableListOf<HapticFeedbackType>()
+        val feedback=object:HapticFeedback{override fun performHapticFeedback(hapticFeedbackType:HapticFeedbackType){events.add(hapticFeedbackType)}}
+        compose.setContent {CompositionLocalProvider(LocalHapticFeedback provides feedback){ReviewTheme(JSONObject().put("haptics",enabled)){CompositionLocalProvider(LocalActions provides UiActions(model,{},{},{})){VideoPlayer(media,request,false,null,{},active=false,showChrome=chrome,onChrome={chrome=it},onBack={},onControlsHeight={},onSave={},onPrevious=null,onNext=null)}}}}
+        val gesture=compose.onNodeWithTag("video-gesture")
+        gesture.performTouchInput {down(center)}
+        compose.runOnIdle {Assert.assertFalse(chrome);Assert.assertEquals(listOf(HapticFeedbackType.VirtualKey),events)}
+        gesture.performTouchInput {up()}
+        compose.runOnIdle {Assert.assertTrue(chrome);enabled=false;events.clear()}
+        gesture.performTouchInput {advanceEventTime(500);click(center)}
+        compose.runOnIdle {Assert.assertFalse(chrome);Assert.assertTrue(events.isEmpty())}
+    }
+    @Test fun videoDoubleTapAndCancelledDragDoNotToggleChrome() {
+        activity.setup();val model=ReaderViewModel(activity.get().application);val media=Media("","",true);val request=GalleryRequest(listOf(media),0,"作者")
+        var chrome by mutableStateOf(false);val events=mutableListOf<HapticFeedbackType>()
+        val feedback=object:HapticFeedback{override fun performHapticFeedback(hapticFeedbackType:HapticFeedbackType){events.add(hapticFeedbackType)}}
+        compose.setContent {CompositionLocalProvider(LocalHapticFeedback provides feedback){ReviewTheme(JSONObject().put("haptics",true)){CompositionLocalProvider(LocalActions provides UiActions(model,{},{},{})){VideoPlayer(media,request,false,null,{},active=false,showChrome=chrome,onChrome={chrome=it},onBack={},onControlsHeight={},onSave={},onPrevious=null,onNext=null)}}}}
+        val gesture=compose.onNodeWithTag("video-gesture")
+        gesture.performTouchInput {down(center);up()};compose.runOnIdle {Assert.assertTrue(chrome)}
+        gesture.performTouchInput {advanceEventTime(100);down(center);up()};compose.runOnIdle {Assert.assertFalse(chrome);Assert.assertEquals(2,events.size)}
+        gesture.performTouchInput {advanceEventTime(500);down(center);moveBy(Offset(0f,100f));up()}
+        compose.runOnIdle {Assert.assertFalse(chrome)}
+    }
+    @Test fun localHistoryActionsHonorHapticSetting() {
+        activity.setup();val model=ReaderViewModel(activity.get().application)
+        model.settings.set("history_1","[{\"id\":\"123\",\"title\":\"历史帖子\",\"author\":\"作者\"}]")
+        val state=ReaderState(authenticating=false,accountId="1",screens=listOf(ReaderScreen(Feed("Home",title="首页"),loaded=true),ReaderScreen(Feed("LocalHistory",title="本机浏览历史"),loaded=true)))
+        var enabled by mutableStateOf(true);val events=mutableListOf<HapticFeedbackType>()
+        val feedback=object:HapticFeedback{override fun performHapticFeedback(hapticFeedbackType:HapticFeedbackType){events.add(hapticFeedbackType)}}
+        compose.setContent {CompositionLocalProvider(LocalHapticFeedback provides feedback){ReviewTheme(JSONObject().put("haptics",enabled)){ReaderApp(model,state)}}}
+        compose.onNodeWithText("历史帖子").performClick();compose.runOnIdle {Assert.assertEquals(listOf(HapticFeedbackType.VirtualKey),events);events.clear()}
+        compose.onNodeWithContentDescription("清空本机历史").performClick();compose.runOnIdle {Assert.assertEquals(listOf(HapticFeedbackType.VirtualKey),events);events.clear()}
+        compose.onNodeWithText("取消").performClick();compose.runOnIdle {Assert.assertEquals(listOf(HapticFeedbackType.VirtualKey),events);events.clear();enabled=false}
+        compose.onNodeWithContentDescription("清空本机历史").performClick();compose.onNodeWithText("清空").performClick()
+        compose.runOnIdle {Assert.assertTrue(events.isEmpty());Assert.assertTrue(model.settings.history("1").isEmpty())}
     }
     @Test fun predictiveBackRevealsPreviousRouteAndCancellationReturnsCurrentPage() {
         activity.setup()
