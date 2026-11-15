@@ -370,7 +370,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     return variants.firstOrNull{videoHeight(it.url) in 1..cap} ?: if(quality=="data_saver")variants.lastOrNull()else variants.firstOrNull()
 }
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable fun VideoPlayer(media:Media,request:GalleryRequest,saving:Boolean,message:String?,onMessage:(String)->Unit,active:Boolean,showChrome:Boolean,onChrome:(Boolean)->Unit,onBack:()->Unit,onControlsHeight:(Int)->Unit,onSave:(Media)->Unit,onPrevious:(()->Unit)?,onNext:(()->Unit)?,onFullscreen:(Boolean)->Unit={}) {
     val chromeVisible by rememberUpdatedState(showChrome);val chromeAction by rememberUpdatedState(onChrome)
     val haptics by rememberUpdatedState(LocalHapticFeedback.current)
@@ -382,8 +382,8 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     var position by remember{mutableLongStateOf(0L)};var duration by remember{mutableLongStateOf(0L)};var playing by remember{mutableStateOf(false)};var buffering by remember{mutableStateOf(true)};var failure by remember{mutableStateOf(false)}
     var delete by remember {mutableStateOf(false)};var buffered by remember {mutableLongStateOf(0L)}
     var landscape by rememberSaveable{mutableStateOf(false)};var menu by remember{mutableStateOf<String?>(null)};var hud by remember{mutableStateOf<String?>(null)};var seekDraft by remember{mutableStateOf<Float?>(null)}
-    // Keep the video viewport fixed when chrome toggles so aspect ratio does not jump.
-    val videoTopInset=WindowInsets.statusBars.asPaddingValues().calculateTopPadding()+48.dp
+    // The visible status-bar inset becomes zero in immersive mode.
+    val videoTopInset=WindowInsets.statusBarsIgnoringVisibility.asPaddingValues().calculateTopPadding()+48.dp
     var gestureActive by remember {mutableStateOf(false)}
     var foreground by remember{mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))};var autoPlay by remember{mutableStateOf(true)};var held by remember{mutableStateOf(false)}
     val scope=rememberCoroutineScope();val initialBrightness=remember(window){window?.attributes?.screenBrightness?:-1f};var brightness by remember{mutableFloatStateOf(if(initialBrightness<0).5f else initialBrightness)}

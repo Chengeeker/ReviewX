@@ -930,6 +930,27 @@ class UiParityTest {
         val restoredSurface=compose.onNodeWithTag("video-surface").fetchSemanticsNode().boundsInRoot
         Assert.assertEquals(surface.top,restoredSurface.top,1f);Assert.assertEquals(surface.bottom,restoredSurface.bottom,1f)
     }
+    @OptIn(ExperimentalLayoutApi::class)
+    @Test fun videoViewportDoesNotMoveWhenStatusBarIsHidden() {
+        activity.setup();val model=ReaderViewModel(activity.get().application);val media=Media("","",true);val request=GalleryRequest(listOf(media),0,"作者")
+        var view:android.view.View?=null;var chrome by mutableStateOf(true);var visibleTop=0;var stableTop=0
+        compose.setContent {view=androidx.compose.ui.platform.LocalView.current;val density=androidx.compose.ui.platform.LocalDensity.current;visibleTop=WindowInsets.statusBars.getTop(density);stableTop=WindowInsets.statusBarsIgnoringVisibility.getTop(density);ReviewTheme(JSONObject().put("theme_mode",2)){CompositionLocalProvider(LocalActions provides UiActions(model,{},{},{})){VideoPlayer(media,request,false,null,{},active=false,showChrome=chrome,onChrome={},onBack={},onControlsHeight={},onSave={},onPrevious=null,onNext=null)}}}
+        fun insets(visible:Boolean):androidx.core.view.WindowInsetsCompat {
+            val type=androidx.core.view.WindowInsetsCompat.Type.statusBars()
+            val stable=androidx.core.graphics.Insets.of(0,48,0,0)
+            return androidx.core.view.WindowInsetsCompat.Builder().setInsetsIgnoringVisibility(type,stable).setInsets(type,if(visible)stable else androidx.core.graphics.Insets.NONE).setVisible(type,visible).build()
+        }
+        compose.runOnUiThread {androidx.core.view.ViewCompat.dispatchApplyWindowInsets(view!!,insets(true))};compose.waitForIdle()
+        compose.runOnIdle {Assert.assertEquals(48,visibleTop);Assert.assertEquals(48,stableTop)}
+        val initial=compose.onNodeWithTag("video-surface").fetchSemanticsNode().boundsInRoot
+        compose.runOnUiThread {chrome=false;androidx.core.view.ViewCompat.dispatchApplyWindowInsets(view!!,insets(false))};compose.waitForIdle()
+        compose.runOnIdle {Assert.assertEquals(0,visibleTop);Assert.assertEquals(48,stableTop)}
+        val hidden=compose.onNodeWithTag("video-surface").fetchSemanticsNode().boundsInRoot
+        Assert.assertEquals(initial.top,hidden.top,1f);Assert.assertEquals(initial.bottom,hidden.bottom,1f)
+        compose.runOnUiThread {chrome=true;androidx.core.view.ViewCompat.dispatchApplyWindowInsets(view!!,insets(true))};compose.waitForIdle()
+        val restored=compose.onNodeWithTag("video-surface").fetchSemanticsNode().boundsInRoot
+        Assert.assertEquals(initial.top,restored.top,1f);Assert.assertEquals(initial.bottom,restored.bottom,1f)
+    }
     @Test fun predictiveBackRevealsPreviousRouteAndCancellationReturnsCurrentPage() {
         activity.setup()
         val root=ReaderScreen(Feed("Settings",title="设置"),loaded=true)
