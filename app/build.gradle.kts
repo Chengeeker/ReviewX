@@ -10,8 +10,8 @@ android {
         applicationId = "com.review.x"
         minSdk = 24
         targetSdk = 36
-        versionCode = 148
-        versionName = "2.1.6"
+        versionCode = 149
+        versionName = "2.1.7"
         ndk { abiFilters.add("arm64-v8a") }
     }
     signingConfigs {
@@ -51,6 +51,7 @@ dependencies {
     implementation("com.github.QWEA0:liquidglass:v2.0.11")
     implementation(platform("androidx.compose:compose-bom:2026.02.00"))
     implementation("androidx.compose.material3:material3:1.4.0")
+    implementation("androidx.compose.material:material-icons-core:1.7.8")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.activity:activity-compose:1.13.0")

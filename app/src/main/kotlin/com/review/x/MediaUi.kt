@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -291,7 +294,13 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
 @Composable fun GalleryButton(icon:String,title:String,onClick:()->Unit) {
     val glass=LocalSettings.current.optBoolean("use_liquid_glass_effect")
     if (!glass) {
-        PlainGalleryControl(title, true, hapticClick(onClick)) { Glyph(icon, null, size=24, color=Color.White) }
+        PlainGalleryControl(title, true, hapticClick(onClick)) {
+            when (icon) {
+                "arrow_back_rounded" -> Icon(Icons.AutoMirrored.Outlined.ArrowBack, null, Modifier.size(22.dp), tint = Color.White)
+                "download_rounded" -> Icon(painterResource(R.drawable.review_download_rounded), null, Modifier.size(22.dp), tint = Color.White)
+                else -> Glyph(icon, null, size=22, color=Color.White)
+            }
+        }
         return
     }
     val interactions=remember {androidx.compose.foundation.interaction.MutableInteractionSource()};val pressed by interactions.collectIsPressedAsState()
