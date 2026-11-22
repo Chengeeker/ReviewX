@@ -276,7 +276,7 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
             }
             }
             val stripInset = if (picturesOnly) 0.dp else 12.dp
-            if(chrome && !closing && !videoFullscreen && flight.value==1f && request.media.size>1)HorizontalPager(thumbs,Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start=stripInset,end=stripInset,bottom=fixedStripBottom?:stripBottom).height(64.dp),pageSize=PageSize.Fixed((maxWidth-stripInset*2)*.16f),contentPadding=PaddingValues(horizontal=((maxWidth-stripInset*2)*.84f/2).coerceAtLeast(0.dp)),beyondViewportPageCount=2,flingBehavior=thumbnailFling) {index->Box(Modifier.fillMaxSize().padding(horizontal=3.dp,vertical=2.dp).border(2.dp,if(index==pager.currentPage)Color.White else Color.Transparent,RoundedCornerShape(8.dp)).padding(2.dp).clip(RoundedCornerShape(6.dp)).clickable {
+            if(chrome && !closing && !videoFullscreen && flight.value==1f && request.media.size>1)HorizontalPager(thumbs,Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start=stripInset,end=stripInset,bottom=fixedStripBottom?:stripBottom).height(64.dp),pageSize=PageSize.Fixed((maxWidth-stripInset*2)*.16f),contentPadding=PaddingValues(horizontal=((maxWidth-stripInset*2)*.84f/2).coerceAtLeast(0.dp)),beyondViewportPageCount=2,flingBehavior=thumbnailFling,overscrollEffect=null) {index->Box(Modifier.fillMaxSize().padding(horizontal=3.dp,vertical=2.dp).border(2.dp,if(index==pager.currentPage)Color.White else Color.Transparent,RoundedCornerShape(8.dp)).padding(2.dp).clip(RoundedCornerShape(6.dp)).clickable {
                 val previous = pager.currentPage
                 if (index != previous && !closing) {
                     tickPage(previous, index, fromStripDrag = false)
