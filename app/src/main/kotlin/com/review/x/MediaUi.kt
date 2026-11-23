@@ -242,10 +242,9 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
             val thumbs=rememberPagerState(initialPage=request.index,pageCount={request.media.size});val mainDrag by pager.interactionSource.collectIsDraggedAsState();val thumbDrag by thumbs.interactionSource.collectIsDraggedAsState();var driver by remember {mutableStateOf("main")};var settleJob by remember {mutableStateOf<Job?>(null)}
             val stripBottom=if(request.media[pager.currentPage].video&&videoControlsHeight>0)with(LocalDensity.current){videoControlsHeight.toDp()}+8.dp else 32.dp
             var fixedStripBottom by remember {mutableStateOf<Dp?>(null)}
-            val freeFling=ScrollableDefaults.flingBehavior()
-            val thumbnailFling=remember(freeFling){object:TargetedFlingBehavior {override suspend fun ScrollScope.performFling(initialVelocity:Float,onRemainingDistanceUpdated:(Float)->Unit):Float=with(freeFling){performFling(initialVelocity)}}}
+            val thumbnailFling=rememberGalleryThumbnailFling(thumbs)
             LaunchedEffect(mainDrag){if(mainDrag){driver="main";fixedStripBottom=null;settleJob?.cancel()}};LaunchedEffect(thumbDrag){if(thumbDrag){driver="thumb";fixedStripBottom=stripBottom;settleJob?.cancel()}}
-            LaunchedEffect(pager,thumbs){snapshotFlow{Triple(pager.currentPage,pager.currentPageOffsetFraction,pager.isScrollInProgress)}.collect{(page,offset,_)->if(!closing && driver=="main" && !thumbDrag)thumbs.scrollToPage(page,offset)}}
+            LaunchedEffect(pager,thumbs){snapshotFlow{Triple(pager.currentPage,pager.currentPageOffsetFraction,pager.isScrollInProgress)}.collect{(page,offset,_)->if(!closing && driver=="main" && !thumbDrag){val position=(page+offset).coerceIn(0f,(thumbs.pageCount-1).coerceAtLeast(0).toFloat());val nearest=position.roundToInt();thumbs.requestScrollToPage(nearest,position-nearest)}}}
             LaunchedEffect(thumbs,pager){snapshotFlow{Triple(thumbs.currentPage,thumbs.currentPageOffsetFraction,thumbs.isScrollInProgress)}.collect{(page,offset,moving)->if(!closing && !returning && driver=="thumb" && !mainDrag){
                 val previous = pager.currentPage
                 pager.scrollToPage(page,offset)
