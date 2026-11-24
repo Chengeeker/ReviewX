@@ -607,7 +607,7 @@ class UiParityTest {
         val dialog = compose.onNode(isDialog())
         repeat(3) { index ->
             dialog.performTouchInput { doubleClick(center) }
-            compose.runOnIdle { Assert.assertEquals(List(index + 1) { HapticFeedbackType.VirtualKey }, events) }
+            compose.runOnIdle { Assert.assertEquals(List(index + 1) { HapticFeedbackType.KeyboardTap }, events) }
         }
         compose.runOnIdle { enabled = false }
         dialog.performTouchInput { doubleClick(center) }
@@ -666,7 +666,7 @@ class UiParityTest {
                 Assert.assertTrue(events.isEmpty())
             }
             dialog.performTouchInput { up() }
-            compose.runOnIdle { Assert.assertEquals(listOf(HapticFeedbackType.VirtualKey), events) }
+            compose.runOnIdle { Assert.assertEquals(listOf(HapticFeedbackType.KeyboardTap), events) }
             compose.mainClock.advanceTimeBy(550)
             compose.onNodeWithContentDescription("返回").assertIsDisplayed()
         }
@@ -975,9 +975,9 @@ class UiParityTest {
         compose.setContent {CompositionLocalProvider(LocalHapticFeedback provides feedback){ReviewTheme(JSONObject().put("haptics",enabled)){CompositionLocalProvider(LocalActions provides UiActions(model,{},{},{})){VideoPlayer(media,request,false,null,{},active=false,showChrome=chrome,onChrome={chrome=it},onBack={},onControlsHeight={},onSave={},onPrevious=null,onNext=null)}}}}
         val gesture=compose.onNodeWithTag("video-gesture")
         gesture.performTouchInput {down(center)}
-        compose.runOnIdle {Assert.assertFalse(chrome);Assert.assertEquals(listOf(HapticFeedbackType.VirtualKey),events)}
+        compose.runOnIdle {Assert.assertFalse(chrome);Assert.assertTrue(events.isEmpty())}
         gesture.performTouchInput {up()}
-        compose.runOnIdle {Assert.assertTrue(chrome);enabled=false;events.clear()}
+        compose.runOnIdle {Assert.assertTrue(chrome);Assert.assertEquals(listOf(HapticFeedbackType.VirtualKey),events);enabled=false;events.clear()}
         gesture.performTouchInput {advanceEventTime(500);click(center)}
         compose.runOnIdle {Assert.assertFalse(chrome);Assert.assertTrue(events.isEmpty())}
     }

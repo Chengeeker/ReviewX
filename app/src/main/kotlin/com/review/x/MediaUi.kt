@@ -2,6 +2,8 @@ package com.review.x
 
 import android.Manifest
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.os.Build
@@ -70,6 +72,12 @@ internal class GalleryPageFeedback {
     }
 }
 
+internal fun Context.findActivity(): Activity? {
+    var current: Context = this
+    while (current is ContextWrapper && current !is Activity) current = current.baseContext
+    return current as? Activity
+}
+
 private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
     down: PointerInputChange,
     target: Rect,
@@ -105,10 +113,9 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
     val liquidGlass = LocalSettings.current.optBoolean("use_liquid_glass_effect")
     val hapticView = LocalView.current
     val pageFeedback = remember { GalleryPageFeedback() }
-    fun tickPage(previous: Int, next: Int, fromStripDrag: Boolean) {
+    fun tickPage(previous: Int, next: Int) {
         if (haptics !== SilentHapticFeedback && pageFeedback.shouldTick(previous, next, SystemClock.uptimeMillis())) {
-            if (fromStripDrag) hapticView.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
-            else haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
+            hapticView.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
         }
     }
     val backdrop = rememberBackdrop()
@@ -182,7 +189,7 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
         closeJob?.cancel()
         closing = false
         hideSource()
-        haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
+        haptics.performHapticFeedback(HapticFeedbackType.KeyboardTap)
         scope.launch {
             val duration = (330 * (1f - flight.value)).roundToInt().coerceAtLeast(1)
             flight.animateTo(1f, tween(duration, easing = LinearEasing))
@@ -199,7 +206,7 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
     Dialog(onDismissRequest=::close,properties=DialogProperties(usePlatformDefaultWidth=false,decorFitsSystemWindows=false)) {
         val window=(LocalView.current.parent as? DialogWindowProvider)?.window
         DisposableEffect(window) { window?.let {it.setWindowAnimations(0);it.setDimAmount(0f);it.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));it.applyReviewStatusBar(dark=true);WindowCompat.getInsetsController(it,it.decorView).isAppearanceLightNavigationBars=false};onDispose {window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)} }
-        LaunchedEffect(chrome){window?.let{val control=WindowCompat.getInsetsController(it,it.decorView);control.systemBarsBehavior=WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE;if(chrome)control.show(WindowInsetsCompat.Type.systemBars())else control.hide(WindowInsetsCompat.Type.systemBars())}}
+        LaunchedEffect(chrome,videoFullscreen){window?.let{val control=WindowCompat.getInsetsController(it,it.decorView);control.systemBarsBehavior=WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE;if(chrome && !videoFullscreen)control.show(WindowInsetsCompat.Type.systemBars())else control.hide(WindowInsetsCompat.Type.systemBars())}}
         BackHandler(onBack=::close)
         CompositionLocalProvider(LocalBackdrop provides backdrop, LocalHapticFeedback provides haptics) {
         BoxWithConstraints(Modifier.fillMaxSize().pointerInput(request) {
@@ -249,7 +256,7 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
                 val previous = pager.currentPage
                 pager.scrollToPage(page,offset)
                 if (driver == "thumb" && !closing) {
-                    tickPage(previous, pager.currentPage, fromStripDrag = true)
+                    tickPage(previous, pager.currentPage)
                 }
                 if(!moving){driver="settling";settleJob=scope.launch {try {coroutineScope {launch{pager.animateScrollToPage(page,animationSpec=tween(120,easing=CubicBezierEasing(.215f,.61f,.355f,1f)))};launch{thumbs.animateScrollToPage(page,animationSpec=tween(120,easing=CubicBezierEasing(.215f,.61f,.355f,1f)))}}}finally{if(driver=="settling"){driver="main";fixedStripBottom=null}}}}}}}
             HorizontalPager(pager,Modifier.fillMaxSize().graphicsLayer {alpha=if(drawFlight)0f else flight.value}.recordBackdrop(backdrop),userScrollEnabled=!zoomed&&!closing,beyondViewportPageCount=0) {index->val item=request.media[index]
@@ -278,7 +285,7 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
             if(chrome && !closing && !videoFullscreen && flight.value==1f && request.media.size>1)HorizontalPager(thumbs,Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(start=stripInset,end=stripInset,bottom=fixedStripBottom?:stripBottom).height(64.dp),pageSize=PageSize.Fixed((maxWidth-stripInset*2)*.16f),contentPadding=PaddingValues(horizontal=((maxWidth-stripInset*2)*.84f/2).coerceAtLeast(0.dp)),beyondViewportPageCount=2,flingBehavior=thumbnailFling,overscrollEffect=null) {index->Box(Modifier.fillMaxSize().padding(horizontal=3.dp,vertical=2.dp).border(2.dp,if(index==pager.currentPage)Color.White else Color.Transparent,RoundedCornerShape(8.dp)).padding(2.dp).clip(RoundedCornerShape(6.dp)).clickable {
                 val previous = pager.currentPage
                 if (index != previous && !closing) {
-                    tickPage(previous, index, fromStripDrag = false)
+                    tickPage(previous, index)
                     driver = "main"
                     fixedStripBottom = null
                     settleJob?.cancel()
@@ -293,7 +300,7 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
 @Composable fun GalleryButton(icon:String,title:String,onClick:()->Unit) {
     val glass=LocalSettings.current.optBoolean("use_liquid_glass_effect")
     if (!glass) {
-        PlainGalleryControl(title, true, hapticClick(onClick)) {
+        PlainGalleryControl(title, true, hapticClick(onClick, HapticFeedbackType.KeyboardTap)) {
             when (icon) {
                 "arrow_back_rounded" -> Icon(Icons.AutoMirrored.Outlined.ArrowBack, null, Modifier.size(22.dp), tint = Color.White)
                 "download_rounded" -> Icon(painterResource(R.drawable.review_download_rounded), null, Modifier.size(22.dp), tint = Color.White)
@@ -313,7 +320,7 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
     },contentAlignment=Alignment.Center) {
         if(glass)GlassSurface(GlassStyle(Color(0x66000000),thickness=32f,refractiveIndex=1.24f,chromatic=.025f,radius=100f),Modifier.size(48.dp))
 
-        IconButton(onClick=hapticClick(onClick),interactionSource=interactions,modifier=Modifier.fillMaxSize()){Glyph(icon,title,size=22,color=Color.White)}
+        IconButton(onClick=hapticClick(onClick, HapticFeedbackType.KeyboardTap),interactionSource=interactions,modifier=Modifier.fillMaxSize()){Glyph(icon,title,size=22,color=Color.White)}
     }
 }
 @Composable private fun ZoomImage(item:Media,active:Boolean,onZoom:(Boolean)->Unit,onTap:(Offset,Float)->Unit,pageIndex:Int,pagePlanes:MutableMap<Int,()->GalleryPlane?>,preview:ImageBitmap?) {
@@ -369,7 +376,7 @@ private suspend fun AwaitPointerEventScope.awaitGalleryRetap(
                 }}
             }
         }
-    }.pointerInput(item.url){detectTapGestures(onTap={if (!tapMoved) tap(it,size.width.toFloat())},onDoubleTap={point->if (!tapMoved) {haptics.performHapticFeedback(HapticFeedbackType.VirtualKey);zoomJob?.cancel();val start=scale;val target=if(start<=1.05f){if(intrinsic.width>0&&intrinsic.height.toFloat()/intrinsic.width>2f)3.5f else 2.5f}else if(start<=3.6f)6f else 1f;val initial=offset;val end=if(target==1f)Offset.Zero else clamp((Offset(size.width/2f,size.height/2f)-point)*(target-1),target);zoomJob=scope.launch{animate(0f,1f,animationSpec=tween(260,easing=CubicBezierEasing(.215f,.61f,.355f,1f))){fraction,_->scale=start+(target-start)*fraction;offset=initial+(end-initial)*fraction}}}})}) {
+    }.pointerInput(item.url){detectTapGestures(onTap={if (!tapMoved) tap(it,size.width.toFloat())},onDoubleTap={point->if (!tapMoved) {haptics.performHapticFeedback(HapticFeedbackType.KeyboardTap);zoomJob?.cancel();val start=scale;val target=if(start<=1.05f){if(intrinsic.width>0&&intrinsic.height.toFloat()/intrinsic.width>2f)3.5f else 2.5f}else if(start<=3.6f)6f else 1f;val initial=offset;val end=if(target==1f)Offset.Zero else clamp((Offset(size.width/2f,size.height/2f)-point)*(target-1),target);zoomJob=scope.launch{animate(0f,1f,animationSpec=tween(260,easing=CubicBezierEasing(.215f,.61f,.355f,1f))){fraction,_->scale=start+(target-start)*fraction;offset=initial+(end-initial)*fraction}}}})}) {
         val imageModifier = Modifier.fillMaxSize().graphicsLayer { scaleX=scale;scaleY=scale;translationX=offset.x;translationY=offset.y }
         if (preview != null) Image(preview,item.description,imageModifier,contentScale=ContentScale.Fit)
         else NetworkImage(item.url,item.description,imageModifier,ContentScale.Fit,onImageReady={bitmap->if(flightImage?.second!=true)flightImage=bitmap to false},showProgress=true)
@@ -387,7 +394,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
 @Composable fun VideoPlayer(media:Media,request:GalleryRequest,saving:Boolean,message:String?,onMessage:(String)->Unit,active:Boolean,showChrome:Boolean,onChrome:(Boolean)->Unit,onBack:()->Unit,onControlsHeight:(Int)->Unit,onSave:(Media)->Unit,onPrevious:(()->Unit)?,onNext:(()->Unit)?,onFullscreen:(Boolean)->Unit={}) {
     val chromeVisible by rememberUpdatedState(showChrome);val chromeAction by rememberUpdatedState(onChrome)
     val haptics by rememberUpdatedState(LocalHapticFeedback.current)
-    val context=LocalContext.current;val activity=context as? Activity;val window=(LocalView.current.parent as? DialogWindowProvider)?.window ?: activity?.window
+    val context=LocalContext.current;val activity=remember(context){context.findActivity()};val window=(LocalView.current.parent as? DialogWindowProvider)?.window ?: activity?.window
     val doubleTapSlop=remember(context){android.view.ViewConfiguration.get(context).scaledDoubleTapSlop.toFloat()}
     val reading=LocalReading.current;val actions=LocalActions.current;val model=actions.model;val lifecycle=LocalLifecycleOwner.current.lifecycle
     val accountState by model.state.collectAsStateWithLifecycle()
@@ -397,7 +404,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     var delete by remember {mutableStateOf(false)};var buffered by remember {mutableLongStateOf(0L)}
     var landscape by rememberSaveable{mutableStateOf(false)};var menu by remember{mutableStateOf<String?>(null)};var hud by remember{mutableStateOf<String?>(null)};var seekDraft by remember{mutableStateOf<Float?>(null)}
     // The visible status-bar inset becomes zero in immersive mode.
-    val videoTopInset=WindowInsets.statusBarsIgnoringVisibility.asPaddingValues().calculateTopPadding()+48.dp
+    val videoTopInset=if(landscape) 0.dp else WindowInsets.statusBarsIgnoringVisibility.asPaddingValues().calculateTopPadding()+48.dp
     var gestureActive by remember {mutableStateOf(false)}
     var foreground by remember{mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))};var autoPlay by remember{mutableStateOf(true)};var held by remember{mutableStateOf(false)}
     val scope=rememberCoroutineScope();val initialBrightness=remember(window){window?.attributes?.screenBrightness?:-1f};var brightness by remember{mutableFloatStateOf(if(initialBrightness<0).5f else initialBrightness)}
@@ -428,7 +435,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
         Box(Modifier.fillMaxSize().padding(top=videoTopInset).testTag("video-gesture").pointerInput(active,foreground){
             var lastTapTime:Long?=null;var lastTapPosition=Offset.Zero;var chromeBeforeTap=false
             awaitEachGesture {
-                val down=awaitFirstDown();haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
+                val down=awaitFirstDown()
                 var finished=false
                 val up=withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis){waitForUpOrCancellation().also{finished=true}}
                 if(!finished){
@@ -437,6 +444,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
                     waitForUpOrCancellation();held=false
                 }else if(up==null){lastTapTime=null;held=false}
                 else {
+                    haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
                     val doubleTap=lastTapTime?.let{up.uptimeMillis-it in viewConfiguration.doubleTapMinTimeMillis..viewConfiguration.doubleTapTimeoutMillis && (up.position-lastTapPosition).getDistance()<=doubleTapSlop}==true
                     if(doubleTap){
                         lastTapTime=null;chromeAction(chromeBeforeTap)
@@ -470,7 +478,7 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
         message?.let {Text(it,Modifier.align(Alignment.TopCenter).fillMaxWidth().statusBarsPadding().padding(top=64.dp,start=16.dp,end=16.dp).background(Color.Black.copy(alpha=.87f),RoundedCornerShape(16.dp)).padding(12.dp),textAlign=androidx.compose.ui.text.style.TextAlign.Center,maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,color=Color.White)}
         if(held)Box(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top=56.dp)){FlutterLabelChip("2.0X 倍速快进中")}
         if(showChrome){
-            Row(Modifier.align(Alignment.TopCenter).fillMaxWidth().testTag("video-header").background(Color.Black).statusBarsPadding(),verticalAlignment=Alignment.CenterVertically) {
+            Row(Modifier.align(Alignment.TopCenter).fillMaxWidth().testTag("video-header").background(if(landscape) Brush.verticalGradient(listOf(Color.Black.copy(alpha=.87f),Color.Transparent)) else Brush.verticalGradient(listOf(Color.Black,Color.Black))).then(if(landscape) Modifier.windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)).padding(horizontal=24.dp) else Modifier.statusBarsPadding()),verticalAlignment=Alignment.CenterVertically) {
                 VideoButton("arrow_back","返回",{if(landscape){landscape=false;activity?.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_PORTRAIT}else onBack()})
                 Text(request.post?.author?.name?:request.author,Modifier.weight(1f),maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,color=Color.White)
                 Text("${request.media.indexOf(media)+1}/${request.media.size}",color=Color.White.copy(alpha=.7f))
@@ -479,13 +487,13 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
                 VideoButton("share","分享视频",{player.pause();runCatching {NativeServices.share(context,request.post?.url?:selected?.url.orEmpty(),"分享视频")}.onFailure {NativeServices.copy(context,request.post?.url?:selected?.url.orEmpty());onMessage("链接已复制")}})
             }
             val screenHeight=LocalConfiguration.current.screenHeightDp.dp
-            Column(Modifier.align(Alignment.BottomCenter).onSizeChanged {onControlsHeight(it.height)}.fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent,Color.Black.copy(alpha=.87f),Color.Black))).navigationBarsPadding().padding(start=12.dp,end=12.dp,top=12.dp,bottom=8.dp).heightIn(max=screenHeight*.55f).verticalScroll(rememberScrollState())) {
+            Column(Modifier.align(Alignment.BottomCenter).onSizeChanged {onControlsHeight(it.height)}.fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent,Color.Black.copy(alpha=.87f),Color.Black))).then(if(landscape) Modifier.windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)).padding(start=28.dp,end=28.dp,top=12.dp,bottom=12.dp) else Modifier.navigationBarsPadding().padding(start=12.dp,end=12.dp,top=12.dp,bottom=8.dp)).heightIn(max=screenHeight*.55f).verticalScroll(rememberScrollState())) {
                 request.post?.let {raw->val post=model.effective(raw)
-                    Row(Modifier.fillMaxWidth()) {
-                        VideoAction("评论","chat_bubble_outline",compact(post.replies),false,Color.White){player.pause();menu="comments"}
-                        VideoAction(if(post.reposted)"取消转发"else "转发","repeat",compact(post.reposts),model.blocked(post.id),if(post.reposted)Color(0xFF69F0AE)else Color.White){model.mutate(post,"repost")}
-                        VideoAction(if(post.liked)"取消喜欢"else "喜欢",if(post.liked)"favorite"else "favorite_border",compact(post.likes),model.blocked(post.id),if(post.liked)Color(0xFFFF4081)else Color.White){model.mutate(post,"like")}
-                        VideoAction(if(post.bookmarked)"移除书签"else "加入书签",if(post.bookmarked)"bookmark"else "bookmark_outline",null,model.blocked(post.id),if(post.bookmarked)Color(0xFF40C4FF)else Color.White){model.mutate(post,"bookmark")}
+                    Row(if(landscape) Modifier.wrapContentWidth().align(Alignment.End) else Modifier.fillMaxWidth()) {
+                        VideoAction("评论","chat_bubble_outline",compact(post.replies),false,Color.White,landscape){player.pause();menu="comments"}
+                        VideoAction(if(post.reposted)"取消转发"else "转发","repeat",compact(post.reposts),model.blocked(post.id),if(post.reposted)Color(0xFF69F0AE)else Color.White,landscape){model.mutate(post,"repost")}
+                        VideoAction(if(post.liked)"取消喜欢"else "喜欢",if(post.liked)"favorite"else "favorite_border",compact(post.likes),model.blocked(post.id),if(post.liked)Color(0xFFFF4081)else Color.White,landscape){model.mutate(post,"like")}
+                        VideoAction(if(post.bookmarked)"移除书签"else "加入书签",if(post.bookmarked)"bookmark"else "bookmark_outline",null,model.blocked(post.id),if(post.bookmarked)Color(0xFF40C4FF)else Color.White,landscape){model.mutate(post,"bookmark")}
                     }
                     if(accountState.accountId==post.author.id)FlutterTextButton(onClick={delete=true},enabled=!model.blocked(post.id),modifier=Modifier.align(Alignment.CenterHorizontally)){Glyph("delete_outline",color=Color(0xFFFF5252));Spacer(Modifier.width(8.dp));Text("删除帖子",color=Color(0xFFFF5252))}
                     if(post.id in accountState.uncertain)Text("操作结果待核对，请在帖子详情刷新",color=Color(0xFFFFD740),fontSize=12.sp)
@@ -498,10 +506,11 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
                     val compact=maxWidth<336.dp
                     val labelWidth=if(compact)44.dp else 56.dp
                     val timeWidth=if(compact)(maxWidth-144.dp-labelWidth*2).coerceAtLeast(40.dp)else 80.dp
-                    Row(Modifier.fillMaxWidth().testTag("video-transport-row"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween) {
+                    Row(Modifier.fillMaxWidth().testTag("video-transport-row"),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=if(landscape) Arrangement.Start else Arrangement.SpaceBetween) {
                         VideoButton(if(playing)"pause"else "play_arrow",if(playing)"暂停"else "播放",{if(player.isPlaying){player.pause();autoPlay=false}else{if(player.playbackState==Player.STATE_ENDED)player.seekTo(0);player.play();autoPlay=true}},enabled=duration>0)
                         VideoButton(if(muted)"volume_off_rounded"else "volume_up_rounded",if(muted)"取消静音"else "静音",{muted=!muted;if(!muted&&gain==0f)gain=1f},enabled=duration>0)
                         Box(Modifier.width(timeWidth).height(48.dp),contentAlignment=Alignment.Center){Text(if(duration>0)"${videoTime(position)} / ${videoTime(duration)}"else "--:-- / --:--",fontSize=if(compact)10.sp else 12.sp,maxLines=1,softWrap=false,color=Color.White.copy(alpha=.7f))}
+                        if(landscape) Spacer(Modifier.weight(1f))
                         FlutterTextButton(onClick={menu="speed"},modifier=Modifier.width(labelWidth).height(48.dp),contentPadding=PaddingValues(horizontal=0.dp)){Text("${speed}X",maxLines=1,softWrap=false,color=Color.White)}
                         FlutterTextButton(onClick={menu="quality"},enabled=media.variants.size>1,modifier=Modifier.width(labelWidth).height(48.dp),contentPadding=PaddingValues(horizontal=0.dp)){Text(selected?.let{val h=videoHeight(it.url);if(h>0)"${h}p"else "高清"}?:"高清",maxLines=1,softWrap=false,color=Color.White.copy(alpha=.7f))}
                         VideoButton(if(landscape)"fullscreen_exit"else "fullscreen",if(landscape)"竖屏"else "横屏",{landscape=!landscape;activity?.requestedOrientation=if(landscape)ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;onChrome(true)})
@@ -522,8 +531,8 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
 fun videoTime(ms:Long):String {val seconds=(ms/1000).coerceAtLeast(0);return if(seconds>=3600)"%d:%02d:%02d".format(seconds/3600,seconds/60%60,seconds%60)else "%02d:%02d".format(seconds/60,seconds%60)}
 
 @Composable private fun VideoButton(icon:String,label:String,onClick:()->Unit,enabled:Boolean=true) {IconButton(onClick=hapticClick(onClick),enabled=enabled,modifier=Modifier.size(48.dp)){Glyph(icon,label,color=if(enabled)Color.White else Color.White.copy(alpha=.38f))}}
-@Composable private fun RowScope.VideoAction(label:String,icon:String,count:String?,disabled:Boolean,color:Color,onClick:()->Unit) {
-    FlutterTextButton(onClick=onClick,enabled=!disabled,modifier=Modifier.weight(1f).heightIn(min=48.dp),contentPadding=PaddingValues(horizontal=4.dp)) {Glyph(icon,label,size=23,color=if(disabled)Color.White.copy(alpha=.38f)else color);if(count!=null){Spacer(Modifier.width(5.dp));Text(count,color=if(disabled)Color.White.copy(alpha=.38f)else color,maxLines=1)}}
+@Composable private fun RowScope.VideoAction(label:String,icon:String,count:String?,disabled:Boolean,color:Color,landscape:Boolean,onClick:()->Unit) {
+    FlutterTextButton(onClick=onClick,enabled=!disabled,modifier=(if(landscape) Modifier.widthIn(min=64.dp).padding(horizontal=4.dp) else Modifier.weight(1f)).heightIn(min=48.dp),contentPadding=PaddingValues(horizontal=4.dp)) {Glyph(icon,label,size=23,color=if(disabled)Color.White.copy(alpha=.38f)else color);if(count!=null){Spacer(Modifier.width(5.dp));Text(count,color=if(disabled)Color.White.copy(alpha=.38f)else color,maxLines=1)}}
 }
 
 internal fun galleryButtonStretch(x:Float,y:Float):FloatArray {

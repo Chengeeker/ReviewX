@@ -12,10 +12,14 @@ internal object SilentHapticFeedback : HapticFeedback {
 }
 
 @Composable
-internal fun hapticClick(onClick: () -> Unit): () -> Unit {
+internal fun hapticClick(onClick: () -> Unit): () -> Unit =
+    hapticClick(onClick, HapticFeedbackType.VirtualKey)
+
+@Composable
+internal fun hapticClick(onClick: () -> Unit, type: HapticFeedbackType): () -> Unit {
     val feedback = LocalHapticFeedback.current
     return {
-        feedback.performHapticFeedback(HapticFeedbackType.VirtualKey)
+        feedback.performHapticFeedback(type)
         onClick()
     }
 }
