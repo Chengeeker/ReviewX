@@ -407,6 +407,8 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     val videoTopInset=if(landscape) 0.dp else WindowInsets.statusBarsIgnoringVisibility.asPaddingValues().calculateTopPadding()+48.dp
     var gestureActive by remember {mutableStateOf(false)}
     var foreground by remember{mutableStateOf(lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED))};var autoPlay by remember{mutableStateOf(true)};var held by remember{mutableStateOf(false)}
+    var boostLocked by remember { mutableStateOf(false) }; val latestBoostLocked by rememberUpdatedState(boostLocked)
+    var lockOnRelease by remember { mutableStateOf(false) }; var unlockOnRelease by remember { mutableStateOf(false) }; var speedCue by remember { mutableStateOf("") }; var lockCue by remember { mutableStateOf("") }
     val scope=rememberCoroutineScope();val initialBrightness=remember(window){window?.attributes?.screenBrightness?:-1f};var brightness by remember{mutableFloatStateOf(if(initialBrightness<0).5f else initialBrightness)}
     val player=remember(media.url){ExoPlayer.Builder(context).setMediaSourceFactory(DefaultMediaSourceFactory(OkHttpDataSource.Factory(AppNetwork.http).setUserAgent(ReaderRepository.USER_AGENT).setDefaultRequestProperties(mapOf("Referer" to "https://x.com/")))).build().apply{setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(),true);setHandleAudioBecomingNoisy(true)}}
     DisposableEffect(player,lifecycle){val listener=object:Player.Listener{override fun onIsPlayingChanged(value:Boolean){playing=value};override fun onPlaybackStateChanged(state:Int){buffering=state==Player.STATE_BUFFERING};override fun onPlayerError(error:PlaybackException){failure=true;buffering=false;DiagnosticLog.record("video.failure",error=error)}};player.addListener(listener)
@@ -421,7 +423,9 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
     }
     LaunchedEffect(selected){val seek=player.currentPosition;val shouldPlay=player.isPlaying||autoPlay;selected?.let{player.setMediaItem(MediaItem.fromUri(it.url));player.prepare();player.seekTo(seek);failure=false;player.playWhenReady=shouldPlay&&active&&foreground}}
     LaunchedEffect(active,foreground){if(!active||!foreground){player.pause();window?.attributes=window?.attributes?.apply{screenBrightness=initialBrightness}}else if(autoPlay)player.play()}
-    LaunchedEffect(speed,held){player.setPlaybackSpeed(if(held)2f else speed)};LaunchedEffect(muted,gain){player.volume=if(muted)0f else gain}
+    LaunchedEffect(speed,held,boostLocked){player.setPlaybackSpeed(if(held||boostLocked)2f else speed)};LaunchedEffect(muted,gain){player.volume=if(muted)0f else gain}
+    LaunchedEffect(speedCue){if(speedCue.isNotEmpty()){delay(900);speedCue=""}}
+    LaunchedEffect(lockCue){if(lockCue.isNotEmpty()){delay(900);lockCue=""}}
     LaunchedEffect(player){while(isActive){position=player.currentPosition.coerceAtLeast(0);duration=player.duration.coerceAtLeast(0);buffered=player.bufferedPosition.coerceAtLeast(0);delay(250)}}
     LaunchedEffect(playing){if(playing)window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)else window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)}
     LaunchedEffect(showChrome,playing,menu,held,gestureActive,active,foreground){if(showChrome&&playing&&menu==null&&!held&&!gestureActive&&active&&foreground){delay(4000);onChrome(false)}}
@@ -440,8 +444,26 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
                 val up=withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis){waitForUpOrCancellation().also{finished=true}}
                 if(!finished){
                     lastTapTime=null
-                    if(active&&foreground&&player.isPlaying&&(down.position.x<size.width*.45f||down.position.x>size.width*.55f)){held=true;haptics.performHapticFeedback(HapticFeedbackType.LongPress)}
-                    waitForUpOrCancellation();held=false
+                    if(active&&foreground&&player.isPlaying){
+                        held=true;lockOnRelease=false;unlockOnRelease=false;lockCue="";speedCue=if(latestBoostLocked)"2.0X 倍速已锁定"else"2.0X 快进中";haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        try {
+                            while(true){
+                                val event=awaitPointerEvent(PointerEventPass.Initial)
+                                val change=event.changes.firstOrNull{it.id==down.id}?:break
+                                if(!change.pressed)break
+                                val distance=change.position.y-down.position.y
+                                lockOnRelease=!latestBoostLocked&&distance>=48.dp.toPx()
+                                unlockOnRelease=latestBoostLocked&&distance<=-48.dp.toPx()
+                                lockCue=when{lockOnRelease->"松开锁定倍速";unlockOnRelease->"松开恢复原速";else->""}
+                                change.consume()
+                            }
+                        } finally {
+                            if(lockOnRelease)boostLocked=true
+                            if(unlockOnRelease)boostLocked=false
+                            held=false
+                            speedCue="";lockCue=when{lockOnRelease->"2.0X 倍速已锁定";unlockOnRelease->"已恢复原速";else->""}
+                        }
+                    } else waitForUpOrCancellation()
                 }else if(up==null){lastTapTime=null;held=false}
                 else {
                     haptics.performHapticFeedback(HapticFeedbackType.VirtualKey)
@@ -453,12 +475,19 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
                     }else{lastTapTime=up.uptimeMillis;lastTapPosition=up.position;chromeBeforeTap=chromeVisible;chromeAction(!chromeVisible)}
                 }
             }
-        }.pointerInput(active,foreground){detectVerticalDragGestures(
-            onDragStart={point->origin=point;drag=Offset.Zero;dragAxis="";gestureActive=true;startBrightness=brightness;startGain=gain},
-            onDragEnd={gestureActive=false;dragAxis="";held=false},onDragCancel={gestureActive=false;dragAxis="";held=false;hud=null}) {change,delta->if(active&&foreground){
-                drag+=Offset(0f,delta)
-                if(dragAxis.isBlank()&&abs(drag.y)>14.dp.toPx())dragAxis=if(origin.x<size.width/2)"brightness"else "volume"
+        }.pointerInput(active,foreground){detectDragGestures(
+            onDragStart={point->origin=point;drag=Offset.Zero;dragAxis="";gestureActive=true;startBrightness=brightness;startGain=gain;startPosition=player.currentPosition},
+            onDragEnd={gestureActive=false;dragAxis="";if(seekDraft!=null){player.seekTo(seekDraft!!.toLong());position=seekDraft!!.toLong();seekDraft=null}},
+            onDragCancel={gestureActive=false;dragAxis="";seekDraft=null;hud=null}) {change,delta->if(active&&foreground){
+                drag+=delta
+                if(held){
+                    val threshold=48.dp.toPx();lockOnRelease=!latestBoostLocked&&drag.y>=threshold;unlockOnRelease=latestBoostLocked&&drag.y<=-threshold
+                    lockCue=when{lockOnRelease->"松开锁定倍速";unlockOnRelease->"松开恢复原速";else->""}
+                    change.consume();return@detectDragGestures
+                }
+                if(dragAxis.isBlank()&&maxOf(abs(drag.x),abs(drag.y))>14.dp.toPx())dragAxis=if(abs(drag.x)>abs(drag.y))"seek"else if(origin.x<size.width/2)"brightness"else "volume"
                 if(dragAxis.isNotBlank())change.consume()
+                if(dragAxis=="seek"&&duration>0){val target=(startPosition+drag.x/size.width*60000).toLong().coerceIn(0,duration);seekDraft=target.toFloat();hud="定位 ${target/1000}s"}
                 if(dragAxis=="brightness"){brightness=(startBrightness-drag.y/(size.height*.65f)).coerceIn(.01f,1f);window?.attributes=window?.attributes?.apply{screenBrightness=brightness};hud="brightness"}
                 if(dragAxis=="volume"){gain=(startGain-drag.y/(size.height*.65f)).coerceIn(0f,1f);muted=gain<=0;hud="volume"}
             }}
@@ -466,17 +495,17 @@ fun preferredVideo(media:Media,quality:String):VideoVariant? {
         LaunchedEffect(hud,gestureActive){if(hud!=null&&!gestureActive){delay(600);hud=null}}
         if(buffering)FlutterProgress(Modifier.align(Alignment.Center),color=Color.White)
         if(failure)Column(Modifier.align(Alignment.Center),horizontalAlignment=Alignment.CenterHorizontally){Text("视频加载失败，请重试",color=Color.White);Button(onClick={failure=false;player.prepare();player.playWhenReady=active&&foreground}){Text("重试")}}
-        hud?.let {value->
-            Row(Modifier.align(Alignment.Center).shadow(12.dp,RoundedCornerShape(16.dp)).background(Color.Black.copy(alpha=.85f),RoundedCornerShape(16.dp)).border(.8.dp,Color.White.copy(alpha=.24f),RoundedCornerShape(16.dp)).padding(horizontal=20.dp,vertical=12.dp),verticalAlignment=Alignment.CenterVertically) {
+        hud?.let {value-> VideoHintOverlay(player,true,inset=videoTopInset) {
+            Row(Modifier.shadow(12.dp,RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha=.87f),RoundedCornerShape(10.dp)).padding(horizontal=16.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically) {
                 if(value=="brightness"||value=="volume") {
                     val level=if(value=="brightness")brightness else gain;val color=if(value=="brightness")Color(0xFFFFD740)else Color(0xFF18FFFF)
                     Glyph(if(value=="brightness")if(level>.5f)"brightness_7_rounded"else "brightness_4_rounded"else if(level==0f)"volume_off_rounded"else if(level>.5f)"volume_up_rounded"else "volume_down_rounded",size=26,color=color)
                     Spacer(Modifier.width(12.dp));LinearProgressIndicator(progress={level},modifier=Modifier.width(100.dp).height(6.dp).clip(RoundedCornerShape(4.dp)),color=color,trackColor=Color.White.copy(alpha=.24f),gapSize=0.dp,drawStopIndicator={});Spacer(Modifier.width(12.dp));Text("${(level*100).toInt()}%",color=Color.White,fontSize=13.sp,fontWeight=androidx.compose.ui.text.font.FontWeight.Bold)
                 }else {Glyph(if(value.startsWith("+"))"forward_10_rounded"else "replay_10_rounded",size=28,color=Color.White);Spacer(Modifier.width(8.dp));Text(value,color=Color.White,fontSize=16.sp,fontWeight=androidx.compose.ui.text.font.FontWeight.Bold)}
             }
-        }
+        } }
         message?.let {Text(it,Modifier.align(Alignment.TopCenter).fillMaxWidth().statusBarsPadding().padding(top=64.dp,start=16.dp,end=16.dp).background(Color.Black.copy(alpha=.87f),RoundedCornerShape(16.dp)).padding(12.dp),textAlign=androidx.compose.ui.text.style.TextAlign.Center,maxLines=3,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis,color=Color.White)}
-        if(held)Box(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top=56.dp)){FlutterLabelChip("2.0X 倍速快进中")}
+        VideoHintOverlay(player, speedCue.isNotEmpty() || lockCue.isNotEmpty(), inset = videoTopInset, contentKey = lockCue.ifEmpty { speedCue }) { Row(Modifier.background(Color.Black.copy(alpha=.87f),RoundedCornerShape(10.dp)).padding(horizontal=16.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically){Glyph("fast_forward_rounded",size=20,color=Color.White);Spacer(Modifier.width(8.dp));Text(lockCue.ifEmpty{speedCue.ifEmpty{"2.0X 倍速快进中"}},color=Color.White,fontSize=14.sp,fontWeight=androidx.compose.ui.text.font.FontWeight.Bold)} }
         if(showChrome){
             Row(Modifier.align(Alignment.TopCenter).fillMaxWidth().testTag("video-header").background(if(landscape) Brush.verticalGradient(listOf(Color.Black.copy(alpha=.87f),Color.Transparent)) else Brush.verticalGradient(listOf(Color.Black,Color.Black))).then(if(landscape) Modifier.windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)).padding(horizontal=24.dp) else Modifier.statusBarsPadding()),verticalAlignment=Alignment.CenterVertically) {
                 VideoButton("arrow_back","返回",{if(landscape){landscape=false;activity?.requestedOrientation=ActivityInfo.SCREEN_ORIENTATION_PORTRAIT}else onBack()})
